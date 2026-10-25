@@ -159,18 +159,18 @@
  "tree_fallback": {
   "sat_storage_mm": 60.0,
   "source": "used only when sim/trees.py results are not passed: per-tree bending-moment snap / uproot model with the wind_tree_params.json parameters (Virot 2016 calibration, Nicoll 2006 anchorage, Kamimura 2012 saturation). Soil saturation proxy = cumulative rain / 60 mm (tree-pit soil ~0.3 m x drainable porosity ~0.2, assumed) until water.py soil_sat frames are passed.",
-  "load_scale": 0.47279,
-  "strength_scale": 4.40233,
+  "load_scale": 1.05469,
+  "strength_scale": 3.98962,
   "calibration": {
-   "load_scale": 0.47279,
-   "strength_scale": 4.40233,
-   "median_ucrit_raw_ms": 23.6,
-   "median_ucrit_sound_ms": 131.34,
+   "load_scale": 1.05469,
+   "strength_scale": 3.98962,
+   "median_ucrit_raw_ms": 43.76,
+   "median_ucrit_sound_ms": 121.76,
    "replay_failures": 9,
    "target_reports": 9,
    "storm": "dec31_2022",
    "method": "sim.destruction.calibrate_trees(): load_scale sets the median critical crown gust of sound inventory trees to 42 m/s (Virot et al. 2016, Phys. Rev. E 93:023001); strength_scale (both snap and uproot capacity) then makes the 31.12.2022 replay fail as many trees in the tile as SF 311 tree reports there (DataSF vw6y-z8j6 via data/grid/validation.json). 311 reports undercount real failures, so this is a low anchor.",
-   "run": "2026-10-25"
+   "run": "2026-10-25 (re-run after wind_tree_params.json update in 7f58479)"
   },
   "anchorage_beta": 0.3,
   "anchorage_source": "assumed lognormal tree-to-tree scatter (beta 0.3) of root anchorage around the Creg x stem-weight regression (Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883 report wide scatter by soil and rooting); also smooths the many identical default-size saplings in the inventory"

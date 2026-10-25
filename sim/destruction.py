@@ -289,7 +289,7 @@ def calibrate_trees(target_ms=42.0, target_reports=None, storm_name="dec31_2022"
         lo, hi = (mid, hi) if n > target else (lo, mid)
     P["tree_fallback"]["strength_scale"] = hi
     n = len(tree_failures(trees, Wm, st, None, seed, P))
-    return {"load_scale": round(load_scale, 5), "strength_scale": round(hi, 5),
+    return {"load_scale": load_scale, "strength_scale": math.ceil(hi * 1e5) / 1e5,   # round up: stay at/below the target
             "median_ucrit_raw_ms": round(float(np.median(ucrit)), 2),
             "median_ucrit_sound_ms": round(target_ms * hi ** (1.0 / (2.0 - b)), 2),
             "replay_failures": n, "target_reports": int(target), "storm": storm_name}
