@@ -260,8 +260,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan", required=True)
     ap.add_argument("--storm", default="elnino_ar_2026")
+    ap.add_argument("--no-expected", action="store_true", help="skip the host-side expected run (compare hashes later)")
+    ap.add_argument("--label", default="Independent audit · Antigravity managed agent")
+    ap.add_argument("--source-job", default=None)
     a = ap.parse_args()
-    job = new_job("managed", {"plan": a.plan})
+    job = new_job("managed", {"plan": a.plan, "label": a.label, "source_job": a.source_job})
+    job.emit("job_start", label=a.label, plan=a.plan, source_job=a.source_job, agent=AGENT, model="gemini-4-argon")
     orig = job.emit
 
     def emit(type, **d):
@@ -270,9 +274,157 @@ def main():
             print(f"[{time.strftime('%H:%M:%S')}] {type}: {json.dumps(d, default=str)[:400]}", flush=True)
         return ev
     job.emit = emit
-    res = managed_job(job, a.storm, Path(a.plan).read_text())
+    res = managed_job(job, a.storm, Path(a.plan).read_text(), expected={} if a.no_expected else None)
+    job.finish("completed", res)
     print(json.dumps(res, indent=1, default=str)[:3000])
 
 
 if __name__ == "__main__":
     main()
+
+
+# ------------------------------------------------------------------ staged audit (exact Daytona job bundle)
+def staged_audit(job: Job, plan_code: str, storm: str = "elnino_ar_2026", max_duration_s: float | None = 7200,
+                 model: str = "gemini-4-argon", host_compare: bool = True) -> dict:
+    """Ship the identical job dir that sim/remote.py runs on Daytona (pinned wheels, wind cache, streets, sandbox
+    export, same CPU feature env) into the Antigravity sandbox; Argon re-runs it there and audits the plan, while
+    the host runs the same job on Daytona -> both ledger hashes are compared."""
+    import shutil
+    import tempfile
+    import threading
+    import uuid as _uuid
+    from google import genai
+    from sim import remote
+    from server.sandbox import run_plan
+    from agent import runner
+    client = genai.Client()
+    emit = job.emit
+    t0 = time.time()
+    emit("phase", phase="M", title="Independent audit · Antigravity managed agent (real frozen sim)")
+    pdir = runner.PLANS / f"audit-{int(t0)}"
+    sb = run_plan(plan_code, out_dir=pdir, timeout=180)
+    if not sb.get("ok"):
+        raise RuntimeError(f"plan failed in sandbox: {sb.get('error')}")
+    kw = {"max_duration_s": max_duration_s} if max_duration_s else {}
+    run_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{_uuid.uuid4().hex[:4]}-audit-sandbox"
+    tmp = Path(tempfile.mkdtemp(prefix="audit_job_"))
+    info = remote.stage_job(tmp, storm, plan_code, "audit in Antigravity sandbox", run_id, False, 8, str(pdir), kw)
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        tar.add(str(tmp), arcname=".")
+    bundle = buf.getvalue()
+    shutil.rmtree(tmp, ignore_errors=True)
+    host = {}
+
+    def host_run():
+        try:
+            rd = remote.run_storm_remote(storm, plan_code, label="audit host twin", plan_dir=str(pdir), **kw)
+            r = runner.load_result(rd)
+            host.update(run_id=rd.name, ledger_hash=r.get("ledger_hash"), total_usd=(r.get("ledger") or {}).get("total_usd"))
+            emit("audit_host_run", **host)
+        except Exception as e:
+            host["error"] = f"{type(e).__name__}: {e}"
+    th = threading.Thread(target=host_run, daemon=True)
+    if host_compare:
+        th.start()
+    it0 = client.interactions.create(agent=AGENT, agent_config={"type": "antigravity", "model": model},
+                                     input="Run `pwd` and reply with the output only.", environment="remote")
+    env_id = it0.environment_id
+    emit("managed_env", environment_id=env_id)
+    client.environments.files.upload(environment=env_id, path="workspace/audit/", file=bundle, extract=True,
+                                     overwrite=True, mime_type="application/gzip")
+    emit("managed_upload", bytes=len(bundle), wind_fields=info.get("wind_fields"), max_duration_s=max_duration_s)
+    window = f"the first {max_duration_s/3600:.1f} h of the storm (reduced window for time)" if max_duration_s else "the full storm"
+    prompt = f"""You are an independent auditor for San Francisco's storm plan (StormSim SF), Gemini 4 Argon's final plan.
+/workspace/audit holds the exact job that our cloud runner executes: the frozen simulator (sim/), city grid + cached
+wind fields (data/), locked cost/damage tables (data/reference), the plan (plan.py) and its sandbox export, job.json.
+1. cd /workspace/audit && pip install -q --break-system-packages -r requirements.txt (pinned versions; required for
+   bit-identical numerics) and run: NPY_DISABLE_CPU_FEATURES="X86_V4 AVX512_ICL AVX512_SPR" python _remote_job.py
+   It simulates {window} with the plan and prints @@LEDGER <hash>. Do NOT modify sim/ or data/.
+2. While it runs, audit plan.py against the city with python (from sim.city_api import CityEditor; city=CityEditor()):
+   pricing gaps (raw array edits or measures the cost planner can't see), floodwalls crossing buildings or not tying
+   into high ground (city.elevation at the ends), shelters in buildings that flood (runs/<run_id>/result.json ledger
+   + frames), evacuation routes or depots on flooded streets. Cite plan.py line numbers and numbers.
+3. Read runs/{run_id}/result.json: ledger_hash, ledger total_usd, plan_cost total_usd, people metrics.
+4. Write AUDIT.md (verdict, numbers, issues with evidence) and call report_verification with ledger_hash_match=false
+   if you have no expected hash to compare against (the host compares), plus your ledger hash in the summary text."""
+    verdict, prev, inp, final_text = None, None, prompt, ""
+    for _ in range(6):
+        kwp = {"previous_interaction_id": prev} if prev else {}
+        iid = None
+        for ev in client.interactions.create(agent=AGENT, agent_config={"type": "antigravity", "model": model}, input=inp,
+                                             environment=env_id, tools=[{"type": "code_execution"}, REPORT_TOOL],
+                                             stream=True, timeout=3600, **kwp):
+            et = getattr(ev, "event_type", None)
+            if et == "interaction.created":
+                iid = ev.interaction.id
+            elif et == "step.start":
+                st = ev.step
+                d = {"step": getattr(st, "type", None)}
+                for k in ("name", "arguments"):
+                    v = getattr(st, k, None)
+                    if v:
+                        d[k] = str(v)[:1500]
+                emit("managed_step", **d)
+            elif et == "step.delta" and getattr(ev.delta, "type", None) == "text" and ev.delta.text:
+                emit("text", text=ev.delta.text, source="managed")
+        it = client.interactions.get(iid)
+        prev = it.id
+        final_text = it.output_text or final_text
+        done_ids = {getattr(s, "call_id", None) for s in it.steps or [] if s.type == "function_result"}
+        pend = [s for s in it.steps or [] if s.type == "function_call" and s.id not in done_ids and s.name == "report_verification"]
+        if it.status == "requires_action" and pend:
+            verdict = dict(pend[0].arguments or {})
+            emit("managed_verdict", **verdict)
+            inp = [{"type": "function_result", "name": pend[0].name, "call_id": pend[0].id,
+                    "result": [{"type": "text", "text": json.dumps({"recorded": True})}]}]
+            continue
+        if verdict or it.status != "completed":
+            break
+        inp = "Now call report_verification with your verdict."
+    sandbox = {}
+    for rel, key in ((f"workspace/audit/runs/{run_id}/result.json", "result"), ("workspace/audit/AUDIT.md", "audit")):
+        try:
+            b = client.environments.files.download(environment=env_id, path=rel)
+            p = OUT / f"{job.id}_{Path(rel).name}"
+            p.write_bytes(b if isinstance(b, (bytes, bytearray)) else str(b).encode())
+            sandbox[key] = "/" + str(p.relative_to(REPO))
+        except Exception as e:
+            sandbox[key] = f"download failed: {e}"
+    if str(sandbox.get("result", "")).startswith("/"):
+        r = json.loads((REPO / sandbox["result"].lstrip("/")).read_text())
+        sandbox.update(ledger_hash=r.get("ledger_hash"), total_usd=(r.get("ledger") or {}).get("total_usd"), mock_sim=r.get("mock"))
+    if str(sandbox.get("audit", "")).startswith("/"):
+        emit("document", kind="verification", title="Independent audit · Antigravity managed agent",
+             markdown=(REPO / sandbox["audit"].lstrip("/")).read_text()[:60000], path=sandbox["audit"])
+    if host_compare:
+        th.join(timeout=900)
+    res = {"environment_id": env_id, "verdict": verdict, "sandbox": sandbox, "host": host, "mock_sim": False,
+           "max_duration_s": max_duration_s, "ledger_hash_match": bool(sandbox.get("ledger_hash")) and sandbox.get("ledger_hash") == host.get("ledger_hash"),
+           "final_text": final_text[:3000], "secs": round(time.time() - t0, 1)}
+    (OUT / f"{job.id}.json").write_text(json.dumps(res, indent=1, default=str))
+    emit("managed_result", **{k: v for k, v in res.items() if k != "final_text"})
+    return res
+
+
+def staged_main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--plan", required=True)
+    ap.add_argument("--max-duration", type=float, default=7200)
+    ap.add_argument("--source-job", default=None)
+    a = ap.parse_args()
+    label = "Independent audit · Antigravity managed agent"
+    job = new_job("managed", {"plan": a.plan, "label": label, "source_job": a.source_job})
+    job.emit("job_start", label=label, plan=a.plan, source_job=a.source_job, agent=AGENT, model="gemini-4-argon",
+             max_duration_s=a.max_duration)
+    orig = job.emit
+
+    def emit(type, **d):
+        ev = orig(type, **d)
+        if type not in ("text",):
+            print(f"[{time.strftime('%H:%M:%S')}] {type}: {json.dumps(d, default=str)[:300]}", flush=True)
+        return ev
+    job.emit = emit
+    res = staged_audit(job, Path(a.plan).read_text(), max_duration_s=a.max_duration or None)
+    job.finish("completed", res)
+    print(json.dumps({k: v for k, v in res.items() if k != "final_text"}, indent=1, default=str))

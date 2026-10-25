@@ -3,9 +3,9 @@
  "retrieved": "2026-10-25",
  "params": {
   "alpha": {
-   "value": 0.7,
+   "value": 0.6,
    "unit": "-",
-   "source": "Bates, Horritt & Fewtrell 2010, J. Hydrol. 387:33-45, eq. 14: CFL coefficient 0.2-0.7 for the local-inertial scheme"
+   "source": "Bates, Horritt & Fewtrell 2010, J. Hydrol. 387:33-45, eq. 14 (CFL coefficient 0.2-0.7); 0.6 because the StormSim 2D pool-perturbation test is unstable at 0.7 and stable at 0.6 (validation/BUGS.md B1)"
   },
   "theta": {
    "value": 0.8,

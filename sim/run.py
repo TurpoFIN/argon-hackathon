@@ -182,6 +182,9 @@ def _run_water_cached(water, wgrid, st, ed, phash, threads, verbose, notes, use_
         tmp = path.with_name(path.stem + f".{os.getpid()}.tmp.npz")
         water.save_result(wres, str(tmp))
         os.replace(tmp, path)
+        old = sorted(WATER_CACHE.glob("water_*.npz"), key=lambda p: p.stat().st_mtime)[:-12]   # ~0.5-1 GB each
+        for p in old:
+            p.unlink(missing_ok=True)
     except Exception as e:
         notes.append(f"water cache write failed: {e}")
     return wres, False

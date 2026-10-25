@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>StormSim SF: where the numbers come from</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+  :root{--bg:#0b1016;--panel:#111a24;--line:#1f2d3b;--cyan:#38d6f0;--cyan2:#7fe7f7;--txt:#e6eef5;--mut:#8ea3b5;--ok:#3ddc97;--bad:#ff6b6b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;background:var(--bg);color:var(--txt);font-family:Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+  .slide{position:relative;width:1920px;height:1080px;padding:34px 48px 0}
+  h1{font-size:48px;font-weight:750;letter-spacing:-.5px}
+  h1 span{color:var(--cyan)}
+  .pipe{display:flex;align-items:center;gap:10px;margin:20px 0 22px}
+  .pipe div{flex:1;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 6px;font-size:21px;font-weight:600}
+  .pipe div.hl{border-color:var(--cyan)}
+  .pipe b{color:var(--cyan);font-size:24px}
+  .main{display:grid;grid-template-columns:1150px 1fr;gap:40px}
+  h2{font-size:17px;text-transform:uppercase;letter-spacing:1.6px;color:var(--cyan);margin-bottom:8px;font-weight:700}
+  table{border-collapse:collapse;width:100%}
+  td{border-bottom:1px solid var(--line);vertical-align:middle;text-align:left}
+  .phys td{padding:15px 10px;font-size:20px;line-height:1.3}
+  .phys td.mod{font-weight:700;font-size:21px;color:var(--cyan2);width:110px}
+  .phys td.what{width:300px}
+  .phys td.eq{width:440px}
+  .phys td.eq .katex{font-size:1.12em}
+  .phys td.src{color:var(--mut);font-size:17px}
+  .cmp td{padding:17px 8px;font-size:19px;line-height:1.3;vertical-align:top}
+  .cmp td:first-child{font-weight:700;width:165px}
+  .cmp td:nth-child(2){color:var(--mut);width:190px}
+  .cmp td:nth-child(3){color:var(--txt)}
+  .cmp tr.h td{font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;font-weight:600;padding:4px 8px}
+  .note{font-size:18px;color:var(--mut);margin-top:14px;line-height:1.4}
+  .val{margin-top:22px}
+  .vrow{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;border-left:5px solid var(--ok)}
+  .card.f{border-left-color:var(--bad)}
+  .card .t{font-size:17px;color:var(--mut);display:flex;justify-content:space-between;font-weight:600}
+  .card .t i{font-style:normal;font-weight:800;color:var(--ok)}
+  .card.f .t i{color:var(--bad)}
+  .card .r{font-size:27px;font-weight:700;margin-top:4px}
+  .card .d{font-size:16px;color:var(--mut);margin-top:4px;line-height:1.3}
+  footer{position:absolute;left:48px;right:48px;bottom:24px;border-top:1px solid var(--line);padding-top:12px;font-size:21px;color:var(--cyan);font-weight:600}
+</style>
+</head>
+<body>
+<div class="slide">
+  <h1>Where the numbers come from <span>· StormSim SF</span></h1>
+
+  <div class="pipe">
+    <div>Real SF data</div><b>→</b>
+    <div>Storm forcing</div><b>→</b>
+    <div class="hl">Physics</div><b>→</b>
+    <div>Damage $ + lives</div><b>→</b>
+    <div>Cost planner</div><b>→</b>
+    <div class="hl">Gemini 4 Argon loop</div>
+  </div>
+
+  <div class="main">
+    <section>
+      <h2>Physics and money</h2>
+      <table class="phys">
+        <tr><td class="mod">Water</td>
+          <td class="what">Rain, runoff, drains, sewer, Bay tide on a 4 m lidar grid</td>
+          <td class="eq">\(q^{t+\Delta t}=\dfrac{q^t-g\,h\,\Delta t\,\partial\eta/\partial x}{1+g\,\Delta t\,n^2|q|/h^{7/3}}\)</td>
+          <td class="src">Bates 2010 · de Almeida 2012 · NOAA 9414290</td></tr>
+        <tr><td class="mod">Wind</td>
+          <td class="what">Lattice-Boltzmann LES around real buildings, 16 m</td>
+          <td class="eq">D3Q19 BGK + \(\nu_t=(C_s\Delta)^2|\bar S|\)</td>
+          <td class="src">Latt &amp; Chopard 2006 · Smagorinsky 1963 · ASCE 7-22</td></tr>
+        <tr><td class="mod">Trees</td>
+          <td class="what">23,564 real street trees snap or uproot on wet soil</td>
+          <td class="eq">snap \(M>\mathrm{MOR}\,\pi d^3/32\)<br>uproot \(M>C_{\rm reg}\,m_{\rm stem}(1-0.4\,s)\)</td>
+          <td class="src">Virot 2016 · Nicoll 2006 · Gardiner 2008</td></tr>
+        <tr><td class="mod">Cars</td>
+          <td class="what">Parked cars float or slide in floodwater</td>
+          <td class="eq">\(F_{\rm drag}>\mu\,(W-B)\)</td>
+          <td class="src">Shu 2011 · USACE EGM 09-04</td></tr>
+        <tr><td class="mod">People</td>
+          <td class="what">Evacuees on the street graph; hazard in water</td>
+          <td class="eq">\(HR=d\,(v+0.5)+DF\)</td>
+          <td class="src">DEFRA FD2321 · US DOT VSL</td></tr>
+        <tr><td class="mod">Damage</td>
+          <td class="what">Each building, by occupancy and storeys reached</td>
+          <td class="eq">\(L=\mathrm{DDF}(d)\cdot V\cdot n_{\rm wet}/n_{\rm floors}\)</td>
+          <td class="src">FEMA Hazus FAST · USACE NACCS 2015 · SF Assessor</td></tr>
+        <tr><td class="mod">Costs</td>
+          <td class="what">Plan priced from the physical change, never by the model</td>
+          <td class="eq">\(\mathrm{BCR}=L_{\rm avoided}\cdot\mathrm{AEP}\cdot\mathrm{PV}_{7\%,50y}\,/\,C\)</td>
+          <td class="src">FEMA BCA · OMB A-94</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>Compared with the tools planners use</h2>
+      <table class="cmp">
+        <tr class="h"><td>Tool</td><td>What it does</td><td>What we add</td></tr>
+        <tr><td>InfoWorks ICM</td><td>Sewer + 2D flood</td><td>Wind, trees, people and $ in the same run</td></tr>
+        <tr><td>HEC-RAS 2D</td><td>2D flood hydraulics</td><td>Damage and plan cost from the same run</td></tr>
+        <tr><td>LISFLOOD-FP</td><td>Same local-inertial equations</td><td>Drains, sewer, damage, AI plan loop</td></tr>
+        <tr><td>OpenFOAM</td><td>Urban wind CFD</td><td>Wind that breaks trees and costs money</td></tr>
+        <tr><td>FEMA Hazus</td><td>Losses from given depths</td><td>Same curves, depths from our physics, per plan</td></tr>
+      </table>
+      <div class="note">They are more mature and more validated. Ours is fast, coupled, and a model can iterate on it.</div>
+    </section>
+  </div>
+
+  <section class="val">
+    <h2>Validation · 11 of 14 checks pass</h2>
+    <div class="vrow">
+      <div class="card"><div class="t">SFPUC 100-yr flood map <i>PASS</i></div><div class="r">CSI 0.27 vs 0.05</div><div class="d">random map of same area · AUC 0.72</div></div>
+      <div class="card"><div class="t">311 flood reports <i>PASS</i></div><div class="r">83 % within 30 m</div><div class="d">vs 60 % random, p = 0.0001 · 31.12.2022</div></div>
+      <div class="card"><div class="t">Mass balance <i>PASS</i></div><div class="r">3.7×10⁻⁹ % error</div><div class="d">1.25 Mm³ of rain, real storm replay</div></div>
+      <div class="card"><div class="t">Hazus by hand <i>PASS</i></div><div class="r">36 / 36 to the cent</div><div class="d">building-by-building vs FEMA tables</div></div>
+      <div class="card f"><div class="t">Dam break <i>FAIL</i></div><div class="r">front 14 % slow</div><div class="d">simplified equations weak in fast flow; ponding is slow</div></div>
+    </div>
+  </section>
+
+  <footer>Every price from a cited table · open source</footer>
+</div>
+</body>
+</html>

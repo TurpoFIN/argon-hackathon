@@ -1,22 +1,22 @@
 {
- "generated_utc": "2026-10-25T22:02:57Z",
+ "generated_utc": "2026-10-25T22:47:14Z",
  "n_tests": 14,
- "n_pass": 8,
+ "n_pass": 11,
  "tests": [
   {
    "id": "1",
    "name": "Lake at rest over bumpy terrain + island + building (well-balanced)",
    "reference": "exact: u = 0, \u03b7 = const (Audusse et al. 2004 well-balanced property)",
-   "result": "max |u| 1.1e-07 m/s, max |\u0394\u03b7| 6.0e-08 m after 1 h; 1b perturbed pool surface range 1.5e+00 m (alpha 0.7); HLL option: lake max |u| 8.2e-14 m/s, pool range 8.4e-07 m",
+   "result": "max |u| 9.9e-08 m/s, max |\u0394\u03b7| 6.0e-08 m after 1 h; 1b perturbed pool surface range 4.1e-06 m (alpha 0.6); HLL option: lake max |u| 8.2e-14 m/s, pool range 8.4e-07 m",
    "tolerance": "|u| < 1e-3 m/s, |\u0394\u03b7| < 1 mm; 1b: 1 mm bump stays < 2 mm",
-   "pass": false,
+   "pass": true,
    "image": "/validation/t01_lake_at_rest.png"
   },
   {
    "id": "2",
    "name": "Mass conservation, real grid, full dec31_2022 storm",
    "reference": "rain in = surface + sewer storage + infiltration + treatment + CSO + edge + bay exchange",
-   "result": "closure 2.1e-09 % of 1.25 Mm\u00b3 rain; rain vs independent integral -0.000 %; surface vs frames +0.00 %",
+   "result": "closure 3.7e-09 % of 1.25 Mm\u00b3 rain; rain vs independent integral -0.000 %; surface vs frames -0.00 %",
    "tolerance": "< 1 % each",
    "pass": true,
    "image": "/validation/t02_mass_balance.png"
@@ -25,7 +25,7 @@
    "id": "3",
    "name": "1D dam break vs Stoker (wet bed) / Ritter (dry bed), both water schemes",
    "reference": "Stoker 1957 / Ritter 1892 analytic; local-inertial expected weaker at high Froude (Bates 2010; de Almeida & Bates 2013 WRR 49)",
-   "result": "inertial: h_r/h_l 0.5 err 3.5 %/front -10 %, h_r/h_l 0.1 err 10.8 %/front -28 %, h_r/h_l 0.0 err 12.3 %/front -58 %; hll: h_r/h_l 0.5 err 1.0 %/front -0 %, h_r/h_l 0.1 err 1.2 %/front -2 %, h_r/h_l 0.0 err 1.2 %/front -15 %",
+   "result": "inertial: h_r/h_l 0.5 err 3.5 %/front -14 %, h_r/h_l 0.1 err 10.8 %/front -31 %, h_r/h_l 0.0 err 12.0 %/front -58 %; hll: h_r/h_l 0.5 err 1.0 %/front -0 %, h_r/h_l 0.1 err 1.2 %/front -2 %, h_r/h_l 0.0 err 1.2 %/front -15 %",
    "tolerance": "mean |err| < 5 % of h_l and bore position within 10 %; verdict on the production scheme ('inertial'), subcritical case h_r/h_l = 0.5",
    "pass": false,
    "image": "/validation/t03_dam_break.png"
@@ -34,7 +34,7 @@
    "id": "4",
    "name": "Steady uniform flow on a sloped channel vs Manning normal depth, both schemes",
    "reference": "Manning: h_n = (q n / \u221aS)^(3/5)",
-   "result": "inertial: Fr 0.30 -0.0 %, Fr 0.68 -0.0 %, Fr 0.53 -0.0 %, Fr 0.93 -16.7 % (oscillating), Fr 1.40 -33.7 % (oscillating); hll: Fr 0.30 -1.7 %, Fr 0.68 +0.7 %, Fr 0.53 +0.1 %, Fr 0.93 +2.8 %, Fr 1.40 +9.8 %",
+   "result": "inertial: Fr 0.30 -0.0 %, Fr 0.68 -0.0 %, Fr 0.53 -0.0 %, Fr 0.93 -15.5 % (oscillating), Fr 1.40 -37.1 % (oscillating); hll: Fr 0.30 -1.7 %, Fr 0.68 +0.7 %, Fr 0.53 +0.1 %, Fr 0.93 +2.8 %, Fr 1.40 +9.8 %",
    "tolerance": "subcritical (Fr < 0.8): |err| < 1 % and steady; verdict on production scheme 'inertial'",
    "pass": true,
    "image": "/validation/t04_manning.png"
@@ -43,7 +43,7 @@
    "id": "5",
    "name": "EA 2D benchmark Test 1/Test 2-type (disconnected water body; filling depressions)",
    "reference": "N\u00e9elz & Pender 2013 (EA SC120002) test behaviours; own DEMs, exact level-pool answers",
-   "result": "(a) pond peak 10.367 m vs 10.35, final 10.010 m vs 10.00; (b) end levels A -1.0 cm, B +1.2 cm, C +0.9 cm, D -0.1 cm; volume err 4.5e-04 %",
+   "result": "(a) pond peak 10.366 m vs 10.35, final 10.010 m vs 10.00; (b) end levels A +0.5 cm, B +0.8 cm, C +0.8 cm, D -1.0 cm; volume err -4.6e-08 %",
    "tolerance": "(a) peak \u00b15 cm, final \u00b12 cm; (b) levels \u00b12 cm, volume \u00b10.1 %",
    "pass": true,
    "image": "/validation/t05_ea_tests.png"
@@ -52,7 +52,7 @@
    "id": "6a",
    "name": "Replay vs SFPUC 100-year storm flood zone",
    "reference": "SFPUC 100-Year Storm Flood Risk Map (DataSF jzu3-4yxp), SFPUC's own 1D-2D model",
-   "result": "CSI 0.28 (random same-area 0.05, lowest-ground 0.14); POD 0.42, FAR 0.56; AUC 0.72",
+   "result": "CSI 0.27 (random same-area 0.05, lowest-ground 0.14); POD 0.42, FAR 0.56; AUC 0.72",
    "tolerance": "CSI > 2x random same-area map and AUC > 0.7",
    "pass": true,
    "image": "/validation/t06_replay_map.png"
@@ -61,7 +61,7 @@
    "id": "6b",
    "name": "Replay vs 311 flooding + sewage reports, 31.12.2022",
    "reference": "150 SF 311 reports in the tile (DataSF vw6y-z8j6), random street-cell placement baseline",
-   "result": "83% within 30 m of sim flooding vs 60% random (p = 0.0001); depth AUC 0.64 (p = 3.3e-09)",
+   "result": "83% within 30 m of sim flooding vs 60% random (p = 0.0001); depth AUC 0.63 (p = 5.2e-09)",
    "tolerance": "permutation p < 0.01 at 30 m",
    "pass": true,
    "image": "/validation/t06_311_distance.png"
@@ -97,25 +97,25 @@
    "id": "10",
    "name": "Tree critical breaking wind speed (calibration consistency)",
    "reference": "Virot, Ponomarenko, Dehandschoewercker, Quere & Clanet 2016, Phys. Rev. E 93:023001: trunks break at ~42 m/s nearly independent of species and size",
-   "result": "median 77.5 m/s (p10 35.5, p90 155.8); log-log slope vs height 0.16",
+   "result": "median 42.0 m/s (p10 19.2, p90 84.3); log-log slope vs height 0.17",
    "tolerance": "median within 42 +/- 8 m/s (calibrated) and weak size dependence |d ln Uc / d ln H| < 0.5 (independent)",
-   "pass": false,
+   "pass": true,
    "image": "/validation/trees_virot.png"
   },
   {
    "id": "11",
    "name": "Hazus FAST depth-damage cross-check, building by building",
    "reference": "FEMA Hazus FAST lookup tables (Hazus 4.0 riverine DDFs, restoration, econ params), computed by hand",
-   "result": "60 curves identical to FEMA rows; 33/36 building x depth cases exact to the cent; mismatches: RES3 relocation (BUGS.md B3)",
+   "result": "60 curves identical to FEMA rows; 36/36 building x depth cases exact to the cent",
    "tolerance": "exact (to the cent)",
-   "pass": false,
+   "pass": true,
    "image": "/validation/t11_hazus_fast.png"
   },
   {
    "id": "12",
    "name": "Replay damage plausibility vs reported 2022-23 winter-storm losses",
    "reference": "SF Chronicle: >= $46M SF damage from the 2022-23 winter storms (city estimate, mostly public property)",
-   "result": "tile $250.5M flood damage (99 bldgs above first floor); area-scaled reference $5.4M -> ratio 46.2x",
+   "result": "tile $126.5M flood damage (99 bldgs above first floor); area-scaled reference $5.4M -> ratio 23.3x",
    "tolerance": "order of magnitude (0.1x-10x)",
    "pass": false,
    "image": "/validation/t12_replay_damage.png"

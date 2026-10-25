@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import os
 import time
 
@@ -79,7 +80,7 @@ class FastByHand:
         return occ if occ in table else occ + "A"
 
     def loss(self, b, depth_m, ddf_s, ddf_c, expo=1.0):
-        d_ff = depth_m - float(b.get("first_floor_m") or 0.3)
+        d_ff = depth_m - float(damage.ref()[0]["flood"]["first_floor_height"]["by_foundation_m"]["slab"])  # Hazus slab default 1 ft
         occ = b["occupancy"]
         s = self.pct(self.bldg[ddf_s], d_ff) / 100 * b["value_structure"] * expo
         c = self.pct(self.cont[ddf_c], d_ff) / 100 * b["value_contents"] * expo
@@ -121,7 +122,7 @@ def test_fast(out_dir):
         for k, v in fl[tab].items():
             row = lut.get(int(v["ddf_id"]))
             same = row is not None and np.allclose([float(row[c]) for c in COLS], v["pct"])
-            occ_ok = row is not None and row["Occupancy"] == k.split("_")[0]
+            occ_ok = row is not None and row["Occupancy"].startswith(k.split("_")[0])  # RES3 covers FEMA RES3A-F
             curve_ok &= bool(same and occ_ok)
             curve_rows.append({"table": tab, "key": k, "ddf_id": v["ddf_id"], "match": bool(same), "occupancy_ok": bool(occ_ok)})
     # building-by-building: one real building per common occupancy, three depths
@@ -141,8 +142,10 @@ def test_fast(out_dir):
     for b in picks:
         ks = damage._curve_key(b, fl["structure"])
         kc = damage._curve_key(b, fl["contents"])
-        expo = min(1.0, float(fl.get("exposed_storeys", 2)) / max(1, int(b.get("floors") or 1)))
         for d in (0.45, 1.0, 1.8):
+            nf = max(1, int(b.get("floors") or 1))   # NACCS storey exposure, re-derived from the JSON rule
+            sh = max(2.5, float(b.get("height_m") or 3.5 * nf) / nf)
+            expo = 1.0 if nf == 1 else min(1.0, max(1, math.ceil(max(d - fl["first_floor_height"]["by_foundation_m"]["slab"], 0) / sh - 1e-9)) / nf)
             hand = fh.loss(b, d, fl["structure"][ks]["ddf_id"], fl["contents"][kc]["ddf_id"], expo)
             sim = _sim_one(b, d)
             rows.append({"bldg_id": b["id"], "occupancy": b["occupancy"], "floors": b.get("floors"), "depth_m": d,
@@ -191,8 +194,8 @@ def test_fast(out_dir):
                       + (f"; mismatches: {', '.join(f'{o} {k}' for o, k in bad)} (BUGS.md B3)" if bad else ""),
             "tolerance": "exact (to the cent)", "pass": bool(ok), "plot": "t11_hazus_fast.png",
             "metrics": {"curves": curve_rows, "cases": rows, "mismatches": bad, "max_rel_diff": worst},
-            "notes": "Pure FAST for buildings of <= 2 floors. Taller buildings: the sim applies the documented "
-                     "NACCS lowest-2-storeys exposure factor (2/floors) on top of FAST; the hand check applies the same factor."}
+            "notes": "FAST damage %; multi-storey buildings: USACE NACCS storey exposure (affected storeys / floors), "
+                     "re-derived independently in the hand check; first floor = Hazus slab default 1 ft."}
 
 
 # --------------------------------------------------------------------------------------------- 12

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where the numbers come from</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false})"></script>
+<style>
+  :root{--ink:#1a1d21;--grey:#6b7280;--rule:#e5e7eb;--blue:#2f6fb5}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1920px;height:1080px;background:#fff;color:var(--ink);font-family:Inter,"Helvetica Neue",Arial,sans-serif;overflow:hidden}
+  .slide{width:1920px;height:1080px;padding:130px 150px 0}
+  h1{font-size:56px;font-weight:650;letter-spacing:-1px}
+  h1::after{content:"";display:block;width:72px;height:5px;background:var(--blue);margin-top:22px}
+  table{border-collapse:collapse;width:100%;margin-top:60px}
+  td{padding:27px 0;border-bottom:1px solid var(--rule);vertical-align:middle;font-size:22px}
+  tr:first-child td{border-top:1px solid var(--rule)}
+  td.m{width:150px;font-weight:650;color:var(--blue)}
+  td.w{width:640px;color:var(--ink)}
+  td.e{width:540px}
+  td.e .katex{font-size:1.1em}
+  td.s{color:var(--grey);font-size:18px;text-align:right;white-space:nowrap}
+  .cmp{margin-top:40px;font-size:21px;color:var(--grey)}
+  .cmp b{color:var(--ink);font-weight:600}
+  .val{display:flex;gap:110px;margin-top:60px}
+  .val div{font-size:19px;color:var(--grey);line-height:1.4}
+  .val b{display:block;font-size:32px;font-weight:650;color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="slide">
+  <h1>Where the numbers come from</h1>
+  <table>
+    <tr><td class="m">Water</td><td class="w">Rain, runoff, drains and Bay tide on a 4 m lidar grid</td>
+      <td class="e">\(q^{t+\Delta t}=\dfrac{q^t-g\,h\,\Delta t\,\partial\eta/\partial x}{1+g\,\Delta t\,n^2|q|/h^{7/3}}\)</td>
+      <td class="s">Bates 2010 · de Almeida 2012</td></tr>
+    <tr><td class="m">Wind</td><td class="w">Lattice-Boltzmann LES around real buildings, 16 m</td>
+      <td class="e">D3Q19 BGK + \(\nu_t=(C_s\Delta)^2|\bar S|\)</td>
+      <td class="s">Latt &amp; Chopard 2006 · Smagorinsky 1963</td></tr>
+    <tr><td class="m">Trees</td><td class="w">23,564 street trees snap, or uproot on wet soil</td>
+      <td class="e">\(M>\mathrm{MOR}\,\pi d^3/32\) &nbsp;or&nbsp; \(M>C_{\rm reg}\,m(1-0.4\,s)\)</td>
+      <td class="s">Virot 2016 · Nicoll 2006</td></tr>
+    <tr><td class="m">Damage</td><td class="w">Every building, by occupancy and storeys reached</td>
+      <td class="e">\(L=\mathrm{DDF}(d)\cdot V\cdot n_{\rm wet}/n_{\rm floors}\)</td>
+      <td class="s">FEMA Hazus FAST · USACE NACCS</td></tr>
+    <tr><td class="m">Costs</td><td class="w">Plans priced from the physical change, not by the model</td>
+      <td class="e">\(\mathrm{BCR}=L_{\rm avoided}\cdot\mathrm{AEP}\cdot\mathrm{PV}\,/\,C\)</td>
+      <td class="s">FEMA BCA · OMB A-94</td></tr>
+  </table>
+  <p class="cmp">Compared with: <b>InfoWorks ICM · HEC-RAS 2D · OpenFOAM · FEMA Hazus</b> — same equation families, coupled into one run an AI can iterate on</p>
+  <div class="val">
+    <div><b>CSI 0.27 vs 0.05</b>SFPUC 100-year flood map vs random</div>
+    <div><b>83 %</b>of real 311 flood calls (31.12.2022) land within 30 m of simulated flooding</div>
+    <div><b>36 / 36</b>Hazus hand-check, exact to the cent</div>
+  </div>
+</div>
+</body>
+</html>
