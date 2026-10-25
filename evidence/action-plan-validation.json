@@ -1,0 +1,66 @@
+{
+  "checked_at": "2026-10-25T22:02:41.648973+00:00",
+  "model": "gemini-4-argon",
+  "result_sha256": "67da689dc27ee1b0c87266612232fe4bfff85765477b1548ccf3acbf1d0ea435",
+  "plan_version": 13,
+  "scenario_id": "968baf61d5bc",
+  "server_pid": 41538,
+  "surfaces": [
+    "http://localhost:5174/analysis",
+    "http://localhost:5174/"
+  ],
+  "observed": {
+    "steps": 8,
+    "first_stops": [
+      {
+        "title": "Check inlet 175054 near 100 LOMBARD ST",
+        "assignment": "Crew 1 \u00b7 first stop"
+      },
+      {
+        "title": "Check tree and street access at 163 MAIN ST",
+        "assignment": "Crew 2 \u00b7 first stop"
+      }
+    ],
+    "hazards": [
+      "wind",
+      "flood",
+      "trees",
+      "routes",
+      "structure",
+      "power"
+    ],
+    "resource_classes": 8,
+    "mobile_width": 390,
+    "mobile_document_width": 390,
+    "shared_version_2d_3d": 13,
+    "selected_tree_site": "report-16572155",
+    "phase_separation": "Start now / queued capacity / after inspection"
+  },
+  "checks": {
+    "shared_tree": "78 Python tests passed in 4.708s",
+    "isolated_commit_core": "51 Python tests passed in 3.629s",
+    "build": "TypeScript and esbuild passed",
+    "live_generation": "Invoked through Generate prioritized plan on actual /analysis"
+  },
+  "limitations": [
+    "Scenario crews and 30-minute window are provisional, not a live municipal roster.",
+    "No field inspections, real dispatch or specialist bookings were performed.",
+    "No measured local damage-reduction benefit.",
+    "Routes and travel durations remain unverified.",
+    "External resource stock and response times are not committed."
+  ],
+  "source_checks": [
+    "https://adoptadrain.sfwater.org/drain-clearing-safety-tips",
+    "https://sfpublicworks.org/services/sandbags",
+    "https://media.api.sf.gov/documents/Winter_Storm_and_Flood_Annex_20160818_Final.pdf",
+    "https://www.sf.gov/report-damaged-or-fallen-tree/",
+    "https://pgealerts.alerts.pge.com/safety/storm/",
+    "https://data.sf.gov/resource/jtgq-b7c5.json"
+  ],
+  "screenshots": [
+    "argon-action-plan.png",
+    "argon-action-plan-3d.png",
+    "argon-action-plan-mobile.png",
+    "argon-resources.png"
+  ]
+}

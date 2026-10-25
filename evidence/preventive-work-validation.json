@@ -1,0 +1,86 @@
+{
+  "checked_at": "2026-10-25T22:13:08.286070+00:00",
+  "model": "gemini-4-argon",
+  "plan_version": 28,
+  "scenario_id": "968baf61d5bc",
+  "server_pid": 74089,
+  "cases": [
+    {
+      "settings": {
+        "profile": "basic",
+        "minutes": 30
+      },
+      "totals": {
+        "jobs": 2,
+        "labor_minutes": 104,
+        "latest_finish": 27
+      },
+      "result_sha256": "4d2db1b9470b61ff0031facdfc3973ac350cdc8439bf95b7dc5c7a26c1c8019c"
+    },
+    {
+      "settings": {
+        "profile": "staged",
+        "minutes": 120
+      },
+      "totals": {
+        "jobs": 6,
+        "labor_minutes": 598,
+        "latest_finish": 115
+      },
+      "result_sha256": "6d17dfd7ba25bdfe56314503dc4ae2dfd197bfafc58c88c3ed4d037a2d1762d8"
+    },
+    {
+      "settings": {
+        "profile": "specialists",
+        "minutes": 480
+      },
+      "totals": {
+        "jobs": 6,
+        "labor_minutes": 1638,
+        "latest_finish": 310
+      },
+      "result_sha256": "8edb96bc409bf9283352aad1098ca380fc66bff373aa70a37936ec5292346465"
+    }
+  ],
+  "observed": {
+    "candidates": 41,
+    "operation_types": 11,
+    "views": [
+      "http://localhost:5174/analysis",
+      "http://localhost:5174/"
+    ],
+    "shared_version": 28,
+    "barrier_map_selection": "fit-barrier@report-16239820",
+    "viewport_widths": [
+      1440,
+      1024,
+      768,
+      390
+    ],
+    "horizontal_overflow": false,
+    "cache_reuse": "Returned to basic30 and staged120 through the actual UI without another model result",
+    "baseline": "Zero person-minutes and no added protection; no invented loss",
+    "benefit_grades": "Observed external storm outcome, observational association, mechanism, operating guidance and limits remain distinct"
+  },
+  "tests": {
+    "shared": "90 passed in 4.127s",
+    "isolated_commit_core": "62 passed in 3.311s",
+    "typescript_build": "passed"
+  },
+  "limitations": [
+    "Resources, crew sizes and stock are explicit planning scenarios, not actual municipal commitments.",
+    "Walking detours/speeds and most work durations are planning estimates; the route is not surveyed.",
+    "No current site defect, access approval, completed work or field dispatch is claimed.",
+    "No calibrated local damage reduction, injury probability or avoided-loss total."
+  ],
+  "sources": {
+    "sandbag_labor": "FEMA P-234 printed page44 / PDF page49, approximately 1h for2people to fill/place100bags",
+    "pump_observation": "FEMA P-942 printed page4-21 / PDF page119, four extra pumps added to emergency power, six kept basement water below3inches and generators operating; prior cached primary-source page text reread",
+    "tree_observation": "UF/IFAS FR173:73% vs47% survival is an external observational association",
+    "source_files_sha256": {
+      "evidence/preventive-work.json": "e8e536e0cb3230ae299d7cac5171cbe41cd3cf4b99c200caaf0cb814f887167b",
+      "evidence/planning-sources.json": "c984b710a3ddb8da1b0bdfbf6aeb5626a8c9e805e5e1babfa559bd99bffa43d5",
+      "evidence/planning-resources.json": "3a6fa9a3228168061380e08fcf99edca534d2ac4c964eb60418d9f3303db37ed"
+    }
+  }
+}

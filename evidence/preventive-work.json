@@ -1,0 +1,405 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "fema234",
+      "title": "FEMA P-234 \u00b7 Preparing for the next flood",
+      "url": "https://www.madisoncounty.ny.gov/DocumentCenter/View/1894",
+      "locator": "Printed pp. 43\u201344; PDF pp. 48\u201349",
+      "finding": "Move contents above the flood protection level and deploy prepared floodproofing. Two people take approximately one hour to fill and place 100 sandbags for a one-foot-high, twenty-foot-long wall. Partial or poorly placed barriers can fail.",
+      "kind": "Official operating guidance; labor reference, not a local outcome trial"
+    },
+    {
+      "id": "drain-time",
+      "title": "City of Issaquah \u00b7 Adopt a Drain",
+      "url": "https://www.issaquahwa.gov/adoptadrain",
+      "locator": "Adopt a Storm Drain",
+      "finding": "The program requests a 15-minute maintenance visit for monitoring, clearing leaves/litter and reporting. This is a service budget, not a timed San Francisco production study.",
+      "kind": "External municipal task-time reference"
+    },
+    {
+      "id": "fema-michael",
+      "title": "FEMA \u00b7 Hurricane Michael retrofit performance",
+      "url": "https://www.fema.gov/sites/default/files/documents/fema_mat-report_hurricane-michael_florida.pdf",
+      "locator": "Chapter 5, Tom P. Haney Technical Center, printed p. 5-18",
+      "finding": "Shutters did not preserve the intended recovery-shelter function when other wind vulnerabilities caused major building damage. Protecting openings does not establish whole-building protection.",
+      "kind": "Post-storm field observation"
+    },
+    {
+      "id": "fema-andrew",
+      "title": "FEMA \u00b7 Building performance after Hurricane Andrew",
+      "url": "https://www.fema.gov/sites/default/files/2020-08/fia22_complete.pdf",
+      "locator": "Printed p. 17, light wood-frame buildings",
+      "finding": "Missing or improperly installed connections and bracing contributed to framing failure. This mechanism does not validate an arbitrary brace or apply automatically to a San Francisco high-rise.",
+      "kind": "Post-storm forensic observation"
+    }
+  ],
+  "operations": [
+    {
+      "id": "clear-inlet",
+      "hazard": "flood",
+      "label": "Clear one inlet surface and adjacent gutter",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        10,
+        15
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "handtool_kit": 1
+      },
+      "output": "One inlet surface and reachable gutter cleared of loose leaves/litter",
+      "without": "Existing surface debris stays in place, if present.",
+      "with": "Surface blockage is removed; no change is claimed to below-grate blockage, sewer capacity or coastal flooding.",
+      "evidence_grade": "Mechanism and operating guidance",
+      "evidence": "SF crews clear catch basins during storms; SFPUC specifies safe surface-clearing practice. No matched local study quantifies damage avoided per cleared inlet.",
+      "source_ids": [
+        "sf-works",
+        "sf-drain-care",
+        "drain-time"
+      ],
+      "time_basis": "10\u201315 minutes of work, anchored to an external 15-minute maintenance budget; 5\u201310 minutes for setup is a planning allowance. Crew travel is added separately.",
+      "conditions": [
+        "Actual surface debris present; if already clear, benefit is zero",
+        "Safe dry sidewalk, no storm or ponding; do not lift grate",
+        "Map point matched to actual inlet"
+      ]
+    },
+    {
+      "id": "secure-items",
+      "hazard": "wind",
+      "label": "Move or tie down up to 10 loose exterior items",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        10,
+        20
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "tie_down": 10,
+        "handtool_kit": 1
+      },
+      "output": "Up to 10 small, accessible loose items stored indoors or secured",
+      "without": "Accessible loose objects remain potential windborne debris, if present.",
+      "with": "Remove the addressed objects as loose-debris sources; do not claim a change to design wind or structural strength.",
+      "evidence_grade": "Local failure mechanism",
+      "evidence": "The March 2023 SF glazing investigation identified debris impacts among failure mechanisms. It did not test a quantified tie-down treatment effect.",
+      "source_ids": [
+        "sf-glass",
+        "fema234"
+      ],
+      "time_basis": "Bounded planning estimate for a small two-person ground/balcony task; not a measured work rate. No roof, facade access, heavy lifting or anchors installed. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Owner access and suitable storage or rated attachment points",
+        "Only light items reachable from a safe floor; no roof or facade work",
+        "Count and attachment method confirmed before work"
+      ]
+    },
+    {
+      "id": "latch-windows",
+      "hazard": "wind",
+      "label": "Close and latch up to 10 accessible windows",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        5,
+        10
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {},
+      "output": "Up to 10 functioning accessible windows closed and latched",
+      "without": "Any open or unlatched window stays open or unlatched.",
+      "with": "Close the addressed openings; no credit for impact resistance, repairs or whole-building collapse prevention.",
+      "evidence_grade": "Local failure mechanism",
+      "evidence": "SF's glazing investigation supports correcting window hardware/condition issues; closing operable windows does not address damaged glass or roof failure.",
+      "source_ids": [
+        "sf-glass",
+        "fema-michael"
+      ],
+      "time_basis": "Planning estimate for one accessible area; hardware repairs and searching a whole tower are excluded. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Owner access and operable hardware",
+        "Actual open/unlatched windows; already-secured windows yield no additional benefit",
+        "No replacement glazing or work at height"
+      ]
+    },
+    {
+      "id": "move-contents",
+      "hazard": "flood",
+      "label": "Move up to 10 portable boxes above the protection level",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        15,
+        25
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "cart": 1
+      },
+      "output": "Up to 10 portable boxes moved to a preselected safe upper storage area",
+      "without": "Those items remain exposed at their original level, if water reaches them.",
+      "with": "Remove direct flood exposure for the relocated items only; water entry and structural risk are unchanged.",
+      "evidence_grade": "Official guidance; outcome unmeasured",
+      "evidence": "FEMA P-234 recommends moving contents above the protection level. It gives no matched storm damage-reduction estimate for this site.",
+      "source_ids": [
+        "fema234"
+      ],
+      "time_basis": "Planning range for a short, unobstructed internal move; no heavy equipment, electrical disconnection or unknown stair carry. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Owner selects actual vulnerable items and a suitable protection level",
+        "Dry, usable route and safe storage capacity",
+        "Small loads within crew handling limits"
+      ]
+    },
+    {
+      "id": "fit-barrier",
+      "hazard": "flood",
+      "label": "Install one stored, pre-fitted doorway barrier",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        10,
+        20
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "fitted_barrier": 1,
+        "handtool_kit": 1
+      },
+      "output": "One compatible doorway barrier installed to its existing design",
+      "without": "That doorway has no added barrier protection.",
+      "with": "Block the addressed entry path within the barrier's verified design limit; backflow, seepage and overtopping remain possible.",
+      "evidence_grade": "Storm evidence shows a limiting condition",
+      "evidence": "FEMA's Sandy investigation documented overtopped floodgates. A barrier can only receive conditional benefit within its assessed protection level; an arbitrary barrier is not credited.",
+      "source_ids": [
+        "sandy",
+        "fema234"
+      ],
+      "time_basis": "Planning estimate for deployment of an already fitted system; manufacture, delivery and new anchoring are excluded. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Stored compatible barrier and manufacturer's deployment instructions",
+        "Owner-approved entry path, design level, backflow and escape route",
+        "No field-fabricated structural flood load assumption"
+      ]
+    },
+    {
+      "id": "sandbag-wall",
+      "hazard": "flood",
+      "label": "Fill and place a 100-bag barrier segment",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        60,
+        90
+      ],
+      "overhead": [
+        10,
+        20
+      ],
+      "equipment": {
+        "empty_sandbag": 100,
+        "sand_fill": 1,
+        "handtool_kit": 1
+      },
+      "output": "One complete 100-bag segment at the referenced one-foot by twenty-foot geometry",
+      "without": "No new barrier segment is built.",
+      "with": "A complete correctly sited segment can divert shallow flow; a partially finished wall receives no protective credit.",
+      "evidence_grade": "Official guidance; outcome unmeasured",
+      "evidence": "FEMA P-234 gives a two-person, approximately one-hour labor reference and warns that undersized or poorly built barriers fail. This is not a promise of watertightness or local damage reduction.",
+      "source_ids": [
+        "fema234",
+        "sf-sandbags"
+      ],
+      "time_basis": "60-minute published labor reference plus a 30-minute contingency and 10\u201320-minute setup allowance. Stock collection/delivery is excluded. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "100 bags and fill already at the site; ten public sandbags do not meet this bill of materials",
+        "Siting, ends, seepage, design water level and drainage assessed",
+        "Complete the segment before exposure; incomplete wall is not counted"
+      ]
+    },
+    {
+      "id": "backup-pump",
+      "hazard": "power",
+      "label": "Deploy one pump on an existing approved backup circuit",
+      "role": "electrician",
+      "people": 2,
+      "minutes": [
+        30,
+        60
+      ],
+      "overhead": [
+        10,
+        20
+      ],
+      "equipment": {
+        "pump": 1,
+        "backup_circuit": 1,
+        "electrical_kit": 1
+      },
+      "output": "One compatible pump connected, discharge secured and operational load test completed",
+      "without": "No added pumping capacity or backup-supported pump is deployed.",
+      "with": "Support the specified pump during a grid outage, if the complete backup chain and discharge work; do not prevent the grid outage.",
+      "evidence_grade": "Operational benefit observed in a real storm",
+      "evidence": "FEMA P-942 documents a Manhattan building where additional sump pumps were connected to emergency power before Sandy, water was controlled and generators stayed operational. Other facilities lost backup because supporting components flooded.",
+      "source_ids": [
+        "sandy",
+        "pge-storm"
+      ],
+      "time_basis": "Planning range for an already compatible pump/circuit; generator procurement, new wiring and repairs are excluded. Site test establishes real readiness. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Qualified electrician, owner approval and compatible existing circuit",
+        "Pump duty, discharge, protected switching/fuel and backup capacity confirmed",
+        "No live or flooded electrical work; no new unapproved interconnection"
+      ]
+    },
+    {
+      "id": "prune-defect",
+      "hazard": "trees",
+      "label": "Prune one arborist-specified defect",
+      "role": "arborist",
+      "people": 3,
+      "minutes": [
+        120,
+        240
+      ],
+      "overhead": [
+        30,
+        60
+      ],
+      "equipment": {
+        "arborist_kit": 1
+      },
+      "output": "One assessed pruning job completed to the arborist's scope",
+      "without": "The assessed tree defect remains untreated.",
+      "with": "Address that tree's defect; no universal failure-probability reduction is assigned.",
+      "evidence_grade": "External observational storm comparison",
+      "evidence": "After Hurricane Andrew, studied properly pruned broad-leaved trees had 73% survival versus 47% for unpruned trees. This observational association does not establish a causal or San Francisco treatment effect, or justify last-minute indiscriminate pruning.",
+      "source_ids": [
+        "uf-trees",
+        "sf-tree-request"
+      ],
+      "time_basis": "Planning range for a defined small specialist job; major removals, utility isolation, access/lift delays and disposal haulage can exceed it. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Current arborist scope, tree ownership and permissions",
+        "Qualified crew, appropriate rigging and exclusion area",
+        "Utility clearance where applicable; no general-crew chainsaw work"
+      ]
+    },
+    {
+      "id": "engineered-support",
+      "hazard": "structure",
+      "label": "Install one engineer-designed support package",
+      "role": "building",
+      "people": 3,
+      "minutes": [
+        180,
+        360
+      ],
+      "overhead": [
+        30,
+        60
+      ],
+      "equipment": {
+        "designed_support": 1
+      },
+      "output": "One previously designed and approved local support package installed and inspected",
+      "without": "The identified structural defect has no added support.",
+      "with": "Address the specific designed load path only; no blanket claim about preventing whole-building collapse.",
+      "evidence_grade": "Failure mechanism only; local applicability absent",
+      "evidence": "Andrew investigations link connection/bracing deficiencies to failure in light wood frames; Sandy documents other failure mechanisms. The mapped SF buildings' structural systems and designs are not established.",
+      "source_ids": [
+        "fema-andrew",
+        "sandy"
+      ],
+      "time_basis": "Planning allowance after engineering, permits and fabrication. Design/procurement lead time is additional and cannot be assumed to fit. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Site-specific engineer design, structure type and defect recorded",
+        "Approved materials, permits, access and inspection",
+        "No generic brace selected from footprint or building height"
+      ]
+    },
+    {
+      "id": "clear-route",
+      "hazard": "routes",
+      "label": "Remove light loose debris from one access segment",
+      "role": "general",
+      "people": 2,
+      "minutes": [
+        15,
+        25
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "handtool_kit": 1
+      },
+      "output": "One short access segment cleared of light, loose, nonhazardous debris",
+      "without": "Any existing loose obstruction stays in the approach.",
+      "with": "Remove that obstruction; no claim about trees still standing, future debris, traffic safety or alternate-route reliability.",
+      "evidence_grade": "Incident mechanism; treatment effect unmeasured",
+      "evidence": "SF Public Works documented tree/debris road obstructions during the 2023 storms. The record does not quantify the safety benefit of this proposed clearance.",
+      "source_ids": [
+        "sf-works"
+      ],
+      "time_basis": "Planning range for a short light-debris task; downed trees, wires, traffic exposure and heavy equipment are excluded. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Current light obstruction and safe work area confirmed",
+        "No power-line contact, trees requiring cutting or hazardous waste",
+        "Authorized access maintained"
+      ]
+    },
+    {
+      "id": "install-cordon",
+      "hazard": "routes",
+      "label": "Place one authorized closure with signed alternate access",
+      "role": "traffic",
+      "people": 2,
+      "minutes": [
+        10,
+        20
+      ],
+      "overhead": [
+        5,
+        10
+      ],
+      "equipment": {
+        "traffic_set": 1
+      },
+      "output": "One approved closure and signed, checked alternative in place",
+      "without": "No new restriction or alternate-route signs are installed.",
+      "with": "Reduce access to the identified danger area; do not count this as less physical storm damage.",
+      "evidence_grade": "Operational guidance; outcome unmeasured",
+      "evidence": "San Francisco's storm annex assigns closure and access control to the responsible agencies. It does not measure avoided injuries for this location.",
+      "source_ids": [
+        "sf-storm-roles",
+        "sf-works"
+      ],
+      "time_basis": "Planning range after a route/control plan and authority approval; design and approval time are excluded. Setup and estimated crew travel are added separately.",
+      "conditions": [
+        "Traffic authority approval and actual hazard trigger",
+        "Verified alternative preserves emergency and accessible travel",
+        "Qualified traffic crew and approved signs/barriers"
+      ]
+    }
+  ]
+}

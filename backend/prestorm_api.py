@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from . import prestorm, risk_assets
+from . import prestorm, risk_assets, action_plan, preventive_work
 
 router = APIRouter(prefix='/api/prestorm')
 lock = threading.RLock()
@@ -51,7 +51,8 @@ def update(body: Update):
         except ValueError as e:
             raise HTTPException(422, str(e))
         state = dict(version=old['version'] + 1, updated_at=datetime.now(timezone.utc).isoformat(),
-                     plan=body.plan.model_dump(), review=old.get('review'))
+                     plan=body.plan.model_dump(), review=old.get('review'), action_plan=old.get('action_plan'),
+                     work_settings=old.get('work_settings'),work_comparison=old.get('work_comparison'),work_studies=old.get('work_studies',[]))
         prestorm.persist(state)
         return prestorm.public(state, parameters, assets, catalog)
 
@@ -81,3 +82,103 @@ def review():
                     job.update(status='failed', error=str(e))
         executor.submit(run)
         return dict(job)
+
+
+@router.post('/generate', status_code=202)
+def generate():
+    with lock:
+        if job['status'] == 'running':
+            return dict(job)
+        assets, catalog, parameters = context()
+        state = prestorm.load(assets, catalog)
+        options = prestorm.sites(assets, catalog)
+        drains = action_plan.load_drains()
+        job.update(status='running', error=None)
+
+        def run():
+            try:
+                result = action_plan.generate(state, parameters, options, catalog, drains)
+                with lock:
+                    current = prestorm.load()
+                    _, _, latest_parameters = context()
+                    latest = action_plan.context(current, latest_parameters, options, catalog, drains)
+                    if current['version'] != state['version'] or result['fingerprint'] != action_plan.fingerprint(latest):
+                        raise ValueError('Inputs changed while Argon planned. Generate again using the current inputs.')
+                    current['action_plan'] = result
+                    current['version'] += 1
+                    prestorm.persist(current)
+                    job.update(status='ready', error=None)
+            except Exception as e:
+                with lock:
+                    job.update(status='failed', error=str(e))
+        executor.submit(run)
+        return dict(job)
+
+
+class WorkRequest(BaseModel):
+    expected_version:int=Field(ge=0)
+    settings:preventive_work.Settings
+
+
+@router.post('/compare-work',status_code=202)
+def compare_work(body:WorkRequest):
+    with lock:
+        if job['status']=='running':return dict(job)
+        assets,catalog,parameters=context()
+        state=prestorm.load(assets,catalog)
+        if state['version']!=body.expected_version:
+            raise HTTPException(409,'The inputs changed in another view. Reload before comparing work.')
+        options=prestorm.sites(assets,catalog)
+        key=preventive_work.fingerprint(preventive_work.context(state,parameters,options,catalog,body.settings))
+        cached=next((s for s in state.get('work_studies',[]) if s['result']['fingerprint']==key),None)
+        if cached:
+            state.update(work_settings=body.settings.model_dump(),work_comparison=cached['result'],version=state['version']+1)
+            prestorm.persist(state);job.update(status='ready',error=None)
+            return dict(job)
+        job.update(status='running',error=None)
+        def run():
+            try:
+                result=preventive_work.generate(state,parameters,options,catalog,body.settings)
+                with lock:
+                    current=prestorm.load()
+                    _,_,latest_parameters=context()
+                    ctx=preventive_work.context(current,latest_parameters,options,catalog,body.settings)
+                    if current['version']!=state['version'] or result['fingerprint']!=preventive_work.fingerprint(ctx):
+                        raise ValueError('Inputs changed during the work comparison. Run it again with the latest inputs.')
+                    settings=body.settings.model_dump()
+                    studies=[r for r in current.get('work_studies',[]) if r['settings']!=settings]
+                    studies.append(dict(settings=settings,result=result))
+                    current.update(work_settings=settings,work_comparison=result,work_studies=studies[-6:],version=current['version']+1)
+                    prestorm.persist(current);job.update(status='ready',error=None)
+            except Exception as e:
+                with lock:job.update(status='failed',error=str(e))
+        executor.submit(run)
+        return dict(job)
+
+
+class MeasurementRequest(BaseModel):
+    expected_version:int=Field(ge=0)
+    site_id:str
+    measurements:dict
+
+
+@router.put('/measurements')
+def record_measurements(body:MeasurementRequest):
+    """Attach actual site evidence; never generate missing elevations/capacities."""
+    from .harm_model import Site,ROOT
+    from pydantic import ValidationError
+    import json
+    with lock:
+        assets,catalog,parameters=context()
+        state=prestorm.load(assets,catalog)
+        if state['version']!=body.expected_version:raise HTTPException(409,'Plan changed; reload before recording measurements.')
+        allowed={s['id'] for rows in prestorm.sites(assets,catalog).values() for s in rows}
+        if body.site_id not in allowed:raise HTTPException(422,'Select a source-backed site.')
+        try:measurement=Site.model_validate(body.measurements)
+        except ValidationError as e:raise HTTPException(422,str(e))
+        path=ROOT/'data/harm/site-measurements.json';path.parent.mkdir(parents=True,exist_ok=True)
+        records=json.loads(path.read_text()) if path.exists() else {}
+        records[body.site_id]=measurement.model_dump(mode='json')
+        temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(records,indent=2));temporary.replace(path)
+        state['version']+=1;prestorm.persist(state)
+        return prestorm.public(state,parameters,assets,catalog)
