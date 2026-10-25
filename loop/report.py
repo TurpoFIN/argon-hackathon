@@ -259,7 +259,7 @@ def card(entry, folder, previous_usd, heading):
 
 def column(log, key, title):
     if not log:
-        return f"<section><h2>{title}</h2><p class='error'>No run log.</p></section>"
+        return f"<section><h2>{title}</h2><p class='plan'>Not run in this session.</p></section>"
     control = log["control"]["ledger"]["total_usd"]
     out = [f"<section><h2>{title} <span class='plan'>{html.escape(log['model'])}</span></h2>"]
     previous = control
