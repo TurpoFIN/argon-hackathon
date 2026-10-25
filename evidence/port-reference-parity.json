@@ -1,0 +1,53 @@
+[
+  {
+    "gust": 0,
+    "forced_trees": false,
+    "plan": null,
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 30,
+    "forced_trees": false,
+    "plan": null,
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 50,
+    "forced_trees": false,
+    "plan": null,
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 80,
+    "forced_trees": false,
+    "plan": null,
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 0,
+    "forced_trees": true,
+    "plan": null,
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 80,
+    "forced_trees": false,
+    "plan": {
+      "roof_retrofit": [
+        0
+      ]
+    },
+    "result": "identical physics, events, times, summary and priced totals"
+  },
+  {
+    "gust": 80,
+    "forced_trees": false,
+    "plan": {
+      "tree_actions": {
+        "0": "remove",
+        "1": "prune"
+      }
+    },
+    "result": "identical physics, events, times, summary and priced totals"
+  }
+]

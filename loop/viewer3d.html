@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Storm Prep Plan 3D</title>
 <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/dark/main.css">
+<link rel="stylesheet" href="/cinema.css">
 <style>
 :root { color-scheme: dark; --bg:#020202; --surface:#161616; --fg:#eeeeee; --muted:#a4a4a4; --edge:rgba(255,255,255,.08);
-  --c1:#006cff; --c3:#f644b9; --c4:#00d1ef; --c5:#ff6d00; --c2:#f2b200; --c7:#00c769;
+  --c1:#006cff; --c3:#f644b9; --c4:#00d1ef; --c5:#ff6d00; --c2:#f2b200; --c7:#00c769; --danger:#ed5b49; --violet:#a56aff;
   --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
 html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; background:#151515; }
 #panel { position:fixed; top:16px; left:16px; width:320px; max-width:calc(100vw - 32px); max-height:calc(100dvh - 64px); overflow:auto;
@@ -20,10 +21,10 @@ html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; backgro
 #show-plan { position:fixed; left:16px; bottom:24px; z-index:1; border:0; border-radius:8px; padding:6px 10px; color:var(--fg); background:var(--surface); font:12px var(--font); cursor:pointer; }
 #panel .sub { color:var(--muted); font-size:12px; margin:0 0 10px; }
 #plans { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
-#plans button { height:28px; padding:0 10px; border-radius:9999px; border:0; background:transparent; color:var(--fg);
+#plans button, .destruction-cams button { height:28px; padding:0 10px; border-radius:9999px; border:0; background:transparent; color:var(--fg);
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fg) 20%, transparent); font:500 12px var(--font); cursor:pointer; }
 #plans button[aria-pressed="true"] { background:var(--fg); color:var(--bg); box-shadow:none; }
-#plans button:focus-visible { outline:1px solid var(--muted); outline-offset:2px; }
+#plans button:focus-visible, .destruction-cams button:focus-visible { outline:1px solid var(--muted); outline-offset:2px; }
 .big { font-size:22px; font-variant-numeric:tabular-nums; margin:2px 0 0; }
 .delta { color:var(--c7); font-variant-numeric:tabular-nums; }
 dl { display:grid; grid-template-columns:1fr auto; gap:2px 12px; margin:10px 0; font-variant-numeric:tabular-nums; }
@@ -34,8 +35,16 @@ ul.legend li { display:flex; gap:8px; align-items:center; }
 video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 #status { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); color:#eee; font:14px var(--font); margin:0; }
 .esri-attribution { font-size:10px; }
+.destruction-cams { display:flex; flex-wrap:wrap; gap:6px; }
+.destruction-feed { list-style:none; padding:0; margin:4px 0 8px; max-height:132px; overflow:auto; }
+.destruction-feed button { font:inherit; color:inherit; text-align:left; background:transparent; border:0; border-left:3px solid var(--danger); padding:2px 6px; cursor:pointer; }
+.destruction-feed .strike button { border-left-color:var(--c3); }
+.destruction-feed button:focus-visible { outline:1px solid var(--muted); }
+.destruction-note { margin-top:6px; }
 </style>
 <script src="https://js.arcgis.com/4.33/"></script>
+<script src="/loop/destruction-layer.js"></script>
+<script src="/cinema.js" defer></script>
 <script type="module" src="/prepViewer.js"></script>
 </head>
 <body>
@@ -57,6 +66,22 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
     <li><span class="sw" style="background:var(--c4)"></span>Doorway sandbags kept the building dry</li>
     <li><span class="sw" style="background:var(--c2); border-radius:50%"></span>Flooded building, size is loss</li>
   </ul>
+  <section id="destruction" hidden>
+    <p class="sub" style="margin:12px 0 0">Storm destruction</p>
+    <p class="sub destruction-clock"></p>
+    <dl class="destruction-stats" id="destruction-stats"></dl>
+    <ul class="legend">
+      <li><span class="sw" style="background:var(--c2)"></span>DS1 minor · orange DS2 · red DS3 · dark red DS4</li>
+      <li><span class="sw" style="background:var(--danger)"></span>Downed wire · red X blocked roadway</li>
+      <li><span class="sw" style="background:var(--violet)"></span>Without power / de-energised</li>
+      <li><span class="sw" style="background:var(--c3)"></span>Tree into building / smashed shelter</li>
+      <li><span class="sw" style="background:var(--c4)"></span>Muni overhead contact wire</li>
+    </ul>
+    <p class="sub" style="margin-top:8px">Latest incidents</p>
+    <ol class="destruction-feed" aria-live="polite"></ol>
+    <div class="destruction-cams"><button type="button" data-cam="worst">Worst block</button><button type="button" data-cam="power">Power cascade</button><button type="button" data-hide>Hide</button></div>
+    <p class="sub destruction-note"></p>
+  </section>
   <div id="storm" style="display:flex;gap:8px;align-items:center;margin-top:10px">
     <button id="toggle" type="button" style="height:32px;padding:0 14px;border-radius:9999px;border:0;background:var(--c1);color:#fff;font:500 13px var(--font);cursor:pointer">▶ Play the storm</button>
     <span id="clock" class="sub" style="margin:0;font-variant-numeric:tabular-nums">Peak water</span>
@@ -87,14 +112,15 @@ const square = (lon, lat, half) => {
 const blob = fc => URL.createObjectURL(new Blob([JSON.stringify(fc)], { type: 'application/geo+json' }));
 
 require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/SceneLayer', 'esri/layers/ElevationLayer',
-         'esri/layers/GeoJSONLayer', 'esri/layers/GroupLayer', 'esri/views/SceneView'],
-(Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupLayer, SceneView) => {
+         'esri/layers/GeoJSONLayer', 'esri/layers/GroupLayer', 'esri/views/SceneView', 'esri/layers/GraphicsLayer', 'esri/Graphic'],
+async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupLayer, SceneView, GraphicsLayer, Graphic) => {
   const plan = new GroupLayer({ title: 'Plan' });
+  const meshLayer = new SceneLayer({ url: 'https://tiles.arcgis.com/tiles/z2tnIkrLQ2BRzr6P/arcgis/rest/services/SanFrancisco_Bldgs/SceneServer/layers/0',
+                                    popupEnabled: false, copyright: 'San Francisco 3D buildings: Precision LightWorks (PLW) / Esri' });
   const map = new Map({
     basemap: new Basemap({ baseLayers: [new TileLayer({ url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer' })] }),
     ground: { layers: [new ElevationLayer({ url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer' })] },
-    layers: [new SceneLayer({ url: 'https://tiles.arcgis.com/tiles/z2tnIkrLQ2BRzr6P/arcgis/rest/services/SanFrancisco_Bldgs/SceneServer/layers/0',
-                              popupEnabled: false, copyright: 'San Francisco 3D buildings: Precision LightWorks (PLW) / Esri' }), plan]
+    layers: [meshLayer, plan]
   });
   const view = new SceneView({ container: 'scene', map, qualityProfile: 'high',
     camera: { position: { longitude: -122.3868, latitude: 37.8012, z: 560 }, heading: 234, tilt: 64 },
@@ -102,6 +128,14 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     popup: { dockEnabled: true, dockOptions: { buttonEnabled: false, breakpoint: false, position: 'top-right' } },
     environment: { lighting: { date: new Date('2026-06-21T20:00:00Z'), directShadowsEnabled: true }, atmosphereEnabled: true } });
   window.planView = view;
+  // The destruction layer never blocks or breaks the plan view: it loads alongside and is skipped if unavailable.
+  let destruction = null;
+  const destructionReady = Promise.resolve()
+    .then(() => window.createDestructionLayer({view, map, buildings: meshLayer, panel: document.getElementById('destruction')}))
+    .then(layer => (destruction = layer))
+    .catch(error => { console.error('Destruction layer unavailable', error); return null; });
+  let showVersion = 0;
+  window.sfScene = { view, map };
   view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
   const storm = { userMoved: false, frames: 0, minutes: [], frame: null, timer: null, layer: null };
@@ -113,9 +147,10 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
   ].map(([min, max, color, a]) => ({ minValue: min, maxValue: max, label: `${min}–${max} m`,
     symbol: { type: 'polygon-3d', symbolLayers: [{ type: 'fill', material: { color: [...hex(color), a] }, outline: { size: 0 } }] } })) });
   const clock = document.getElementById('clock'), scrub = document.getElementById('scrub'), toggle = document.getElementById('toggle');
-  function setFrame(k) {
+  function setFrame(k, forwardPlayback = false) {
     if (!storm.layer || !storm.frames) return;
     storm.frame = k;
+    destruction?.setTime(k === null ? 3600 : k * 120, forwardPlayback);
     storm.layer.renderer = floodRenderer(k === null ? 'depth' : 'd' + k);
     scrub.value = k === null ? scrub.max : k;
     clock.textContent = k === null ? 'Peak water' : `Storm minute ${storm.minutes[k] ?? k * 2} of 60`;
@@ -126,14 +161,25 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     if (storm.timer) return stop();
     let k = storm.frame === null || storm.frame >= storm.frames - 1 ? 0 : storm.frame;
     setFrame(k); toggle.textContent = '❚❚ Pause';
-    storm.timer = setInterval(() => { k += 1; if (k >= storm.frames) { stop(); return; } setFrame(k); }, 450);
+    storm.timer = setInterval(() => { k += 1; if (k >= storm.frames) { stop(); return; } setFrame(k, true); }, 450);
   });
   scrub.addEventListener('input', () => { stop(); setFrame(Number(scrub.value) >= storm.frames - 1 && Number(scrub.value) == scrub.max ? null : Number(scrub.value)); });
   function hex(c) { return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
 
   async function show(option, log) {
+    const version = ++showVersion;
+    stop();
+    const destructionPromise = Promise.all([
+      fetch(folder + option.label + '_destruction.json').then(r => r.ok ? r.json() : undefined),
+      fetch(folder + option.label + '_destruction_street_trees.json').then(r => r.ok ? r.json() : undefined)
+    ]).catch(() => [undefined, undefined]);
     document.querySelectorAll('#plans button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.label === option.label)));
     const layers = await fetch(folder + option.label + '_layers.json').then(r => r.ok ? r.json() : Promise.reject(r.status));
+    const [damage, trees] = await destructionPromise;
+    if (version !== showVersion) return;
+    const layer = await destructionReady;
+    if (layer) await layer.set(damage, trees).catch(error => console.error('Destruction data unavailable', error));
+    if (version !== showVersion) return;
     const half = layers.cell_m / 2;
     const frames = layers.flood_frames || layers.flood.map(([lon, lat, d]) => [lon, lat, [d]]);
     const flood = { type: 'FeatureCollection', features: frames.map(([lon, lat, series]) => {
@@ -141,7 +187,7 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
       series.forEach((v, k) => { properties['d' + k] = v; });
       return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties };
     }) };
-    storm.frames = frames.length ? frames[0][2].length : 0;
+    storm.frames = layers.frame_minutes?.length || (frames.length ? frames[0][2].length : damage?.t.length || 0);
     storm.minutes = layers.frame_minutes || [];
     const walls = { type: 'FeatureCollection', features: layers.walls.map(w => ({ type: 'Feature',
       geometry: { type: 'LineString', coordinates: w.path }, properties: { height: w.height_m } })) };
@@ -156,7 +202,7 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     const keep = storm.frame;
     plan.layers.removeAll();
     plan.addMany([
-      storm.layer = new GeoJSONLayer({ url: blob(flood), title: 'Flood depth', renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' },
+      storm.layer = new GeoJSONLayer({ url: blob(flood), title: 'Flood depth', geometryType: 'polygon', renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' },
         outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }),
       new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', geometryType: 'polyline', elevationInfo: { mode: 'on-the-ground' },
         renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
@@ -228,6 +274,10 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     }
     folder = `/runs/${encodeURIComponent(run)}/${encodeURIComponent(model)}/`;
     const log = await fetch(folder + model + '.json').then(r => r.json());
+    // Cinema mode (cinema.js) shows the storm this run was tested against: its rain and wind, and the forecast's P50 peak water.
+    const sp = log.parameters || {}, p50 = (log.forcing?.scenarios || []).find(s => s.name === 'P50');
+    window.sfCinemaHost = { standalone: true, conditions: () => ({ rainMmH: sp.rain_mm_h ?? 0, meanMs: sp.wind_mps ?? 0,
+      gustMs: sp.gust_mps ?? sp.wind_mps ?? 0, fromDeg: sp.wind_from_deg ?? 200, tideM: p50?.peak_water_level_navd88_m ?? 2.368, localHour: null, flash: 0 }) };
     const name = log.model.includes('argon') ? 'Argon' : 'Flash';
     const rounds = log.rounds.filter(r => r.ledger);
     const best = rounds.length ? rounds.reduce((a, b) => (b.ledger.total_usd < a.ledger.total_usd ? b : a)) : null;

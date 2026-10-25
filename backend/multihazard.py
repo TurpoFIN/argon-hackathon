@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -18,6 +19,7 @@ from shapely.geometry import LineString, Point, shape
 from shapely.ops import transform
 
 from . import risk_assets
+from .destruction_adapter import Inputs
 from .simulation import advance_water, Budget
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -35,11 +37,10 @@ CREWS=('general','general','arborist','structural','electrician')
 LIMITS={'secure_loose':12,'prune_tree':6,'brace_structure':4,'protect_entrance':8,'backup_power':4,'close_route':8}
 ASSUMPTIONS=[
     'Conditional stress test: mapped geometry is real; structural condition, load capacities, roof objects, entrance ratings and work durations are scenario inputs, not surveyed findings.',
-    'Three matched capacity cases (0.65, 1.0, 1.35) are sensitivity cases, not event probabilities. Same latent strengths and weather are reused for every plan.',
-    'Roof/wall assembly failure is modeled for buildings below 20 m. Whole high-rise stability, dynamic response, waves and foundation scour remain outside this model.',
-    'Wind loads use q=0.613 V² with directional coefficients. This is a simplified load model, not CFD validation. Tree dimensions use DBH-based allometry; tree condition is unobserved.',
-    'Tree overturning capacity is an explicit 35–55 m/s dry-anchorage sensitivity, with crown streamlining and wet-soil reduction. It is not a universal failure threshold or a calibration to SF trees; stem fracture is not resolved.',
-    'Only source-classified overhead lines can be struck by trees. PG&E feeder installation type is unknown. Building-to-feeder association is a nearest-route assumption, not a verified customer connection.',
+    'Three matched capacity cases (0.65, 1.0, 1.35) vary the retained glass and flood-equipment thresholds, not event probabilities. Destruction keeps its archived fragilities; latent samples and weather are reused for every plan.',
+    'Tree, building and overhead-network failures use the shared StormSim destruction engine and fixed city seed. DS3 and DS4 count as partial collapse in these metrics.',
+    'Wind uses the host potential-flow speedup and exposure-B height profile. Tree snap/uproot uses the archived calibration; dimensions remain DBH-based allometry.',
+    'The overhead inventory is OSM; nearest-span service connections and fused sections are engine assumptions, not verified utility topology.',
     'Substation equipment height and damage threshold are conditional inputs; no actual outage is asserted. Local islanded backup powers one modeled 10 kW load, not the public network.',
     'Backup candidates assume a compatible pre-installed transfer connection. Bracing assumes an engineered four-anchor kit and access method. These prerequisites are scenario conditions, not facts in GIS.',
     'Route exposure counts hazardous open street-link minutes, not people or injuries. Closures affect access and can worsen isolation. No casualty predictions or dollar-loss claims.',
@@ -119,7 +120,9 @@ class Model:
         self._cellsB=tuple(np.array([b['cell'] for b in self.buildings]).T)
         self._cellsR=tuple(np.array([r['cell'] for r in self.roads]).T)
         self._cellsS=tuple(np.array([s['cell'] for s in self.stations]).T) if self.stations else None
-        self.overhead=[transform(risk_assets.TO,shape(l['geometry'])) for l in assets['power_lines'] if l['installation']=='overhead']
+        self.lines=[l for l in assets['power_lines'] if l['installation']=='overhead']
+        self.destruction_inputs=Inputs(assets,world)
+        self.line_index={line['id']:i for i,line in enumerate(self.lines)}
 
     def cell(self,xy):
         x0,y0=self.world.lon[0,0],self.world.lat[0,0]
@@ -173,112 +176,176 @@ class Model:
             result[kind]=sorted(values,key=lambda t:t['priority'],reverse=True)[:16]
         return result
 
-    def run(self, actions, capacity_case=1., record=False):
+    def _start(self, actions, capacity_case):
         receipt=self.execute(actions);done={(a['kind'],a['target']) for a in receipt['completed']}
         # Exogenous latent samples depend only on the fixed world, never on the plan.
         rng=np.random.default_rng(20261025);nb=len(self.buildings);nt=len(self.trees)
         glass_cap=rng.uniform(1200,2400,(nb,4))*capacity_case
-        structure_cap=rng.uniform(500,1800,nb)*capacity_case
-        dry_anchorage_gust=rng.uniform(35,55,nt)
         w=copy.copy(self.world);w.p=copy.copy(w.p);w.clog=w.clog.copy();w.parcels=copy.deepcopy(w.parcels)
         for parcel in w.parcels:parcel['kg']*=max(0,w.p.debris_kg-self.roof_mass)/max(w.p.debris_kg,1e-9)
         w.crews=[];w.events=[];w.frames=[];w.forecasting=True;w.storm_hold=True
         # Entrance barriers, braces and backup are finite local assets.
         barrier=np.array([.6 if ('protect_entrance',b['id']) in done else 0 for b in self.buildings])
-        brace=np.array([20000/b['area_m2'] if ('brace_structure',b['id']) in done else 0 for b in self.buildings])
         backup=np.array([('backup_power',b['id']) in done for b in self.buildings])
         closed=np.array([('close_route',r['id']) in done for r in self.roads])
         treefailed=np.zeros(nt,bool);structfailed=np.zeros(nb,bool);glassfailed=np.zeros((nb,4),bool);objectreleased=np.zeros(len(self.objects),bool)
-        stationfailed=np.zeros(len(self.stations),bool);linehit=False
+        stationfailed=np.zeros(len(self.stations),bool);linedown=np.zeros(len(self.lines),bool);struck=np.zeros(nb,bool)
+        flooded=np.zeros(nb,bool);interior_depth=np.zeros(nb)
+        metrics=dict(route_hazard_minutes=0.,isolated_building_minutes=0.,unserved_load_hours=0.,interior_water_m3=0.)
+        events=[];frames=[];tree_road=np.zeros(len(self.roads),bool);rubble_road=np.zeros(len(self.roads),bool)
+        bangles=np.array([b['angle_rad'] for b in self.buildings]);road_mid=np.array([r['xy'][len(r['xy'])//2] for r in self.roads]);roadtree=cKDTree(road_mid)
+        destruction_result=None
+        theta=math.radians(p.wind_from_deg if (p:=w.p) else 0);direction=np.array([-math.sin(theta),-math.cos(theta)])
+        return SimpleNamespace(**{k:v for k,v in locals().items() if k!='self'})
+
+    def _consequences(self, s, h, step, duration, record=True, flowwalls=None):
+        gust=s.p.gust_mps*(.6+.4*math.sin(math.pi*min(step,3600)/3600))
+        q=.613*gust**2
+        normals=np.stack([s.bangles+i*math.pi/2 for i in range(4)],axis=1)
+        coeff=.8+1.2*np.maximum(0,np.cos(normals-(math.pi/2-s.theta)))**2
+        newglass=(q*coeff>s.glass_cap)&~s.glassfailed;s.glassfailed|=newglass
+        if s.destruction_result is None:
+            _,s.destruction_result=self.destruction_inputs.run(
+                np.zeros((31,*s.w.z.shape)),np.arange(0,3601,120),s.receipt['completed'])
+        result=s.destruction_result
+        # Project the engine's time-stamped failures into this model's existing metrics and graph.
+        for failure in result['buildings']:
+            i=failure['id'];at=failure['ds_t'][2]
+            if at is not None and at<=step and not s.structfailed[i]:
+                s.structfailed[i]=True;b=self.buildings[i]
+                s.events.append(dict(time_seconds=at,kind='partial_collapse',id=b['id'],position=b['position']))
+                # Preserve this model's rubble/transport consequence, triggered only by engine DS3+.
+                near=s.roadtree.query_ball_point(b['xy'],max(12,math.sqrt(b['area_m2'])/2))
+                s.rubble_road[near]=True
+                if flowwalls is not None:
+                    for j in near:flowwalls[tuple(self.roads[j]['cell'])]=True
+        for failure in result['trees']:
+            i=failure['id']
+            if failure['fail_t']>step or s.treefailed[i]:continue
+            s.treefailed[i]=True;t=self.trees[i]
+            s.events.append(dict(time_seconds=failure['fail_t'],kind='tree_fall',id=t['id'],position=t['position'],
+                fall_dir_deg=failure['fall_dir_deg'],height_m=t['height_m'],species=t.get('species','unrecorded')))
+            idx=int(s.w.drain_tree.query([t['cell'][1],t['cell'][0]])[1])
+            crown_area=math.pi*(t['crown_m']/2)**2
+            if ('prune_tree',t['id']) in s.done:crown_area*=.75
+            s.w.clog[idx]+=min(2.,crown_area*.03)
+        for strike in result['tree_strikes']:
+            i=strike['bldg_id']
+            if strike['t']>step or s.struck[i]:continue
+            s.struck[i]=True;s.glassfailed[i,0]=True
+            s.events.append(dict(time_seconds=strike['t'],kind='tree_strike',tree_id=self.trees[strike['tree_id']]['id'],
+                building_id=self.buildings[i]['id'],position=self.buildings[i]['position']))
+        inventory=self.destruction_inputs.assets
+        for kind,failures,spans in [('power',result['power_spans'],inventory['power_spans']),
+                                    ('trolley',result['ocs_spans'],inventory['ocs_spans'])]:
+            for failure in failures:
+                if failure['t']>step:continue
+                span=spans[failure['id']]
+                if kind=='power':
+                    original=inventory['power_lines'][span['line_id']]
+                else:original=span
+                source=original.get('source_id','OSM'+str(original.get('osm_id')))
+                j=self.line_index.get(source)
+                if j is None or s.linedown[j]:continue
+                s.linedown[j]=True
+                event=dict(time_seconds=failure['t'],kind='line_down',id=source,line_kind=kind,
+                    position=list(risk_assets.FROM(*np.mean([span['a'],span['b']],axis=0))))
+                if failure.get('tree_id') is not None and failure['tree_id']>=0:
+                    event['tree_id']=self.trees[failure['tree_id']]['id']
+                s.events.append(event)
+        for block in result['road_blocks']:
+            if block['t']>step:continue
+            point=Point(block['x'],block['y'])
+            for j in s.roadtree.query_ball_point([block['x'],block['y']],block['length_m']+25):
+                if self.road_shapes[j].distance(point)<=max(6,block['length_m']/2):
+                    s.tree_road[j]=True
+        for i,o in enumerate(self.objects):
+            if s.objectreleased[i] or ('secure_loose',o['id']) in s.done:continue
+            if q*1.2*o['area_m2']<=.5*o['mass_kg']*9.81:continue
+            s.objectreleased[i]=True;end=np.array(o['xy'])+s.direction*min(80,gust*o['height_m']/6)
+            s.events.append(dict(time_seconds=step,kind='windborne_object',id=o['id'],position=list(risk_assets.FROM(*end))))
+            distance,j=self.btree.query(end)
+            if distance<30 and .5*o['mass_kg']*(gust*.5)**2>150:s.glassfailed[j,0]=True
+            for j in s.roadtree.query_ball_point(end,15):s.rubble_road[j]=True
+        waterB=h[self._cellsB];above=np.maximum(0,waterB-.15)
+        # Rated barrier overtops; above rating it provides no dry-proofing credit.
+        enter=(waterB>.15)&~((s.barrier>0)&(waterB<=s.barrier))
+        s.flooded|=enter;s.interior_depth=np.maximum(s.interior_depth,np.where(enter,above,0))
+        if self.stations:
+            heights=h[self._cellsS]
+            s.stationfailed|=heights>(.45*s.capacity_case)
+        failednames={station['name'] for i,station in enumerate(self.stations) if s.stationfailed[i] and station.get('name')}
+        out=np.array([b.get('substation') in failednames for b in self.buildings])
+        # Conditional local service-panel inundation, not an observed utility outage.
+        out|=waterB>(.45*s.capacity_case)
+        out|=np.array([any(bid==i and at<=step for bid,at in result['outage']['buildings_out_t']) for i in range(len(self.buildings))])
+        # CEC transmission-to-distribution topology is unavailable; do not invent cascading customers.
+        # 20 kW backup for an assumed 10 kW load; raised pad may itself flood.
+        backup_running=s.backup&(waterB<.8)&~s.structfailed
+        served=~out|backup_running
+        roadwater=h[self._cellsR];danger=s.tree_road|s.rubble_road|(roadwater>.15)
+        inaccessible=s.tree_road|s.rubble_road|(roadwater>.3)|s.closed
+        rr=[];cc=[]
+        for j,(u,v) in enumerate(self.road_ends):
+            if not inaccessible[j]:rr.extend((u,v));cc.extend((v,u))
+        graph=csr_matrix((np.ones(len(rr)),(rr,cc)),shape=self.graph.shape)
+        _,labels=connected_components(graph,directed=False)
+        isolated=(labels[self.bnodes]!=labels[self.home])&self.baseline_access
+        if duration>0:
+            s.metrics['route_hazard_minutes']+=float((danger&~s.closed).sum())*2*(duration/120)
+            s.metrics['isolated_building_minutes']+=float(isolated.sum())*2*(duration/120)
+            s.metrics['unserved_load_hours']+=float((~served).sum())/30*(duration/120)
+        if record:
+            s.frames.append(dict(time_seconds=step,down_line_ids=[self.lines[i]['id'] for i in np.where(s.linedown)[0]],
+                struck_building_ids=[self.buildings[i]['id'] for i in np.where(s.struck)[0]],tree_ids=[self.trees[i]['id'] for i in np.where(s.treefailed)[0]],
+                structure_ids=[self.buildings[i]['id'] for i in np.where(s.structfailed)[0]],
+                flooded_ids=[self.buildings[i]['id'] for i in np.where(enter)[0]],
+                unpowered_ids=[self.buildings[i]['id'] for i in np.where(~served)[0]],
+                blocked_route_ids=[self.roads[i]['id'] for i in np.where(inaccessible)[0]]))
+
+    def _result(self, s, peak, residual):
+        glass_area=np.array([b['perimeter_m']*b['height_m']*.35/4 for b in self.buildings])
+        s.metrics.update(lines_down=int(s.linedown.sum()),
+            trolley_lines_down=sum(bool(s.linedown[i]) for i,l in enumerate(self.lines) if l.get('kind')=='trolley'),
+            tree_strikes=sum(e['kind']=='tree_strike' for e in s.events),trees_failed=int(s.treefailed.sum()),partial_collapses=int(s.structfailed.sum()),
+            damaged_envelope_m2=float((s.glassfailed*glass_area[:,None]).sum()),flooded_entrances=int(s.flooded.sum()),
+            interior_water_m3=float(sum(s.interior_depth[i]*b['area_m2'] for i,b in enumerate(self.buildings))),
+            failed_substations=int(s.stationfailed.sum()),crew_minutes=float(sum(s.receipt['crew_minutes'])),
+            completed_actions=len(s.receipt['completed']),mass_balance_error_m3=residual)
+        s.events.sort(key=lambda e:(e['time_seconds'],e['kind'],str(e.get('id',''))))
+        return dict(metrics=s.metrics,receipt=s.receipt,frames=s.frames,events=s.events,peak=peak,destruction=s.destruction_result)
+
+    def replay(self, frames, frame_seconds, actions=(), capacity_case=1.):
+        """Replay the shared consequences; rubble does not alter water in replay.
+
+        Input depths and times belong to the existing water simulation. Its mass
+        balance is not recomputed here; mass_balance_error_m3 is unavailable.
+        """
+        if len(frames)!=len(frame_seconds) or not len(frames):raise ValueError('Depth frames and times must match')
+        times=np.asarray(frame_seconds,float)
+        if not np.isfinite(times).all() or times[0]<0 or np.any(np.diff(times)<=0):raise ValueError('Frame times must increase')
+        s=self._start(actions,capacity_case);peak=np.zeros_like(s.w.z)
+        _,s.destruction_result=self.destruction_inputs.run(frames,times,s.receipt['completed'])
+        for i,(h,step) in enumerate(zip(frames,times)):
+            if h.shape!=s.w.z.shape or not np.isfinite(h).all():raise ValueError('Invalid depth frame')
+            duration=float(times[i+1]-step) if i+1<len(times) else 0.
+            self._consequences(s,h,float(step),duration)
+            np.maximum(peak,h,out=peak)
+        return self._result(s,peak,None)
+
+    def run(self, actions, capacity_case=1., record=False):
+        s=self._start(actions,capacity_case);w=s.w;p=s.p
         h=np.zeros_like(w.z);pilot=w.dynamics.get('coastal');case=w.dynamics.get('coastal_case','manual')
         if pilot:
             tide0=boundary(pilot,case,0)
         else:tide0=w.dynamics['tide_base']
         h[w.ocean]=np.maximum(tide0-w.z[w.ocean],0);budget=Budget(initial_m3=float(h.sum()*144))
-        flowwalls=w.walls.copy();peak=h.copy();flooded=np.zeros(nb,bool);interior_depth=np.zeros(nb)
-        metrics=dict(route_hazard_minutes=0.,isolated_building_minutes=0.,unserved_load_hours=0.,interior_water_m3=0.)
-        events=[];frames=[];flood_frames=[];tree_road=np.zeros(len(self.roads),bool);rubble_road=np.zeros(len(self.roads),bool)
-        bangles=np.array([b['angle_rad'] for b in self.buildings]);road_mid=np.array([r['xy'][len(r['xy'])//2] for r in self.roads]);roadtree=cKDTree(road_mid)
-        theta=math.radians(p.wind_from_deg if (p:=w.p) else 0);direction=np.array([-math.sin(theta),-math.cos(theta)])
+        flowwalls=w.walls.copy();peak=h.copy();flood_frames=[]
         for step in range(3601):
             if step%5==0:w.step(step,h);rates=w.rates()
             if step%120==0:
-                gust=p.gust_mps*(.6+.4*math.sin(math.pi*min(step,3600)/3600))
-                q=.613*gust**2
-                normals=np.stack([bangles+i*math.pi/2 for i in range(4)],axis=1)
-                coeff=.8+1.2*np.maximum(0,np.cos(normals-(math.pi/2-theta)))**2
-                newglass=(q*coeff>glass_cap)&~glassfailed;glassfailed|=newglass
-                roofcoeff=1.4+glassfailed.any(axis=1)*.5
-                newstruct=(q*roofcoeff>structure_cap+brace)&~structfailed&np.array([b['height_m']<20 for b in self.buildings])
-                for i in np.where(newstruct)[0]:
-                    structfailed[i]=True;b=self.buildings[i];events.append(dict(time_seconds=step,kind='partial_collapse',id=b['id'],position=b['position']))
-                    near=roadtree.query_ball_point(b['xy'],max(12,math.sqrt(b['area_m2'])/2))
-                    rubble_road[near]=True
-                    for j in near:flowwalls[tuple(self.roads[j]['cell'])]=True
-                for i,t in enumerate(self.trees):
-                    if treefailed[i]:continue
-                    original_area=math.pi*(t['crown_m']/2)**2
-                    crown_area=original_area
-                    if ('prune_tree',t['id']) in done:crown_area*=.75
-                    # Explicit capacity scenario: do not transfer UK conifer pull coefficients
-                    # or a universal stem-break threshold to uninspected urban trees.
-                    streamlining=(max(gust,10)/10)**(-.7)
-                    moment=q*.5*streamlining*crown_area*.6*t['height_m']
-                    saturation=min(1,p.rain_mm_h/85+float(h[tuple(t['cell'])]))
-                    critical=dry_anchorage_gust[i]
-                    root_capacity=.613*critical**2*.5*(critical/10)**(-.7)*original_area*.6*t['height_m']*(1-.4*saturation)*capacity_case
-                    if moment<=root_capacity:continue
-                    treefailed[i]=True;events.append(dict(time_seconds=step,kind='tree_fall',id=t['id'],position=t['position']))
-                    line=LineString([t['xy'],(np.array(t['xy'])+direction*t['height_m']).tolist()])
-                    for j in roadtree.query_ball_point(t['xy'],t['height_m']+25):
-                        if self.road_shapes[j].distance(line)<3:tree_road[j]=True
-                    for j in self.btree.query_ball_point(t['xy'],t['height_m']+10):
-                        if line.distance(Point(self.B[j]))<max(3,math.sqrt(self.buildings[j]['area_m2'])/3):glassfailed[j,0]=True
-                    if any(line.distance(power)<3 for power in self.overhead):linehit=True
-                    # Finite new leaf inventory; explicitly accounted separately from initial litter.
-                    idx=int(w.drain_tree.query([t['cell'][1],t['cell'][0]])[1]);w.clog[idx]+=min(2.,crown_area*.03)
-                for i,o in enumerate(self.objects):
-                    if objectreleased[i] or ('secure_loose',o['id']) in done:continue
-                    if q*1.2*o['area_m2']<=.5*o['mass_kg']*9.81:continue
-                    objectreleased[i]=True;end=np.array(o['xy'])+direction*min(80,gust*o['height_m']/6)
-                    events.append(dict(time_seconds=step,kind='windborne_object',id=o['id'],position=list(risk_assets.FROM(*end))))
-                    distance,j=self.btree.query(end)
-                    if distance<30 and .5*o['mass_kg']*(gust*.5)**2>150:glassfailed[j,0]=True
-                    for j in roadtree.query_ball_point(end,15):rubble_road[j]=True
-                waterB=h[self._cellsB];above=np.maximum(0,waterB-.15)
-                # Rated barrier overtops; above rating it provides no dry-proofing credit.
-                enter=(waterB>.15)&~((barrier>0)&(waterB<=barrier))
-                flooded|=enter;interior_depth=np.maximum(interior_depth,np.where(enter,above,0))
-                if self.stations:
-                    heights=h[self._cellsS]
-                    stationfailed|=heights>(.45*capacity_case)
-                failednames={s['name'] for i,s in enumerate(self.stations) if stationfailed[i] and s.get('name')}
-                out=np.array([b.get('substation') in failednames for b in self.buildings])
-                # Conditional local service-panel inundation, not an observed utility outage.
-                out|=waterB>(.45*capacity_case)
-                # CEC transmission-to-distribution topology is unavailable; do not invent cascading customers.
-                # 20 kW backup for an assumed 10 kW load; raised pad may itself flood.
-                backup_running=backup&(waterB<.8)&~structfailed
-                served=~out|backup_running
-                roadwater=h[self._cellsR];danger=tree_road|rubble_road|(roadwater>.15)
-                inaccessible=tree_road|rubble_road|(roadwater>.3)|closed
-                rr=[];cc=[]
-                for j,(u,v) in enumerate(self.road_ends):
-                    if not inaccessible[j]:rr.extend((u,v));cc.extend((v,u))
-                graph=csr_matrix((np.ones(len(rr)),(rr,cc)),shape=self.graph.shape)
-                _,labels=connected_components(graph,directed=False)
-                isolated=(labels[self.bnodes]!=labels[self.home])&self.baseline_access
-                if step<3600:
-                    metrics['route_hazard_minutes']+=float((danger&~closed).sum())*2
-                    metrics['isolated_building_minutes']+=float(isolated.sum())*2
-                    metrics['unserved_load_hours']+=float((~served).sum())/30
-                if record:
-                    flood_frames.append(h.astype('float32').copy())
-                    frames.append(dict(time_seconds=step,tree_ids=[self.trees[i]['id'] for i in np.where(treefailed)[0]],
-                        structure_ids=[self.buildings[i]['id'] for i in np.where(structfailed)[0]],
-                        flooded_ids=[self.buildings[i]['id'] for i in np.where(enter)[0]],
-                        unpowered_ids=[self.buildings[i]['id'] for i in np.where(~served)[0]],
-                        blocked_route_ids=[self.roads[i]['id'] for i in np.where(inaccessible)[0]]))
+                self._consequences(s,h,step,120 if step<3600 else 0,record,flowwalls)
+                flood_frames.append(h.astype('float32').copy())
                 rates=w.rates()
             if step==3600:break
             tide=boundary(pilot,case,step,p.coastal_rise_m) if pilot else tide0+min(step/1800,1)*p.coastal_rise_m
@@ -286,11 +353,13 @@ class Model:
             np.maximum(peak,h,out=peak)
         residual=float(h.sum()*144)-budget.initial_m3-budget.rain_m3+budget.drained_m3-budget.coastal_exchange_m3
         if not np.isfinite(h).all() or abs(residual)>.01:raise ArithmeticError('Multi-hazard water balance failed')
-        glass_area=np.array([b['perimeter_m']*b['height_m']*.35/4 for b in self.buildings])
-        metrics.update(trees_failed=int(treefailed.sum()),partial_collapses=int(structfailed.sum()),
-            damaged_envelope_m2=float((glassfailed*glass_area[:,None]).sum()),flooded_entrances=int(flooded.sum()),
-            interior_water_m3=float(sum(interior_depth[i]*b['area_m2'] for i,b in enumerate(self.buildings))),
-            failed_substations=int(stationfailed.sum()),crew_minutes=float(sum(receipt['crew_minutes'])),
-            completed_actions=len(receipt['completed']),mass_balance_error_m3=residual)
-        return dict(metrics=metrics,receipt=receipt,frames=frames,events=events,peak=peak,
-                    flood=np.stack(flood_frames) if record else None)
+        _,s.destruction_result=self.destruction_inputs.run(flood_frames,np.arange(0,3601,120),s.receipt['completed'])
+        return {**self._result(s,peak,residual), 'flood':np.stack(flood_frames) if record else None}
+
+
+def destruction(model, frames, frame_seconds, actions=()):
+    """The exact positional scene export, shared with the two publishers."""
+    from .destruction_web import export
+    receipt=model.execute(actions)
+    storm,result=model.destruction_inputs.run(frames,frame_seconds,receipt['completed'])
+    return export(storm,'Shared weather',result,model.destruction_inputs)

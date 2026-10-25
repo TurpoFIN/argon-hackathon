@@ -1,0 +1,274 @@
+{
+ "_about": "Parameters of sim/destruction.py (above-ground destruction: buildings, power poles and spans, Muni overhead contact system, streetlights, traffic signals, shelters, masts, trees as the cascade driver, wind-borne roof debris, outages). Every value has a source; 'assumed' = engineering judgement stated as such, to be calibrated against the 31.12.2022 / 21.3.2023 311 and PG&E outage reports. Fragilities are lognormal in the LOCAL 3-s gust at the asset's height (storm reference gust x exposure profile x LBM speed-up when sim/wind.py is present).",
+ "retrieved": "2026-10-25",
+ "wind_profile": {
+  "exposure_B": {
+   "alpha": 7.0,
+   "zg_m": 365.76
+  },
+  "exposure_C": {
+   "alpha": 9.5,
+   "zg_m": 274.32
+  },
+  "z_min_m": 4.57,
+  "source": "ASCE 7-16 Table 26.11-1 terrain exposure constants (B: alpha 7.0, zg 1200 ft; C: alpha 9.5, zg 900 ft) and Table 26.10-1 Kz = 2.01 (z/zg)^(2/alpha), z >= 15 ft. Storm gust is the 10 m open-exposure (C) airport reference (sim/storm.py), so local gust = V_ref sqrt(Kz_B(z) / Kz_C(10 m))."
+ },
+ "tall_building_speedup": {
+  "k_per_100m": 0.5,
+  "radius_m": 60.0,
+  "max_factor": 1.5,
+  "source": "assumed proxy used only when no LBM field is passed: street-level gusts near tall buildings reach 1.5-2x the free-stream at corners and downwash zones (Stathopoulos 2006, J. Wind Eng. Ind. Aerodyn. 94:769-780; SF Planning Code sec. 148 wind-comfort studies). Factor = 1 + k * H_tallest_within_radius / 100 m, capped."
+ },
+ "power_pole": {
+  "median_gust_ms": 78.7,
+  "beta": 0.226,
+  "young_median_gust_ms": 87.4,
+  "young_beta": 0.156,
+  "share_young": 0.3,
+  "height_m": 12.2,
+  "domino_factor": 0.7,
+  "tree_break_dbh_cm": 30.0,
+  "source": "Structural wind fragility of a Class 3 wood distribution pole with conductors, age 50 yr: median 3-s gust 176 mph (78.7 m/s) (Darestani & Shafieezadeh 2019, 'Multi-dimensional wind fragility functions for wood utility poles', Eng. Struct.; accepted manuscript https://par.nsf.gov/servlets/purl/10100652, Fig. 4b: 'the median values for Classes 1 and 3 are 165 mph and 176 mph'); beta 0.226 and the age<=25 yr case (87.4 m/s, beta 0.156) evaluated from the paper's Table 16 response surface (Eq. 22). Design basis: CPUC GO 95 Rule 43.2 light loading 8 psf (383 Pa) on cylindrical surfaces (https://ia.cpuc.ca.gov/gos/GO95/go_95_rule_43_2.html); Table 4 wood safety factors Grade A 4 / B 3 / C 2, replaced before 2/3 of that (Rule 44.3). share_young assumed. Domino: a pole next to a failed pole carries unbalanced conductor tension; capacity x0.7 (assumed). A trunk of DBH >= 30 cm landing on a span pulls down / snaps the nearer pole (assumed; same heavy-stem threshold as damage_functions trees.car_total_loss_dbh_cm). Wind alone rarely breaks poles; tree fall-ins dominate (23.2% of all distribution outages are vegetation, CNUC/UVM utility survey, T&D World 14.7.2021, https://www.tdworld.com/vegetation-management/article/21169246/more-than-20-of-outages-attributed-to-vegetation-uvm-survey)."
+ },
+ "power_span": {
+  "wire_height_m": 9.0,
+  "contact_reach_m": 1.5,
+  "service_drop_m": 35.0,
+  "source": "GO 95 Table 1 minimum clearance of supply conductors over streets ~25 ft (7.6 m); 9 m typical primary height on a 40 ft pole (assumed). Service-drop reach 35 m: PG&E Electric and Gas Service Requirements (Greenbook) overhead service-drop span limit ~100-125 ft (assumed mid value). A tree reaches a wire at horizontal distance d when sqrt(d^2 + h_wire^2) <= tree height + crown radius (rigid fall arc)."
+ },
+ "ocs": {
+  "wire_height_m": 5.8,
+  "section_half_length_m": 400.0,
+  "span_m": 30.0,
+  "source": "SFMTA trolley wire ~18-19 ft (5.5-5.8 m) above the street (CPUC GO 95 Rule 74 trolley contact conductor clearances); OCS hung from span wires every ~100 ft (assumed); a downed wire trips its feeder section, ~0.5 mi of route (assumed), until line crews re-hang it."
+ },
+ "streetlight": {
+  "median_gust_ms": 51.0,
+  "beta": 0.15,
+  "degraded_share": 0.1,
+  "degraded_factor": 0.75,
+  "height_m": 9.0,
+  "high_mast_height_m": 20.0,
+  "flood_dark_depth_m": 0.3,
+  "source": "AASHTO LRFD-LTS-1 (2015) luminaire supports designed for the ASCE 7 Risk Cat II 700-yr gust (~100-110 mph, 45-49 m/s, US West Coast); median capacity ~1.1-1.15x design after resistance factor 0.9 (assumed). Degraded share (base corrosion / fatigue cracks) 10% at 0.75 strength: assumed. Streetlight handhole/base wiring ~0.3 m above grade shorts when flooded (assumed)."
+ },
+ "signal": {
+  "head_median_gust_ms": 36.0,
+  "head_beta": 0.15,
+  "structure_median_gust_ms": 51.0,
+  "structure_beta": 0.15,
+  "cabinet_flood_depth_m": 0.45,
+  "height_m": 7.5,
+  "power_reach_m": 40.0,
+  "source": "Mast-arm structure as luminaire support (AASHTO LRFD-LTS-1). Signal heads twist / tear off span wires and arm brackets in gale-force gusts (FDOT Structures Research Center wind-tunnel tests of signal heads, 2011; median assumed 36 m/s). Controller cabinet (Caltrans Model 332L) on a ~0.15 m foundation with the lowest electronics ~0.45 m above grade (assumed). A signal within 40 m of a de-energised overhead span goes dark (assumed fed from it; downtown network-fed signals are not near overhead lines)."
+ },
+ "shelter": {
+  "median_gust_ms": 38.0,
+  "beta": 0.18,
+  "source": "assumed: tempered-glass bus-shelter panels and roof canopy designed to ~ASCE 7 basic wind with low reserve; lognormal median 38 m/s."
+ },
+ "mast": {
+  "median_gust_ms": 58.0,
+  "beta": 0.15,
+  "height_m": 30.0,
+  "source": "assumed: lighting and communication masts designed to ANSI/TIA-222-H with ~1.3x reserve over the ~45 m/s SF design gust."
+ },
+ "building": {
+  "classes": {
+   "wood_lowrise": {
+    "ds_median_ms": [
+     36.0,
+     46.0,
+     56.0,
+     66.0
+    ],
+    "beta": 0.18
+   },
+   "masonry_lowrise": {
+    "ds_median_ms": [
+     34.0,
+     44.0,
+     55.0,
+     65.0
+    ],
+    "beta": 0.18
+   },
+   "engineered_mid": {
+    "ds_median_ms": [
+     42.0,
+     54.0,
+     66.0,
+     80.0
+    ],
+    "beta": 0.18
+   },
+   "engineered_high": {
+    "ds_median_ms": [
+     46.0,
+     60.0,
+     74.0,
+     90.0
+    ],
+    "beta": 0.18
+   }
+  },
+  "class_rules": "RES with <=4 floors -> wood_lowrise (SF Victorian/Edwardian/Marina-style wood frame); COM/IND/other with <=3 floors built before 1950 -> masonry_lowrise; 4-9 floors -> engineered_mid; >=10 floors or >35 m -> engineered_high.",
+  "roof_cover_lost_frac": [
+   0.08,
+   0.3,
+   0.75,
+   1.0
+  ],
+  "structure_loss_ratio": [
+   0.02,
+   0.1,
+   0.35,
+   1.0
+  ],
+  "contents_loss_ratio": [
+   0.0,
+   0.05,
+   0.3,
+   1.0
+  ],
+  "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage and Loss Estimation', Nat. Hazards Rev. 7(2):94-103, Table 1): DS1 minor (roof cover loss >2-15%, <=1 window), DS2 moderate (15-50%, 1-3 roof deck panels), DS3 severe (>50%, roof deck 3-25%), DS4 destruction (roof structure or wall failure); thresholds as recalled from that table, not re-verified online 25.10.2026. roof_cover_lost_frac = DS-range midpoints. DS medians in local roof-height gust and loss ratios (excluding glazing, which sim/damage.py prices) are assumed, pending calibration. Flood: collapse needs flow velocity >= 2.0 m/s ('such a critical level is given for a flow velocity of 2.0 m/s', Claußen & Clark 1990 as cited by Kreibich et al. 2009, NHESS 9:1679-1692, https://nhess.copernicus.org/articles/9/1679/2009/nhess-9-1679-2009.pdf) and depth x velocity >= 7 m2/s (Claußen & Clark 1990 masonry destruction threshold as widely cited, not re-verified); partial structural damage at v*h >= 1.5 m2/s (Kreibich et al. 2009: significant jump in damage grade above 1.5 m2/s, Elbe 2002 data).",
+  "flood_partial_dv_m2s": 1.5,
+  "flood_collapse_v_ms": 2.0,
+  "flood_collapse_dv_m2s": 7.0,
+  "collapse_debris_reach_h": 0.5,
+  "collapse_debris_source": "assumed: collapse debris spreads about half the building height beyond the footprint (equivalent radius), downing wires, poles and trolley wire there",
+  "flood_min_footprint_m2": 25.0,
+  "flood_min_footprint_source": "assumed: footprints under 25 m2 are kiosks, vents and station entrances, not occupiable buildings; excluded from flood structural failure (they sat next to a 12 m DEM pit at ~UTM 552116, 4182056 that sim/water.py fills)"
+ },
+ "roof_debris": {
+  "piece_area_m2": 0.25,
+  "areal_mass_kg_m2": {
+   "wood_lowrise": 11.0,
+   "masonry_lowrise": 20.0,
+   "engineered_mid": 20.0,
+   "engineered_high": 20.0
+  },
+  "cd": 1.2,
+  "reps_per_building": 6,
+  "window_hit_m2": 1.5,
+  "source": "Asphalt shingle ~2.2-2.4 lb/ft2 (~11 kg/m2, manufacturer specs); built-up/modified-bitumen with ballast ~4 lb/ft2 (~20 kg/m2). Plate drag Cd 1.2 (wind_tree_params debris_cd_plate; Wills, Lee & Wyatt 2002). Flight: closed-form quadratic-drag horizontal relaxation x(t) = U t - L ln(1 + U t / L), L = 2m/(rho Cd A), and vertical fall at terminal speed (Holmes 2004, J. Wind Eng. Ind. Aerodyn. 92:9-22 for the debris equations). Any roof-cover fragment exceeds the ASTM E1996 Missile A (2 g at 39.6 m/s) impact that ordinary annealed glass is not tested for, so a facade hit on a window breaks it; hit lands on glass with the window-to-wall ratio of damage_functions.json glazing. 6 representative particles per damaged building, each standing for its share of the pieces (assumed). airborne_fraction 0.1 assumed: most lost roof cover lifts and stays on the roof or drops beside the building; only a tenth becomes a missile that crosses the street (calibration target: broken-window 311 reports).",
+  "airborne_fraction": 0.1
+ },
+ "outage": {
+  "restore_h_span": 12.0,
+  "restore_h_pole": 24.0,
+  "restore_h_ocs": 8.0,
+  "source": "assumed storm restoration times after the storm ends (crew backlog dominates; PG&E reports multi-day restoration in the Jan 2023 storms). Customer-hours x LBNL ICE outage cost (see unit costs).",
+  "access_radius_m": 150.0,
+  "access_delay_h_per_block": 2.0,
+  "access_delay_cap_h": 12.0,
+  "access_source": "assumed: each blocked roadway within 150 m of a fault adds 2 h before a line crew can reach it (cap 12 h); a tree into an overhead-served building tears its service drop (restored like a span)"
+ },
+ "tree_fallback": {
+  "sat_storage_mm": 60.0,
+  "source": "used only when sim/trees.py results are not passed: per-tree bending-moment snap / uproot model with the wind_tree_params.json parameters (Virot 2016 calibration, Nicoll 2006 anchorage, Kamimura 2012 saturation). Soil saturation proxy = cumulative rain / 60 mm (tree-pit soil ~0.3 m x drainable porosity ~0.2, assumed) until water.py soil_sat frames are passed.",
+  "load_scale": 1.05469,
+  "strength_scale": 3.98962,
+  "calibration": {
+   "load_scale": 1.05469,
+   "strength_scale": 3.98962,
+   "median_ucrit_raw_ms": 43.76,
+   "median_ucrit_sound_ms": 121.76,
+   "replay_failures": 9,
+   "target_reports": 9,
+   "storm": "dec31_2022",
+   "method": "sim.destruction.calibrate_trees(): load_scale sets the median critical crown gust of sound inventory trees to 42 m/s (Virot et al. 2016, Phys. Rev. E 93:023001); strength_scale (both snap and uproot capacity) then makes the 31.12.2022 replay fail as many trees in the tile as SF 311 tree reports there (DataSF vw6y-z8j6 via data/grid/validation.json). 311 reports undercount real failures, so this is a low anchor.",
+   "run": "2026-10-25 (re-run after wind_tree_params.json update in 7f58479)"
+  },
+  "anchorage_beta": 0.3,
+  "anchorage_source": "assumed lognormal tree-to-tree scatter (beta 0.3) of root anchorage around the Creg x stem-weight regression (Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883 report wide scatter by soil and rooting); also smooths the many identical default-size saplings in the inventory"
+ },
+ "costs": {
+  "_note": "filled from cited sources below; see each item's source",
+  "power_pole_usd": {
+   "usd": 22400.0,
+   "source": "PG&E 2021 Wildfire Mitigation Plan Change Order, initiative 7.3.3.6 (1.11.2021): 'the actual cost is closer to $22,400 per unit' (pole replacement or reinforcement)",
+   "url": "https://www.pge.com/assets/pge/docs/outages-and-safety/outage-preparedness-and-support/2021WMP-PGE-Change-Order-2021-11-01.pdf",
+   "source_year": 2021
+  },
+  "ocs_span_usd": {
+   "usd": null,
+   "source": null
+  },
+  "streetlight_usd": {
+   "usd": 3550.0,
+   "source": "Santa Maria Sun (City of Santa Maria, CA public works knockdown bills): 'bills ranging from $2,700 to $4,400 per light post'; midpoint",
+   "url": "https://www.santamariasun.com/news-2/cars-hitting-light-poles-are-a-santa-maria-epidemic-14793548/",
+   "source_year": 2014
+  },
+  "signal_head_usd": {
+   "usd": null,
+   "source": null
+  },
+  "signal_structure_usd": {
+   "usd": null,
+   "source": null
+  },
+  "signal_cabinet_usd": {
+   "usd": 7852.76,
+   "source": "South Carolina state contract price list, Traffic Signal Controllers, Cabinets and Components (Aug 2020): 'Cabinet Assembly Model 332A (larger) - Temple Product $7,852.76' (supply only, installation excluded: low)",
+   "url": "https://procurement.sc.gov/files/attach/TRAFFIC%20SIGNAL%20CONTROLLERS%20CABINETS%20AND%20COMPONENTS%20Aug%202020%20%282%29.pdf",
+   "source_year": 2020
+  },
+  "shelter_usd": {
+   "usd": 800.0,
+   "source": "MARTA Atlanta via Hoodline 14.12.2024: 'replacing a single glass panel costs around $200'; x 4 panels per shelter (assumed)",
+   "url": "https://hoodline.com/2024/12/over-100-marta-bus-shelters-vandalized-in-atlanta-and-dekalb-county-repairs-exceed-20-000/",
+   "source_year": 2024
+  },
+  "mast_usd": {
+   "usd": null,
+   "source": null
+  },
+  "roof_cover_usd_m2": {
+   "usd": 91.49,
+   "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2",
+   "url": "https://www.fixr.com/costs/roof-replacement-california",
+   "source_year": 2025
+  },
+  "outage_usd_per_event": {
+   "hours": [
+    0.5,
+    1,
+    4,
+    8,
+    16
+   ],
+   "residential": [
+    4.5,
+    5.1,
+    9.5,
+    17.2,
+    32.4
+   ],
+   "small_ci": [
+    520,
+    647,
+    1880,
+    4690,
+    9055
+   ],
+   "medium_large_ci": [
+    15241,
+    17804,
+    39458,
+    84083,
+    165482
+   ],
+   "source": "Sullivan, Schellenberg & Blundell 2015, Updated Value of Service Reliability Estimates for Electric Utility Customers in the US, LBNL-6941E, Table ES-1 (2013 USD, not inflated: conservative). Interpolated by outage duration; beyond 16 h extended at the 8-16 h slope.",
+   "url": "https://eta-publications.lbl.gov/sites/default/files/lbnl-6941e.pdf",
+   "source_year": 2015,
+   "class_rule": "RES -> residential customers = dwelling units (floor area / damage_functions people.unit_floor_area_m2); non-RES floor area < 300 m2 -> small C&I (< 50,000 kWh/yr), else medium/large C&I (assumed area proxy)"
+  },
+  "_unpriced": "power spans, trolley wire repair, signal heads, signal mast arms and masts: no verified repair unit cost found 25.10.2026 (leads seen only in search snippets were not used); they are counted, not priced",
+  "power_span_usd": {
+   "usd": null,
+   "source": null
+  }
+ }
+}

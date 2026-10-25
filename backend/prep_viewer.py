@@ -40,6 +40,12 @@ def preparation_viewer():
     return viewer()
 
 
+@router.get("/loop/destruction-layer.js")
+def destruction_layer():
+    """The viewer's storm destruction layer (also served by loop.serve)."""
+    return FileResponse(ROOT / "loop/destruction-layer.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})
+
+
 @router.get("/api/prep-runs")
 def preparation_runs():
     return {"runs": available_runs()}

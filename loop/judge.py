@@ -173,7 +173,7 @@ def validate(plan: Plan, context, judge):
 
 
 class Judge:
-    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways"):
+    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways", replay_context=None):
         self.run_dir = run_dir
         self.mode = mode
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +185,11 @@ class Judge:
         else:
             self.base, self.p, self.source = build_base(use_shared_state, None, rain_mm_h)
             self.scenarios = [dict(name="design", weight=1.0, spec=None, base=self.base)]
-        self.context, self.heuristic = codex_context(self.base)  # candidates come from the P50 (or design) world
+        if replay_context is None:
+            self.context, self.heuristic = codex_context(self.base)
+        else:
+            self.context, self.heuristic = replay_context, {}
+            preparedness.apply_evidence(self.base)
         for scenario in self.scenarios:
             if scenario["base"] is not self.base:
                 preparedness.apply_evidence(scenario["base"])
