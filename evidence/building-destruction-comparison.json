@@ -1,0 +1,2376 @@
+{
+  "adapter_sha256": "32aa9534e268933db56a970693d700769ca74c17cb1f971f89a2fc0477899be7",
+  "engine_sha256": "f8c46cba238412cd80e1bbfcaf9763f1c2dd1d79d5c51e2341de638b850e9127",
+  "inventory_sha256": "1bc4be552a1b09a8c727754b8d54b3a9a601c0308bc5c46184fb616b649fafbd",
+  "cases": [
+    {
+      "path": "data/scenarios/37351e0c297d",
+      "label": null,
+      "input": {
+        "flood_sha256": "5eebb175000d8a0319627cd4f8484e291f2f043b3a94ac356bbfbfb3226701b4"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 17,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 65701.39,
+            "basis": "718 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": null,
+            "basis": "rain through failed roofs: contents loss ratio by DS; missing building values are unpriced",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an",
+            "unpriced_building_ids": [
+              1,
+              2,
+              74,
+              118,
+              140,
+              214,
+              215,
+              379,
+              617,
+              713,
+              820,
+              897,
+              919,
+              1113,
+              1243,
+              1432,
+              1561
+            ],
+            "priced_usd": 0.0
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 116800.21,
+            "basis": "37 windows broken by roof debris on 20 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 37,
+        "total_usd": 216757.12,
+        "trees_into_buildings": 3,
+        "roads_blocked": 30
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 18,
+          "DS2": 1,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 86945.81,
+            "basis": "950 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 499858.23,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 108984.47,
+            "basis": "56 windows broken by roof debris on 24 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 42,
+        "total_usd": 722191.27,
+        "trees_into_buildings": 2,
+        "roads_blocked": 24
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "041b70ceba472b301c97942adf4ded216044a44bccef9664a43caa3611d7a0e9"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "control",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ce7acf9dc3429ea18fbd56809ede94c942c49b5b8c61800ede06e3622ffc6955"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "codex_heuristic",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "1f6f2e680535380482bfa008613fbdf9219e3cfa593b2e75e75d62f48c73fdc3"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8b1addb73fc25feabc94655c59fe628f122d5024b8646b57d2d26f7d0ca153bb"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "greedy",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8525b4e5ba2737243f30a4deca62afb99f36147f095974eeb91e90b06182925e"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "argon_round1",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "4c508c4e405c324938ae8f47a96fea6ad3c39b337966d453925aff046353adf5"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "57dd3aa5a3201fcc50d6c81e7c12a2fdb5aedd90a6964817cea67d986a352fbe"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "argon_round2",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "4593c8434665738a2385dfb90e02f04b37e59662f6b2c24116714c2172bc3f0f"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "aa90e6c557a075f6ef7889b050a8e2550b8c5a3dd05f02ea0b909b4bf9bf79ad"
+    },
+    {
+      "path": "data/prep-loop/demo6/argon",
+      "label": "argon_round3",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "1325f86732ef428948b55500c7754fc384da4a0bbafae9d2e96d6e7f2b425d92"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "01488de67b0b952a85d2f0a01fc398b42d0aa4a7a1ce4a076ebf0c7abb08634b"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "control",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ce7acf9dc3429ea18fbd56809ede94c942c49b5b8c61800ede06e3622ffc6955"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "codex_heuristic",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "1f6f2e680535380482bfa008613fbdf9219e3cfa593b2e75e75d62f48c73fdc3"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8b1addb73fc25feabc94655c59fe628f122d5024b8646b57d2d26f7d0ca153bb"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "greedy",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8525b4e5ba2737243f30a4deca62afb99f36147f095974eeb91e90b06182925e"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "flash_round1",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ba9e3569387abb2be0a43593ddc4abff3ddf34ca514a065d9a26644038292022"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "flash_round2",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "f1bf989ee0b71465a54f929d60b87bb179e4f5c910f4c1c05808787951d5854e"
+    },
+    {
+      "path": "data/prep-loop/demo6/flash",
+      "label": "flash_round3",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "84f0fe5047bfebc98b74233167a35c5968b768a6e951d7b5b0f3bfef50e7efc4"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "control",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ce7acf9dc3429ea18fbd56809ede94c942c49b5b8c61800ede06e3622ffc6955"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "codex_heuristic",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "1f6f2e680535380482bfa008613fbdf9219e3cfa593b2e75e75d62f48c73fdc3"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8b1addb73fc25feabc94655c59fe628f122d5024b8646b57d2d26f7d0ca153bb"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "greedy",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8525b4e5ba2737243f30a4deca62afb99f36147f095974eeb91e90b06182925e"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "argon_round1",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "4c508c4e405c324938ae8f47a96fea6ad3c39b337966d453925aff046353adf5"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "57dd3aa5a3201fcc50d6c81e7c12a2fdb5aedd90a6964817cea67d986a352fbe"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "argon_round2",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "4593c8434665738a2385dfb90e02f04b37e59662f6b2c24116714c2172bc3f0f"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "aa90e6c557a075f6ef7889b050a8e2550b8c5a3dd05f02ea0b909b4bf9bf79ad"
+    },
+    {
+      "path": "data/prep-loop/demo6check/argon",
+      "label": "argon_round3",
+      "input": {
+        "log_sha256": "74c605e2391dd4cfba23ccc4d72d83a8effebf888136d537ba6fb328e1a8912f",
+        "flood_sha256": "1325f86732ef428948b55500c7754fc384da4a0bbafae9d2e96d6e7f2b425d92"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "01488de67b0b952a85d2f0a01fc398b42d0aa4a7a1ce4a076ebf0c7abb08634b"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "control",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ce7acf9dc3429ea18fbd56809ede94c942c49b5b8c61800ede06e3622ffc6955"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "codex_heuristic",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "1f6f2e680535380482bfa008613fbdf9219e3cfa593b2e75e75d62f48c73fdc3"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8b1addb73fc25feabc94655c59fe628f122d5024b8646b57d2d26f7d0ca153bb"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "greedy",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "eca678c0e2305a08057d72df2081bda2f37fc0adc5d86d9e1ac5312023c35101"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "8525b4e5ba2737243f30a4deca62afb99f36147f095974eeb91e90b06182925e"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "flash_round1",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "ba9e3569387abb2be0a43593ddc4abff3ddf34ca514a065d9a26644038292022"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "flash_round2",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "f1bf989ee0b71465a54f929d60b87bb179e4f5c910f4c1c05808787951d5854e"
+    },
+    {
+      "path": "data/prep-loop/demo6check/flash",
+      "label": "flash_round3",
+      "input": {
+        "log_sha256": "1a4972c381e84c39d37c18b0f3c82a7e22b40cbded60bd2d436b45d026219daa",
+        "flood_sha256": "a95a26ec4e207c418845df18e46c6d034f64d4c4ab6024a46ce149ad7bd31384"
+      },
+      "before": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "after": {
+        "buildings_by_ds": {
+          "DS1": 0,
+          "DS2": 0,
+          "DS3": 0,
+          "DS4": 0
+        },
+        "building_dollar_lines": [
+          {
+            "cause": "wind_roof_cover",
+            "usd": 0.0,
+            "basis": "0 m2 roof cover lost (Hazus DS midpoints) x re-roof $/m2",
+            "source": "Fixr.com, How Much Does It Cost to Replace a Roof in California? (29.8.2025): asphalt shingles $5.50-$11.50 per sq ft; midpoint $8.50/ft2 = $91.49/m2"
+          },
+          {
+            "cause": "wind_structure",
+            "usd": 0.0,
+            "basis": "DS3 top storeys / DS4 whole building x structure loss ratio x assessor value",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "wind_contents",
+            "usd": 0.0,
+            "basis": "rain through failed roofs: contents loss ratio by DS",
+            "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage an"
+          },
+          {
+            "cause": "debris_glazing",
+            "usd": 0.0,
+            "basis": "0 windows broken by roof debris on 0 buildings x glazing $/m2",
+            "source": "https://www.insightglass.com/commercial-storefront-windows-cost-bay-area-2026/"
+          }
+        ],
+        "buildings_priced": 0,
+        "total_usd": 0.0,
+        "trees_into_buildings": 0,
+        "roads_blocked": 0
+      },
+      "collision_shape": [
+        616,
+        439
+      ],
+      "collision_cell_m": 4.0,
+      "water_shape": [
+        205,
+        146
+      ],
+      "output_sha256": "84f0fe5047bfebc98b74233167a35c5968b768a6e951d7b5b0f3bfef50e7efc4"
+    }
+  ]
+}

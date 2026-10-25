@@ -111,10 +111,10 @@ class DestructionEngineTests(unittest.TestCase):
 
     def test_host_grid_orientation_wind_and_exact_export(self):
         model=fixture(gust=20);inputs=Inputs(model.a,model.world)
-        b=inputs.buildings[0];ix,iy=inputs.grid.cell(b['x'],b['y'])
+        b=inputs.buildings[0];ix,iy=inputs.grid.host_cell(b['x'],b['y'])
         self.assertEqual((int(iy),int(ix)),(3,4))
         for row in (1,6):
-            x,y=inputs.grid.xy.reshape((*model.world.z.shape,2))[row,2]
+            x,y=inputs.grid.xy.reshape((*inputs.grid.shape,2))[row,2]
             ix,iy=inputs.grid.cell(x,y);self.assertEqual(int(iy),row)
         st,r=inputs.run(np.zeros((31,*model.world.z.shape)),range(0,3601,120))
         self.assertEqual(st.gust_ms[15],model.world.p.gust_mps)

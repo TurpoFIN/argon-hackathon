@@ -22,13 +22,13 @@ TO = Transformer.from_crs(4326, 32610, always_xy=True).transform
 FROM = Transformer.from_crs(32610, 4326, always_xy=True).transform
 
 
-def fetch(name, url):
+def fetch(name, url, max_bytes=12_000_000):
     FOLDER.mkdir(exist_ok=True)
     path = FOLDER / name
     if not path.exists():
         with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent':'ArgonPreparedness/1.0'}), timeout=60) as r:
-            data = r.read(12_000_001)
-        if len(data) > 12_000_000: raise ValueError('Asset cut exceeds 12 MB: '+name)
+            data = r.read(max_bytes + 1)
+        if len(data) > max_bytes: raise ValueError('Asset cut exceeds byte limit: '+name)
         path.write_bytes(data)
     raw = path.read_bytes()
     return json.loads(raw), {'url':url, 'file':name, 'sha256':hashlib.sha256(raw).hexdigest()}
@@ -63,6 +63,12 @@ def prepare():
         bldgs.append(dict(id='B'+str(b['sf16_bldgid']),xy=[center.x,center.y],position=list(FROM(center.x,center.y)),
             cell=cell(center.x,center.y),area_m2=p.area,perimeter_m=p.length,height_m=float(b['hgt_median_m']),
             angle_rad=float(np.arctan2(edge[1],edge[0])),geometry=mapping(geom)))
+    from . import building_inventory
+    full, roll, inventory_sources = building_inventory.load_sources()
+    inventory_coverage = building_inventory.enrich(bldgs, full, roll)
+    with np.load(ROOT/'data/model-inputs.npz') as f:
+        building_inventory.ground_fallback(bldgs, f['ground'], f['lon'], f['lat'])
+    sources.extend(inventory_sources)
     sources.append({'name':'DataSF building footprints','url':manifest['sources']['buildings'],'basis':'Mapped geometry and older measured height; structural condition is not recorded.'})
     q={'$where':f'latitude between {BBOX[1]} and {BBOX[3]} and longitude between {BBOX[0]} and {BBOX[2]}',
        '$select':'treeid,species,mapdbh,latitude,longitude,legalstatus,data_as_of','$limit':10000}
@@ -138,7 +144,7 @@ def prepare():
         b['supply_basis']='Nearest mapped feeder; customer connection unverified'
     result=dict(version=1,generated_at=datetime.now(timezone.utc).isoformat(),bbox=BBOX,
         buildings=bldgs,trees=trees,roads=roads,power_lines=lines,substations=stations,sources=sources,
-        coverage=dict(buildings=len(bldgs),trees=len(trees),trees_without_usable_dbh=missing,roads=len(roads),
+        coverage=dict(**inventory_coverage,buildings=len(bldgs),trees=len(trees),trees_without_usable_dbh=missing,roads=len(roads),
                       distribution_feeders=len(pgelines),transmission_lines=transmission_count,substations=len(stations),
                       overhead_power_lines=sum(l['installation']=='overhead' and l.get('kind','power')=='power' for l in lines),
                       trolley_wire_ways=sum(l.get('kind')=='trolley' for l in lines),
