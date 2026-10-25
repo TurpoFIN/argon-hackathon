@@ -1,0 +1,35 @@
+{
+ "definition": "SFPUC: >= 6 in deep, contiguous >= half an average city block (6,440 m2 measured)",
+ "a_replay_our_threshold_0.15m": {
+  "CSI": 0.274,
+  "POD": 0.421,
+  "FAR": 0.561,
+  "AUC_maxdepth": 0.72,
+  "pred_km2": 0.785,
+  "obs_km2": 0.819
+ },
+ "b_replay_sfpuc_definition": {
+  "CSI": 0.327,
+  "POD": 0.349,
+  "FAR": 0.157,
+  "AUC_maxdepth": 0.72,
+  "pred_km2": 0.339,
+  "obs_km2": 0.819
+ },
+ "c_atlas14_100yr_sfpuc_definition": {
+  "CSI": 0.192,
+  "POD": 0.205,
+  "FAR": 0.24,
+  "AUC_maxdepth": 0.657,
+  "pred_km2": 0.221,
+  "obs_km2": 0.819
+ },
+ "c2_atlas14_100yr_our_threshold_0.15m": {
+  "CSI": 0.197,
+  "POD": 0.304,
+  "FAR": 0.642,
+  "AUC_maxdepth": 0.657,
+  "pred_km2": 0.695,
+  "obs_km2": 0.819
+ }
+}
