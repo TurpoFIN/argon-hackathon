@@ -676,3 +676,24 @@ body { grid-template-rows: auto auto 1fr !important; }
 .cm td { background: #f4f4f4 !important; }
 #board td, #board td * { color: #0a0a0a; } #board tr.sel td, #board tr.on td { background: #f4f4f4 !important; }
 .ag-av, .av { color: #fff !important; }
+
+/* ===================== less on screen ===================== */
+.top .kpis, .top .sub, .tab[data-tab="architecture"] { display: none !important; }
+.ov-lede { font-size: 34px !important; font-weight: 600 !important; letter-spacing: -0.02em; max-width: 900px !important; }
+.ov-hero { display: flex; align-items: baseline; gap: 18px; font-size: 56px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.ov-hero .from { color: #a3a3a3; } .ov-hero .arr { color: #d4d4d4; font-weight: 400; } .ov-hero .to { color: #0a0a0a; }
+.ov-cap { margin-top: 10px; color: #737373; font-size: 14px; }
+.ov-t { font-size: 22px !important; font-weight: 600 !important; fill: #0a0a0a !important; }
+.ov-val { font-size: 20px !important; fill: #a3a3a3 !important; } .ov-val.last { fill: #0a0a0a !important; font-size: 26px !important; font-weight: 700; }
+.ov-h { font-weight: 500; color: #737373; }
+/* Evolution: chart, family tree, leaderboard only */
+#card-archive, #card-gens, #card-calib { display: none !important; }
+#view-evolution .grid-evo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; grid-template-rows: minmax(300px, 1fr) minmax(320px, 1fr) !important; }
+#card-main { grid-column: 1 / -1 !important; grid-row: 1 !important; }
+#card-pareto { grid-column: 1 !important; grid-row: 2 !important; } #card-board { grid-column: 2 !important; grid-row: 2 !important; }
+#card-funnel { grid-column: 1 / -1 !important; }
+/* detail: three numbers, no directive, code folded */
+.detail .d-dir, .detail .scores .score:nth-child(n+4) { display: none !important; }
+.d-more { margin-top: 8px; } .d-more > summary { cursor: pointer; color: #737373; font-size: 12px; padding: 6px 0; list-style: none; }
+.d-more > summary::before { content: '+ '; } .d-more[open] > summary::before { content: '− '; }
+.card-h .hint, .hint { display: none !important; }

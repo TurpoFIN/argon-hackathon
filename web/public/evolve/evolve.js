@@ -482,11 +482,10 @@ async function renderDetail() {
       ${c.code_url ? `<a class="btn ghost" href="${esc(c.code_url)}" target="_blank">plan.py</a>` : ''}
     </div>
     <div class="d-sec"><div class="lab">Lineage<span class="r faint">${L.length - 1} ancestor${L.length === 2 ? '' : 's'}</span></div><div class="tree">${lineageHtml}</div></div>
-    ${causeHtml}
-    ${spendHtml}
-    <div class="d-sec"><div class="lab">Plan code<span class="r codebar"><span class="dstat" id="dstat"></span>
+    ${'' && causeHtml}${'' && spendHtml}
+    <details class="d-more"><summary>Plan code</summary><div class="d-sec"><div class="lab">Plan code<span class="r codebar"><span class="dstat" id="dstat"></span>
       <span class="seg"><button data-m="diff" class="${diffMode === 'diff' ? 'on' : ''}">Diff vs parent</button><button data-m="full" class="${diffMode === 'full' ? 'on' : ''}">Full</button></span></span></div>
-      <div class="code" id="code"><div class="ln"><span class="no"></span><span class="sg"></span><span class="tx faint">loading…</span></div></div></div>`;
+      <div class="code" id="code"><div class="ln"><span class="no"></span><span class="sg"></span><span class="tx faint">loading…</span></div></div></div></details>`;
 
   box.querySelectorAll('.tnode[data-id]').forEach((n) => { if (n.dataset.id !== c.id) n.addEventListener('click', () => select(n.dataset.id)); });
   box.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => { diffMode = b.dataset.m; lastDetailKey = ''; renderDetail(); }));
@@ -1180,10 +1179,10 @@ function renderOverview() {
   const best = D.best ? D.best.score.net_benefit_usd : null;
   const ratio = best && seedBest > 0 ? best / seedBest : null;
   const nAgents = (S.agents || []).length || 11;
+  void ratio; void nAgents;
   $('#ovStats').innerHTML = `
-    <div class="ov-big"><span class="v">${best != null ? money(best, { sign: true }) : '—'}</span><span class="k">best net benefit<br>(damage avoided − cost)</span></div>
-    <div class="ov-big alt"><span class="v">${ratio ? '×' + ratio.toFixed(ratio < 10 ? 2 : 1) : '—'}</span><span class="k">better than the<br>best first plan</span></div>
-    <div class="ov-small"><b>${D.cands.length}</b> plans tried<b>${Math.max(0, gens.length - 1)}</b> generations<b>${nAgents}</b> agents</div>`;
+    <div class="ov-hero"><span class="from">${seedBest != null ? money(seedBest) : '—'}</span><span class="arr">→</span><span class="to">${best != null ? money(best) : '—'}</span></div>
+    <div class="ov-cap">net benefit of the best plan, first try → after ${Math.max(0, gens.length - 1)} generations · ${D.cands.length} plans tried</div>`;
   renderOvLoop();
   renderOvChart(gens, seedBest);
 }
@@ -1203,10 +1202,10 @@ function renderOvLoop() {
   const cnt = archCounts();
   const st = S.stage;
   const boxes = [
-    { n: 1, t: 'Prompt sampler', s: ['picks a parent plan +', 'inspirations from the database'], x: cx, y: cy - R, c: '#0a0a0a', on: running && st === 'mutating' && cnt.flash === 0 && cnt.argon === 0 },
-    { n: 2, t: 'LLM ensemble', s: ['Gemini 4 Argon directs,', '6 Gemini 3.8 Flash specialists', 'write code diffs'], x: cx + R * 1.55, y: cy, c: '#0a0a0a', on: running && (cnt.argon + cnt.flash + cnt.review > 0 || st === 'architect' || st === 'seeding') },
-    { n: 3, t: 'Evaluators', s: ['sandbox · cited cost planner', 'storm sim: flood, wind,', 'trees, people'], x: cx, y: cy + R, c: '#0a0a0a', on: running && cnt.check + cnt.sim > 0 },
-    { n: 4, t: 'Program database', s: ['keeps the best plan per', 'strategy and budget band'], x: cx - R * 1.55, y: cy, c: '#0a0a0a', on: running && st === 'selecting' },
+    { n: 1, t: 'Pick the best plans', s: [], x: cx, y: cy - R, c: '#0a0a0a', on: running && st === 'mutating' && cnt.flash === 0 && cnt.argon === 0 },
+    { n: 2, t: 'Gemini writes changes', s: [], x: cx + R * 1.55, y: cy, c: '#0a0a0a', on: running && (cnt.argon + cnt.flash + cnt.review > 0 || st === 'architect' || st === 'seeding') },
+    { n: 3, t: 'Simulate the storm', s: [], x: cx, y: cy + R, c: '#0a0a0a', on: running && cnt.check + cnt.sim > 0 },
+    { n: 4, t: 'Keep the winners', s: [], x: cx - R * 1.55, y: cy, c: '#0a0a0a', on: running && st === 'selecting' },
   ];
   // ring path (ellipse) for the travelling pulse
   const rx = R * 1.55, ry = R;
@@ -1219,28 +1218,23 @@ function renderOvLoop() {
     return `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
   });
   arcs.forEach((d) => el('path', { d, fill: 'none', stroke: 'rgba(0,0,0,.45)', 'stroke-width': 2, 'marker-end': 'url(#ovArrow)' }, svg));
-  const pulse = el('circle', { r: 6, fill: '#555555', filter: 'url(#ovGlow)', class: 'ov-pulse' }, svg);
-  const am = el('animateMotion', { dur: running ? '6s' : '10s', repeatCount: 'indefinite', path: ring }, pulse);
-  void am;
-  // centre label
-  const ctr = el('text', { x: cx, y: cy - 6, 'text-anchor': 'middle', class: 'ov-ctr' }, svg); ctr.textContent = 'repeat every';
-  const ctr2 = el('text', { x: cx, y: cy + 22, 'text-anchor': 'middle', class: 'ov-ctr b' }, svg); ctr2.textContent = 'generation';
+  if (running) {
+    const pulse = el('circle', { r: 6, fill: '#0a0a0a', class: 'ov-pulse' }, svg);
+    el('animateMotion', { dur: '6s', repeatCount: 'indefinite', path: ring }, pulse);
+  }
   boxes.forEach((b) => {
-    const w = 300, hh = 74 + b.s.length * 21;
+    const w = 300, hh = 64;
     const g = el('g', { class: 'ov-node' + (b.on ? ' on' : '') }, svg);
     el('rect', { x: b.x - w / 2, y: b.y - hh / 2, width: w, height: hh, rx: 16, fill: '#ffffff', stroke: b.c, 'stroke-opacity': b.on ? 1 : 0.18, 'stroke-width': b.on ? 2.5 : 1.5, filter: b.on ? 'url(#ovGlow)' : null }, g);
     el('circle', { cx: b.x - w / 2 + 24, cy: b.y - hh / 2 + 26, r: 13, fill: b.c }, g);
     const nn = el('text', { x: b.x - w / 2 + 24, y: b.y - hh / 2 + 31, 'text-anchor': 'middle', class: 'ov-n' }, g); nn.textContent = b.n;
-    const tt = el('text', { x: b.x - w / 2 + 46, y: b.y - hh / 2 + 32, class: 'ov-t' }, g); tt.textContent = b.t;
+    const tt = el('text', { x: b.x - w / 2 + 50, y: b.y - hh / 2 + 33, class: 'ov-t' }, g); tt.textContent = b.t;
     b.s.forEach((line, i) => { const s = el('text', { x: b.x - w / 2 + 20, y: b.y - hh / 2 + 62 + i * 21, class: 'ov-s' }, g); s.textContent = line; });
   });
   // inputs (left) and output (right) as side notes
   const side = (x, y, lines, cls) => { lines.forEach((l, i) => { const t = el('text', { x, y: y + i * 22, class: cls }, svg); t.textContent = l; }); };
   const budget = money(S.config?.budget_usd || 50e6, { dp: 0 });
-  side(14, 34, ['INPUTS'], 'ov-side-k');
-  side(14, 60, [`Problem: storm + ${budget} budget`, 'Evaluator: the locked StormSim', 'Initial plans'], 'ov-side');
-  side(W - 14, 34, ['OUTPUT'], 'ov-side-k r');
-  side(W - 14, 60, ['Best plan →', 'planner approval'], 'ov-side r');
+  void side; void budget;
 }
 function renderOvChart(gens, seedBest) {
   const box = $('#ovChart');
@@ -1253,29 +1247,26 @@ function renderOvChart(gens, seedBest) {
     if (run != null) pts.push({ g, v: run });
   });
   if (!pts.length) { const t = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = 'waiting for the first scored plans…'; return; }
-  const m = { l: 92, r: 40, t: 40, b: 56 };
+  const m = { l: 40, r: 40, t: 50, b: 56 };
   const lo = Math.min(0, ...pts.map((p) => p.v)), hi = Math.max(...pts.map((p) => p.v)) * 1.12 || 1;
   const gMax = Math.max(1, pts[pts.length - 1].g);
   const x = (g) => m.l + (W - m.l - m.r) * (g / gMax);
   const y = (v) => H - m.b - (H - m.t - m.b) * ((v - lo) / (hi - lo));
-  for (let i = 0; i <= 3; i++) {
-    const v = lo + (hi - lo) * i / 3;
-    el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'rgba(0,0,0,.08)' }, svg);
-    const t = el('text', { x: m.l - 14, y: y(v) + 5, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = money(v);
-  }
+  el('line', { x1: m.l, x2: W - m.r, y1: y(lo), y2: y(lo), stroke: 'rgba(0,0,0,.15)' }, svg);
   pts.forEach((p) => { const t = el('text', { x: x(p.g), y: H - m.b + 32, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = p.g === 0 ? 'first plans' : 'gen ' + p.g; });
   let d = `M ${x(pts[0].g)} ${y(pts[0].v)}`;
   pts.slice(1).forEach((p) => { d += ` H ${x(p.g)} V ${y(p.v)}`; });
   const area = d + ` V ${y(lo)} H ${x(pts[0].g)} Z`;
   el('path', { d: area, fill: 'rgba(0,0,0,.07)' }, svg);
   el('path', { d, fill: 'none', stroke: '#0a0a0a', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, svg);
-  if (seedBest != null) {
+  if (false && seedBest != null) {
     el('line', { x1: m.l, x2: W - m.r, y1: y(seedBest), y2: y(seedBest), stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '5 6' }, svg);
     const t = el('text', { x: W - m.r, y: y(seedBest) + 22, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = 'best first plan ' + money(seedBest);
   }
   pts.forEach((p, i) => {
     el('circle', { cx: x(p.g), cy: y(p.v), r: i === pts.length - 1 ? 9 : 6, fill: i === pts.length - 1 ? '#0a0a0a' : '#ffffff', stroke: '#0a0a0a', 'stroke-width': 3 }, svg);
-    const t = el('text', { x: x(p.g), y: y(p.v) - 18, 'text-anchor': i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle', class: 'ov-val' + (i === pts.length - 1 ? ' last' : '') }, svg);
-    t.textContent = money(p.v, { sign: true });
+    if (i !== 0 && i !== pts.length - 1) return;
+    const t = el('text', { x: x(p.g), y: y(p.v) - 18, 'text-anchor': i === 0 ? 'start' : 'end', class: 'ov-val' + (i === pts.length - 1 ? ' last' : '') }, svg);
+    t.textContent = money(p.v);
   });
 }
