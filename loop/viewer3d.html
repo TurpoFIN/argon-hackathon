@@ -56,7 +56,6 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
     <span id="clock" class="sub" style="margin:0;font-variant-numeric:tabular-nums">Peak water</span>
   </div>
   <input id="scrub" type="range" min="0" max="30" value="30" step="1" aria-label="Storm time" style="width:100%;margin-top:6px;accent-color:var(--c1)">
-  <button id="fly" type="button" style="display:none;margin-top:6px;margin-right:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:#f644b9;color:#fff;font:500 12px var(--font);cursor:pointer">Fly to pumps</button>
   <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
   <video id="video" muted playsinline controls></video>
 </aside>
@@ -180,14 +179,16 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
       ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
       ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    const fly = document.getElementById('fly');
-    fly.style.display = layers.pumps.length ? 'inline-block' : 'none';
-    fly.onclick = async () => {
-      // Let the view frame the actual pump features, looking north-west across them.
-      const pumpLayer = plan.layers.find(l => l.title === 'Pumps');
-      const { features } = await pumpLayer.queryFeatures({ where: '1=1', returnGeometry: true });
-      await view.goTo({ target: features, heading: 325, tilt: 62 }, { duration: 2500 });
-    };
+    // Frame the plan's placements once, on the first plan that has any; later switches keep the camera
+    // so before and after compare from the same spot.
+    if (!storm.framed) {
+      const targets = plan.layers.filter(l => l.title === 'Pumps' || l.title === 'Cleared drains').toArray();
+      const features = (await Promise.all(targets.map(l => l.queryFeatures({ where: '1=1', returnGeometry: true })))).flatMap(r => r.features);
+      if (features.length) {
+        storm.framed = true;
+        await view.goTo({ target: features, heading: 325, tilt: 60 }, { animate: false });
+      }
+    }
     const video = document.getElementById('video'), play = document.getElementById('play');
     video.style.display = 'none';
     if (option.entry.video) { play.style.display = 'inline-block'; play.onclick = () => { video.src = folder + option.entry.video; video.style.display = 'block'; video.play(); }; }
