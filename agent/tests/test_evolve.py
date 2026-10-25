@@ -60,16 +60,24 @@ class FakeInteractions:
         self.calls = []
 
     def create(self, model, input, **kw):
-        self.calls.append((model, input[:80]))
-        if "Predict its effect" in input:
+        prompt = input if isinstance(input, str) else "\n".join(str(x.get("text", "")) for x in input if isinstance(x, dict))
+        self.calls.append((model, prompt[:80]))
+        if "Watch generation" in prompt:
+            ids = re.findall(r"## (c\d{3}) LEDGER", prompt)
+            out = json.dumps({"candidates": [{"cand": cid, "critique": "water still enters the Mission Creek sag",
+                                                "failures": [{"where": "17th & Folsom (1966, 2466)", "cause": "flooding",
+                                                              "evidence": "depth and building ledger remain highest"}],
+                                                "directives": ["Add a pump at 17th & Folsom and size it to the remaining basin depth."]}
+                                               for cid in ids]})
+        elif "Predict its effect" in prompt:
             out = '{"verdict": "run", "predicted": "better", "reason": "adds pumping where water pools"}'
-        elif "Return ONLY a JSON object" in input:
-            ids = re.findall(r"^(c\d{3}) ", input, re.M)
+        elif "Return ONLY a JSON object" in prompt:
+            ids = re.findall(r"^(c\d{3}) ", prompt, re.M)
             out = json.dumps({"insights": ["storage pays back", "walls are wasted"],
                               "directions": [{"parent": ids[0] if ids else "", "directive": "add a pump at the basin"}] * 4,
                               "crossover": {"parents": ids[:2], "idea": "merge"}})
-        elif "Improve the PARENT plan" in input:
-            m = re.search(r"# PARENT\n.*?```python\n(.*?)```", input, re.S)
+        elif "Improve the PARENT plan" in prompt:
+            m = re.search(r"# PARENT\n.*?```python\n(.*?)```", prompt, re.S)
             first = m.group(1).splitlines()[0] if m else "def apply(city):"
             out = (f"NOTE: add a pump\n<<<<<<< SEARCH\n{first}\n=======\n{first}\n    city.pump(2000, 2400, m3s=1.5)\n"
                    ">>>>>>> REPLACE")
@@ -98,6 +106,9 @@ def test_full_run_with_fake_llm(tmp_path, monkeypatch):
     assert st["usage"]["gemini-4-argon"]["calls"] >= 1
     assert any(c.get("review") for c in st["candidates"]), "reviewer must annotate mutations"
     assert {a["kind"] for a in st["activity"]} >= {"seed", "architect", "mutate", "review", "check", "sim", "tweak"}
+    assert st["watch"] and st["watch"][0]["media"]
+    assert any("Visual verification directive" in c.get("directive", "") for c in st["candidates"] if c["op"] == "mutate")
+    assert any(a["kind"] == "watch" and a["t1"] is not None for a in st["activity"])
     assert all(a["t1"] is not None for a in st["activity"])
     assert st["funnel"]["proposed"] == len(st["candidates"]) and st["funnel"]["within_budget"] >= 1
     assert any(c.get("agent") in ev.SPECIALISTS for c in st["candidates"] if c["op"] == "mutate")
