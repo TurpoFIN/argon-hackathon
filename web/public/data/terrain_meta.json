@@ -1,0 +1,23 @@
+{
+ "nx": 443,
+ "ny": 532,
+ "dx": 8.0,
+ "x0": 550624.0,
+ "y0": 4179056.0,
+ "crs": "EPSG:32610",
+ "order": "row-major, row 0 = south, cell centre local x=(ix+0.5)*8, y=(iy+0.5)*8",
+ "coords": "local metres: x east, y north, relative to (x0, y0) UTM 10N",
+ "z_min": -2.0,
+ "z_max": 115.02510070800781,
+ "z_datum": "NAVD88 m",
+ "files": {
+  "terrain": "terrain_8m.f32 (float32)",
+  "flood100": "flood100_8m.u8",
+  "bay": "bay_8m.u8 (1 = bay cell)"
+ },
+ "grid4": {
+  "nx": 887,
+  "ny": 1064,
+  "dx": 4.0
+ }
+}

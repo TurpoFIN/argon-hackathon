@@ -18,3 +18,7 @@ __pycache__/
 web/dist/
 web/node_modules/
 *.mp4
+validation/cache/
+agent/pack_cache/
+web/public/synth/
+web/shots/
