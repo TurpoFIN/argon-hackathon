@@ -364,6 +364,10 @@ def api_forecast(refresh: bool = False):
         raise HTTPException(502, f"forecast unavailable: {type(exc).__name__}: {exc}") from exc
 
 
+from server import evolve_api  # noqa: E402
+app.include_router(evolve_api.router)
+
+
 @app.get("/data/{path:path}")
 def data_file(path: str):
     for base in DATA_DIRS:
