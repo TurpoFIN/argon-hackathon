@@ -140,10 +140,9 @@ def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int 
         # default menu still contains all families; this is a transparent
         # measurement cap, not a score-dependent filter.
         priority = ["Storage vault at lowest basin", "Pump station at lowest basin",
-                    "Upgrade basin inlets", "Permeable pavement upstream",
-                    "Dry floodproof exposed buildings", "Clear basin drains",
+                    "Permeable pavement upstream", "Dry floodproof exposed buildings",
                     "Brace wind-exposed trees", "Early alert and evacuation",
-                    "Deployable bay barrier"]
+                    "Upgrade basin inlets", "Clear basin drains", "Deployable bay barrier"]
         by_name = {c["name"]: c for c in candidates}
         candidates = [by_name[n] for n in priority if n in by_name][:candidate_limit]
     # One-at-a-time measurements are independent and safe to run in worker threads;
@@ -227,9 +226,20 @@ def _write_report(evidence: dict):
     (EVIDENCE / "TOURNAMENT.md").write_text("\n".join(lines) + "\n")
 
 
+def _save_evidence(storm: str, budget: float, started: str, base_dir: Path,
+                   entries: list[dict], headline: str | None = None, status: str = "running") -> dict:
+    evidence = {"schema_version": 1, "status": status, "storm": storm, "budget_usd": budget,
+                "started_utc": started, "finished_utc": _utc() if status == "done" else None,
+                "mock_sim": runner.get_run_storm()[1], "baseline_run_id": base_dir.name, "entries": entries}
+    evidence["headline"] = headline or "Headline pending: real model runs are still in progress."
+    (EVIDENCE / "tournament.json").write_text(json.dumps(evidence, indent=2, default=str) + "\n")
+    _write_report(evidence)
+    return evidence
+
+
 def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: int = 3,
                    generations: int = 1, population: int = 3, max_minutes: float = 12,
-                   sim_workers: int = 2, candidate_limit: int | None = 8,
+                   sim_workers: int = 2, candidate_limit: int | None = 6,
                    no_llm: bool = False) -> dict:
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     # The headline evidence needs ledgers and hashes, not replay media.  Avoid
@@ -241,6 +251,10 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
     entries = [_no_plan(base_dir, base, budget)]
     greedy, _, _ = _greedy(storm, budget, base_dir, base, greedy_workers, candidate_limit)
     entries.append(greedy)
+    # Publish a complete no-plan + measured greedy result before model calls;
+    # this guarantees a defensible table even if the API or a later run times
+    # out near the hard deadline.
+    _save_evidence(storm, budget, started, base_dir, entries)
     if not no_llm:
         # Same Evolve settings/call budget for both model conditions.  The Flash
         # condition uses Flash as both architect and mutator; Argon changes only
@@ -249,7 +263,7 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
                                  ("Gemini 4 Argon (Evolve architect)", "gemini-4-argon")):
             entries.append(_evolve_entry(label, architect, storm, budget, generations, population,
                                           max_minutes, base, sim_workers))
-    evidence = {"schema_version": 1, "storm": storm, "budget_usd": budget, "started_utc": started,
+    evidence = {"schema_version": 1, "status": "done", "storm": storm, "budget_usd": budget, "started_utc": started,
                 "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1], "baseline_run_id": base_dir.name,
                 "entries": entries}
     greedy_rec = next((e for e in entries if e.get("kind") == "greedy"), None)
@@ -274,7 +288,7 @@ def main():
     ap.add_argument("--population", type=int, default=3)
     ap.add_argument("--max-minutes", type=float, default=12)
     ap.add_argument("--sim-workers", type=int, default=2)
-    ap.add_argument("--candidate-limit", type=int, default=8)
+    ap.add_argument("--candidate-limit", type=int, default=6)
     ap.add_argument("--no-llm", action="store_true")
     a = ap.parse_args()
     result = run_tournament(**vars(a))
