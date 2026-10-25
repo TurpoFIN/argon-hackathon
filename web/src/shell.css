@@ -37,3 +37,19 @@
 @media (max-width: 900px) { .storm-live-chip { left: 50%; font-size: 9px; white-space: nowrap; } }
 .compare-headline { display: inline-block; color: #e6f6fb; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
 .eop-report { overflow-x: auto; } .eop-report table { width: 100%; max-width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; } .eop-report td, .eop-report th { color: #19313d !important; opacity: 1 !important; background: transparent; padding: 5px 6px; border-bottom: 1px solid #d3e0e0; vertical-align: top; } .eop-report th { color: #147f98 !important; font: 9px 'JetBrains Mono',monospace; text-transform: uppercase; }
+
+/* ===================== calmer: one accent, no glows, flat surfaces ===================== */
+#shell-page { background: #07131c !important; }
+.product-topbar { background: #07131c !important; box-shadow: none !important; backdrop-filter: none !important; }
+.shell-card, .metric-strip > div, .forecast-next, .evolve-callout, .evolve-timeline, .arrival-card, .compare-badge, .storm-context-card { background: #0b1a25 !important; box-shadow: none !important; border-color: rgba(149,207,227,.12) !important; }
+.forecast-next { background: #0b1a25 !important; }
+.status-dot, .alert-pulse, .approval-state .status-dot, .evolve-orbit i { box-shadow: none !important; }
+.status-dot { background: #8fb3c4 !important; } .live-dot { color: #8fb3c4 !important; }
+.alert-pulse { background: #8fb3c4 !important; } .alert-pulse.muted { background: #4d6675 !important; }
+.positive, .evidence-tag.verified, .evolve-stage.done span, .evolve-stage.done b, .approval-state.approved { color: #dcebf1 !important; border-color: rgba(149,207,227,.3) !important; }
+.evolve-stage.fix span, .evolve-stage.fix b, .approval-state { color: #8fb3c4 !important; border-color: rgba(149,207,227,.25) !important; }
+.approval-state .status-dot { background: #8fb3c4 !important; }
+.evolve-orbit i { background: #5be0ff !important; }
+.best td { background: rgba(91,224,255,.04) !important; }
+.map-still.argon-plan, .map-still.no-plan { background: #0b1a25 !important; }
+.view-heading h1 em { color: #f5fbff !important; }

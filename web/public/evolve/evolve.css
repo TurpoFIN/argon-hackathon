@@ -734,3 +734,10 @@ select { background: rgba(19, 44, 57, .7) !important; color: #bdd2dc !important;
 .code, .code .ln { background: rgba(4, 16, 26, .6) !important; color: #c9dbe5 !important; }
 #card-watch .watch-row { border-left-color: #5be0ff !important; background: rgba(91, 224, 255, .05) !important; }
 .badge.real { color: var(--good); border: 1px solid rgba(100, 243, 162, .4); background: rgba(100, 243, 162, .06); }
+/* calmer: single accent, greens/ambers muted */
+:root { --good: #dcebf1; --warn: #8fb3c4; --tweak: #8fb3c4; }
+body { background: #07131c !important; }
+.top { background: #07131c !important; }
+.card, .detail, .ov-card, .ov-watch { background: #0b1a25 !important; border-color: rgba(149,207,227,.12) !important; }
+.pill .dot { background: #8fb3c4 !important; }
+.kpi.big .v, .net, .ov-hero .to, .ov-val.last { color: #f5fbff !important; fill: #f5fbff !important; }
