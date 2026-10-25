@@ -9,7 +9,8 @@ API:     GET  /api/health
          POST /api/benchmark  {storm?, budget_usd?, max_runs?, max_minutes?, entries?}   -> {job_id}
          POST /api/managed    {storm?, plan_code? | job_id?, mode?}                       -> {job_id}
          GET  /api/jobs, /api/jobs/{id}, /api/jobs/{id}/events (SSE; Last-Event-ID / ?since=)
-         POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate)
+         POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate; writes EOP)
+         GET  /api/jobs/{id}/eop                                                   (cited EOP JSON)
          GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts, /api/forecast
 """
 from __future__ import annotations
@@ -206,9 +207,41 @@ def api_approve(job_id: str, req: ApproveReq):
     j.emit("approval", **rec)
     res = dict(j.result or {})
     res["approval"] = rec
+    # The planner's approval is the hand-off point from a scored plan to field
+    # operations.  Build the cited EOP from the submitted run; all numerical
+    # values remain sourced from result.json and the locked cost tables.
+    if req.approved:
+        try:
+            from agent.action_plan import generate_eop_for_job
+            eop = generate_eop_for_job(job_id, res, repo=REPO)
+            rec.update({"eop_json": eop["eop_json"], "eop_html": eop["eop_html"]})
+            res["approval"] = rec
+            res["eop_path"] = eop["eop_json"]
+            (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
+            j.emit("document", kind="eop", title="Emergency Operations Plan",
+                   json_path=eop["eop_json"], html_path=eop["eop_html"])
+        except Exception as exc:
+            # Approval remains durable even if a malformed historical job cannot
+            # be rendered; the API exposes the exact failure for remediation.
+            rec["eop_error"] = f"{type(exc).__name__}: {exc}"
+            res["approval"] = rec
+            (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
+            j.emit("eop_error", error=rec["eop_error"])
     j.finish("approved" if req.approved else "rejected", res)
     j.status = "completed"
     return {"ok": True, **rec}
+
+
+@app.get("/api/jobs/{job_id}/eop")
+def api_job_eop(job_id: str):
+    """Return the cited EOP generated when the planner approved this job."""
+    p = RUNS / job_id / "eop.json"
+    if not p.exists() or RUNS.resolve() not in p.resolve().parents:
+        raise HTTPException(404, "no EOP for this job")
+    try:
+        return JSONResponse(json.loads(p.read_text()))
+    except Exception as exc:
+        raise HTTPException(500, f"invalid EOP: {exc}")
 
 
 def _run_summary(d: Path) -> dict | None:
