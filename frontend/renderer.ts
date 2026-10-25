@@ -141,7 +141,7 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
         const fbo=gl.getParameter(gl.FRAMEBUFFER_BINDING),vp=gl.getParameter(gl.VIEWPORT);
         host.resetWebGLState();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(vp[0],vp[1],vp[2],vp[3]);
       } else output=this.bindRenderTarget();
-      if(document.body.classList.contains('planning-mode')&&!document.body.classList.contains('research-mode'))return output;
+      if(document.body.classList.contains('planning-mode')&&!document.body.classList.contains('plan-ui-hidden')&&!document.body.classList.contains('research-mode'))return output;
       if(!glReady) initialize(gl);
       const now=performance.now(),dt=playing?.()===false?0:Math.min((now-last)/1000,0.05);last=now;elapsed+=dt;
       // One forward 60-minute scenario, looped for viewing. Starts at 35 minutes.
