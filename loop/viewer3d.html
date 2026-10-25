@@ -56,6 +56,7 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
     <span id="clock" class="sub" style="margin:0;font-variant-numeric:tabular-nums">Peak water</span>
   </div>
   <input id="scrub" type="range" min="0" max="30" value="30" step="1" aria-label="Storm time" style="width:100%;margin-top:6px;accent-color:var(--c1)">
+  <button id="fly" type="button" style="display:none;margin-top:6px;margin-right:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:#f644b9;color:#fff;font:500 12px var(--font);cursor:pointer">Fly to pumps</button>
   <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
   <video id="video" muted playsinline controls></video>
 </aside>
@@ -138,15 +139,19 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     plan.addMany([
       storm.layer = new GeoJSONLayer({ url: blob(flood), title: 'Flood depth', renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' },
         outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }),
-      new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', elevationInfo: { mode: 'on-the-ground' },
+      new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', geometryType: 'polyline', elevationInfo: { mode: 'on-the-ground' },
         renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
           uniqueValueInfos: [0.3048, 0.6096, 0.9144].map(h => ({ value: h, symbol: wallSymbol(h) })) } }),
-      new GeoJSONLayer({ url: blob(points(layers.pumps, { kind: 'pump' })), title: 'Pumps', elevationInfo: { mode: 'on-the-ground' },
-        renderer: { type: 'simple', symbol: { type: 'point-3d', symbolLayers: [{ type: 'object', resource: { primitive: 'cylinder' },
-          width: 4, depth: 4, height: 5, material: { color: '#f644b9' } }] } } }),
-      new GeoJSONLayer({ url: blob(points(layers.drains_cleared, { kind: 'drain' })), title: 'Cleared drains',
-        elevationInfo: { mode: 'on-the-ground' }, renderer: { type: 'simple', symbol: icon('#00c769', 9) } }),
-      new GeoJSONLayer({ url: blob(buildings), title: 'Buildings', elevationInfo: { mode: 'relative-to-scene' }, outFields: ['*'],
+      new GeoJSONLayer({ url: blob(points(layers.pumps, { kind: 'pump' })), title: 'Pumps', geometryType: 'point', elevationInfo: { mode: 'on-the-ground' },
+        renderer: { type: 'simple', symbol: { type: 'point-3d',
+          symbolLayers: [{ type: 'icon', size: 30, resource: { primitive: 'circle' }, material: { color: '#f644b9' }, outline: { color: '#ffffff', size: 3 } }],
+          verticalOffset: { screenLength: 70, maxWorldLength: 400, minWorldLength: 30 },
+          callout: { type: 'line', size: 2, color: '#f644b9', border: { color: [0, 0, 0, .5] } } } } }),
+      new GeoJSONLayer({ url: blob(points(layers.drains_cleared, { kind: 'drain' })), title: 'Cleared drains', geometryType: 'point',
+        elevationInfo: { mode: 'on-the-ground' }, renderer: { type: 'simple', symbol: { ...icon('#00c769', 12),
+          verticalOffset: { screenLength: 30, maxWorldLength: 150, minWorldLength: 10 },
+          callout: { type: 'line', size: 1, color: '#00c769' } } } }),
+      new GeoJSONLayer({ url: blob(buildings), title: 'Buildings', geometryType: 'point', elevationInfo: { mode: 'relative-to-scene' }, outFields: ['*'],
         renderer: { type: 'unique-value', field: 'status', uniqueValueInfos: [
           { value: 'dry', label: 'Kept dry', symbol: icon('#00d1ef', 16, 'square') },
           { value: 'overtopped', label: 'Sandbags overtopped', symbol: icon('#ff6d00', 11, 'square') },
@@ -170,6 +175,14 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
       ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
       ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    const fly = document.getElementById('fly');
+    fly.style.display = layers.pumps.length ? 'inline-block' : 'none';
+    fly.onclick = async () => {
+      // Let the view frame the actual pump features, looking north-west across them.
+      const pumpLayer = plan.layers.find(l => l.title === 'Pumps');
+      const { features } = await pumpLayer.queryFeatures({ where: '1=1', returnGeometry: true });
+      await view.goTo({ target: features, heading: 325, tilt: 62 }, { duration: 2500 });
+    };
     const video = document.getElementById('video'), play = document.getElementById('play');
     video.style.display = 'none';
     if (option.entry.video) { play.style.display = 'inline-block'; play.onclick = () => { video.src = folder + option.entry.video; video.style.display = 'block'; video.play(); }; }
