@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from . import prestorm, risk_assets
+from . import prestorm, risk_assets, action_plan
 
 router = APIRouter(prefix='/api/prestorm')
 lock = threading.RLock()
@@ -51,7 +51,7 @@ def update(body: Update):
         except ValueError as e:
             raise HTTPException(422, str(e))
         state = dict(version=old['version'] + 1, updated_at=datetime.now(timezone.utc).isoformat(),
-                     plan=body.plan.model_dump(), review=old.get('review'))
+                     plan=body.plan.model_dump(), review=old.get('review'), action_plan=old.get('action_plan'))
         prestorm.persist(state)
         return prestorm.public(state, parameters, assets, catalog)
 
@@ -73,6 +73,37 @@ def review():
                     if current['version'] != state['version']:
                         raise ValueError('Plan changed during review; the new inputs need another review.')
                     current['review'] = result
+                    current['version'] += 1
+                    prestorm.persist(current)
+                    job.update(status='ready', error=None)
+            except Exception as e:
+                with lock:
+                    job.update(status='failed', error=str(e))
+        executor.submit(run)
+        return dict(job)
+
+
+@router.post('/generate', status_code=202)
+def generate():
+    with lock:
+        if job['status'] == 'running':
+            return dict(job)
+        assets, catalog, parameters = context()
+        state = prestorm.load(assets, catalog)
+        options = prestorm.sites(assets, catalog)
+        drains = action_plan.load_drains()
+        job.update(status='running', error=None)
+
+        def run():
+            try:
+                result = action_plan.generate(state, parameters, options, catalog, drains)
+                with lock:
+                    current = prestorm.load()
+                    _, _, latest_parameters = context()
+                    latest = action_plan.context(current, latest_parameters, options, catalog, drains)
+                    if current['version'] != state['version'] or result['fingerprint'] != action_plan.fingerprint(latest):
+                        raise ValueError('Inputs changed while Argon planned. Generate again using the current inputs.')
+                    current['action_plan'] = result
                     current['version'] += 1
                     prestorm.persist(current)
                     job.update(status='ready', error=None)

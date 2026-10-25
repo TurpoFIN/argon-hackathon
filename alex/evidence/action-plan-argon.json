@@ -1,0 +1,65 @@
+{
+  "strategy": "Within the 30-minute scenario preparation window, deploy the two provisional general field units to geographically distinct north and south clusters while running coordinator outreach to building operators in parallel. Confirm each field unit has a surface-clearing kit before departure; do not assume uncommitted municipal or utility specialists, sandbag stock, pumps, or barriers are on site. Assign one initial field stop per unit\u2014100 Lombard St in the north and 163 Main St in the south\u2014and hold subsequent stops in ordered, geographically coherent queues until the units report back from their initial inspections. Physical repairs, deep drain clearing, arborist work, and road closures follow field verification and requests to 311, SFPUC, Public Works, SFMTA/SFPD, PG&E, or building owners.",
+  "steps": [
+    {
+      "candidate_id": "wind:glass-0",
+      "crew": null,
+      "why": "50 California St has a documented post-storm forensic investigation of March 2023 glazing failures (SF DBI/WJE). Coordinator outreach to the building operator to verify latched windows, secured exterior items, and glazing hardware requires no field travel and runs in parallel with field deployments, requesting building-service contractor follow-up if defects are found.",
+      "why_before_next": "This site is prioritized alongside the Mission St high-rises to immediately initiate operator checks on all three forensically documented glazing sites while field units mobilize."
+    },
+    {
+      "candidate_id": "wind:glass-1",
+      "crew": null,
+      "why": "301 Mission St is a forensically investigated March 2023 glazing failure site where coordinator contact with the property operator can immediately verify window latches and exterior item security without consuming field unit capacity.",
+      "why_before_next": "Initiated in parallel before 350 Mission St as part of the same simultaneous coordinator outreach batch to known March 2023 glazing investigation sites."
+    },
+    {
+      "candidate_id": "wind:glass-2",
+      "crew": null,
+      "why": "350 Mission St is one of the three mapped buildings from the March 2023 glazing investigation; coordinator outreach checks present window and facade readiness via the building operator.",
+      "why_before_next": "Completes the parallel coordinator outreach to documented glazing sites before listing the initial field stops and their dependent queues."
+    },
+    {
+      "candidate_id": "flood:report-16239820",
+      "crew": 1,
+      "why": "100 Lombard St is the initial northern field stop because it had recurring flood reports across three distinct historical storm dates (2022-12-31, 2023-01-10, 2023-01-15) and has a mapped catch basin (inlet 175054) 12 meters away for dry sidewalk inspection and surface litter clearing with a surface-clearing kit.",
+      "why_before_next": "Serves as the northern unit's first field stop because it has three distinct historical flood dates in the northern cluster, ahead of the southern unit's initial stop and subsequent queued stops."
+    },
+    {
+      "candidate_id": "trees:report-16572155",
+      "crew": 2,
+      "why": "163 Main St is the initial southern field stop because it has tree reports on two distinct historical dates (2023-03-21 and 2023-03-23) affecting both tree and route hazards in the Howard/Main corridor; the unit inspects from a safe public location and requests Public Works tree-service or SFMTA/SFPD traffic-service if a current defect or obstruction is found.",
+      "why_before_next": "Assigned as the first stop for the southern unit in parallel with the northern first stop, ahead of queued stops that must wait for initial field reports."
+    },
+    {
+      "candidate_id": "flood:report-16276303",
+      "crew": 1,
+      "why": "455 The Embarcadero is queued next for the northern unit because it also had flood reports on three distinct dates (2023-01-09, 2023-01-16, 2023-03-14) along the northern waterfront corridor south of Lombard St, requiring inspection of inlet 154785 and 311 drainage-service escalation if clogged below the grate.",
+      "why_before_next": "Queued after 100 Lombard St because the mapped inlet at 455 The Embarcadero is 64 meters from the report location versus 12 meters at Lombard, and it precedes the single-date tree site at 425 Pacific Ave."
+    },
+    {
+      "candidate_id": "flood:report-16282371",
+      "crew": 2,
+      "why": "Intersection of Howard St and 1st St is queued next for the southern unit because it is immediately adjacent to 163 Main St, has a mapped inlet (160684) 9 meters away, and anchors the Howard St drainage and route corridor where multiple historical reports occurred.",
+      "why_before_next": "Follows the initial stop at 163 Main St to maintain tight geographic coherence in the south and precedes the nearby single-date flood check at 251 Howard St."
+    },
+    {
+      "candidate_id": "trees:report-16572287",
+      "crew": 1,
+      "why": "425 Pacific Ave is queued third for the northern unit because it has tree and route reports across two distinct dates (2023-03-21 and 2023-03-23) and lies directly along the northern unit's southward path from The Embarcadero.",
+      "why_before_next": "Placed as the final step in the northern queue after the two three-date flood sites, completing the high-evidence checks within the 8-step plan."
+    }
+  ],
+  "coverage": {
+    "wind": "Covered by parallel coordinator outreach to building operators at 50 California St, 301 Mission St, and 350 Mission St (all three mapped sites from the March 2023 DBI/WJE glazing investigation) to confirm latched windows, secured exterior items, and contractor follow-up via building-service if defects exist.",
+    "flood": "Covered by initial and queued field inspections at multi-date historical flood locations in the north (100 Lombard St and 455 The Embarcadero) and the Howard St corridor in the south (Howard St & 1st St), using surface-clearing kits for loose surface debris and requesting SFPUC/Public Works drainage-service via 311 for below-grate blockages or owner-arranged pumps-barriers/sandbags where warranted.",
+    "trees": "Covered by field inspection at two-date historical tree report sites in the south (163 Main St) and north (425 Pacific Ave) to document any current hanging limbs or street obstructions and request Public Works tree-service (arborist) via 311 or 911 if wires or structures are threatened.",
+    "routes": "Covered jointly through the flood and tree field checks at 100 Lombard St, 163 Main St, 455 The Embarcadero, Howard St & 1st St, and 425 Pacific Ave, where units verify usable street approaches and request SFMTA/SFPD/Public Works traffic-service for authorized closures and alternate routes if an active obstruction is confirmed.",
+    "structure": "Deferred during the initial 30-minute window because the candidate sites (50 California St, 301 Mission St, 350 Mission St) are sourced only from the historical glazing investigation, which is not evidence of structural collapse risk; any structural concerns identified during the wind operator outreach will be escalated to the owner's structural engineer and DBI (building-service).",
+    "power": "Deferred during the initial 30-minute window because the candidate sites (50 California St, 301 Mission St, 350 Mission St) have no documented electrical or backup failure history and public maps do not establish building connections; operators contacted for wind checks can be reminded to have their electrician (power-service) verify backup chains, while any downed lines encountered in the field will be reported to 911 and PG&E."
+  },
+  "result_sha256": "67da689dc27ee1b0c87266612232fe4bfff85765477b1548ccf3acbf1d0ea435",
+  "generated_at": "2026-10-25T22:01:21.795933+00:00",
+  "model": "gemini-4-argon",
+  "fingerprint": "482e5a7fc0eb9e1c5b933c20a83fc57eaac3a95183c65aec15d5b0dd8673f518"
+}

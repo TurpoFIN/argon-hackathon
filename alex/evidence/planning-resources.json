@@ -1,0 +1,148 @@
+{
+  "checked_at": "2026-10-25",
+  "sources": [
+    {
+      "id": "sf-drain-care",
+      "title": "SFPUC \u00b7 Drain clearing equipment and safety",
+      "url": "https://adoptadrain.sfwater.org/drain-clearing-safety-tips",
+      "published": "Checked 2026-10-25",
+      "locator": "Recommended Equipment; When to Notify 311",
+      "kind": "Current operating guidance",
+      "finding": "Surface clearing uses a reflective vest, gloves and a rake, broom, shovel or grabber. Supplies are limited. Do not lift grates, enter ponding water or clear during a storm; report complete clogs and hazardous waste to 311."
+    },
+    {
+      "id": "sf-sandbags",
+      "title": "SF Public Works \u00b7 Sandbag pickup",
+      "url": "https://sfpublicworks.org/services/sandbags",
+      "published": "Checked 2026-10-25",
+      "locator": "How to get sandbags",
+      "kind": "Public resource program",
+      "finding": "Residents and businesses with flood-prone properties may collect up to 10 free sandbags with proof of address, Monday\u2013Saturday 8am\u20132pm, at the operations yard's Marin/Kansas gate. Self-loading and transport are required; current stock is not confirmed."
+    },
+    {
+      "id": "sf-storm-roles",
+      "title": "San Francisco \u00b7 Winter Storm & Flood Annex",
+      "url": "https://media.api.sf.gov/documents/Winter_Storm_and_Flood_Annex_20160818_Final.pdf",
+      "published": "2016-08-18; role document, not a live roster",
+      "locator": "Table 3-1; \u00a74.8.1 (PDF pages 13\u201319, 31\u201333)",
+      "kind": "Agency responsibilities",
+      "finding": "Public Works handles pre-storm clearing, tree/debris response and specialist contractors; DBI assesses structural damage; SFPUC supports drainage; SFPD/SFMTA control access; SFFD/SFPW/SFPUC can support water removal. This establishes request owners, not available crew or equipment counts."
+    },
+    {
+      "id": "sf-tree-request",
+      "title": "SF.gov \u00b7 Report a damaged or fallen tree",
+      "url": "https://www.sf.gov/report-damaged-or-fallen-tree/",
+      "published": "Checked 2026-10-25",
+      "locator": "When to report; What to do",
+      "kind": "Public service request",
+      "finding": "Report obstructing or damaged trees through 311. The published response range is 1\u201390 days, not guaranteed pre-storm availability. Call 911 for incidents involving power lines, vehicles or buildings."
+    },
+    {
+      "id": "pge-storm",
+      "title": "PG&E \u00b7 Storm safety and outage reporting",
+      "url": "https://pgealerts.alerts.pge.com/safety/storm/",
+      "published": "Checked 2026-10-25",
+      "locator": "Watch out for downed power lines",
+      "kind": "Utility operating guidance",
+      "finding": "Treat downed lines as energized, stay away, call 911 and then PG&E at 1-800-743-5002. Public line maps do not authorize local crews to work on electrical infrastructure."
+    },
+    {
+      "id": "sf-drains",
+      "title": "DataSF \u00b7 mapped catch basins and drains",
+      "url": "https://data.sf.gov/resource/jtgq-b7c5.json",
+      "published": "Local public inventory snapshot",
+      "locator": "dpw_node_id, drain_type, location",
+      "kind": "Asset inventory",
+      "finding": "Point geometry and asset identifiers locate a candidate inlet. Proximity to a historic flood report does not establish hydraulic connectivity or current blockage."
+    }
+  ],
+  "resources": [
+    {
+      "id": "surface-kit",
+      "name": "Surface-clearing kit",
+      "owner": "Crew stores / SFPUC Adopt a Drain",
+      "contents": "Reflective vest, gloves, rake or broom, debris bags and disposal access",
+      "availability": "Confirm each crew's kit before leaving. SFPUC supplies some adopters, but availability is limited.",
+      "source_ids": [
+        "sf-drain-care"
+      ]
+    },
+    {
+      "id": "drainage-service",
+      "name": "Drainage crew and sewer equipment",
+      "owner": "SFPUC / Public Works through 311",
+      "contents": "Qualified response to below-grate blockages, sewer backups and street flooding",
+      "availability": "Request with the observed location and condition; no dedicated crew or response time is committed to this plan.",
+      "source_ids": [
+        "sf-storm-roles",
+        "sf-drain-care"
+      ]
+    },
+    {
+      "id": "tree-service",
+      "name": "Arborist and tree-removal equipment",
+      "owner": "Public Works / qualified tree contractor",
+      "contents": "Arborist assessment; saw, lift or removal equipment only when the assessment calls for it",
+      "availability": "Not counted as a general crew. Use 311 for a current public-tree concern; emergency escalation when wires, vehicles or buildings are involved.",
+      "source_ids": [
+        "sf-tree-request",
+        "sf-storm-roles"
+      ]
+    },
+    {
+      "id": "building-service",
+      "name": "Building operator and structural engineer",
+      "owner": "Property owner; DBI for building-safety concerns",
+      "contents": "Access, maintenance records, glazing contractor and engineer-designed stabilization where necessary",
+      "availability": "Obtain the owner's current findings and arrange qualified inspection; no engineer or repair materials are assumed on site.",
+      "source_ids": [
+        "sf-storm-roles",
+        "sf-glass",
+        "sandy"
+      ]
+    },
+    {
+      "id": "power-service",
+      "name": "Utility crew and building electrician",
+      "owner": "PG&E / property operator",
+      "contents": "Utility isolation and line repair; compatible building backup, switchgear and load testing",
+      "availability": "Utility work requires PG&E. Building backup requires an electrician and owner-approved connection; no portable generator or fuel stock is assumed.",
+      "source_ids": [
+        "pge-storm",
+        "sandy",
+        "pge"
+      ]
+    },
+    {
+      "id": "traffic-service",
+      "name": "Traffic control and alternate access",
+      "owner": "SFMTA / SFPD / Public Works",
+      "contents": "Authorized closure, signs, barriers and verified emergency/accessible route",
+      "availability": "General crews report conditions; traffic authority must authorize controls. No closure crew or barrier stock is committed.",
+      "source_ids": [
+        "sf-storm-roles"
+      ]
+    },
+    {
+      "id": "sandbags",
+      "name": "Sandbags and transport",
+      "owner": "Public Works operations yard, Marin / Kansas gate",
+      "contents": "Up to 10 free bags per eligible SF address; bring address proof and a vehicle for self-loading",
+      "availability": "Published pickup Monday\u2013Saturday 8am\u20132pm. Stock and storm-specific hours need confirmation. A 30-minute plan must not assume collection and fitting will finish.",
+      "source_ids": [
+        "sf-sandbags"
+      ]
+    },
+    {
+      "id": "pumps-barriers",
+      "name": "Pumps and fitted flood barriers",
+      "owner": "Property operator / qualified contractor; emergency agency support where warranted",
+      "contents": "Site-compatible pump, safe discharge, reliable power and barrier matched to entry path",
+      "availability": "Request after inspecting the entry path, backflow and power. No pump capacity, barrier size or delivery time is inferred.",
+      "source_ids": [
+        "sandy",
+        "sf-storm-roles"
+      ]
+    }
+  ]
+}
