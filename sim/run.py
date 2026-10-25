@@ -158,7 +158,7 @@ def _water_key(storm, phash: str) -> str:
     return h.hexdigest()[:16]
 
 
-WATER_CACHE = RUNS / "_cache"
+WATER_CACHE = Path(os.environ.get("STORMSIM_WATER_CACHE") or (RUNS / "_cache"))
 
 
 def _run_water_cached(water, wgrid, st, ed, phash, threads, verbose, notes, use_cache=True):
@@ -182,6 +182,9 @@ def _run_water_cached(water, wgrid, st, ed, phash, threads, verbose, notes, use_
         tmp = path.with_name(path.stem + f".{os.getpid()}.tmp.npz")
         water.save_result(wres, str(tmp))
         os.replace(tmp, path)
+        old = sorted(WATER_CACHE.glob("water_*.npz"), key=lambda p: p.stat().st_mtime)[:-12]   # ~0.5-1 GB each
+        for p in old:
+            p.unlink(missing_ok=True)
     except Exception as e:
         notes.append(f"water cache write failed: {e}")
     return wres, False
@@ -483,6 +486,9 @@ def run_storm(storm_name: str, plan_code: str | None = None, label: str = "run",
     lh = ledger_hash(led)
     result = {
         "run_id": run_id, "label": label, "storm": storm_name, "storm_title": getattr(st, "title", storm_name),
+        # Keep live forcing provenance alongside the ledger so a run can be audited offline.
+        "storm_stats": getattr(st, "stats", {}), "storm_sources": getattr(st, "sources", []),
+        "storm_alerts": getattr(st, "alerts", []), "storm_provenance": getattr(st, "provenance", {}),
         "mock": False, "has_plan": has_plan, "plan_hash": phash, "seed_key": seed_key, "plan_source": plan_src,
         "ledger": led, "ledger_hash": lh, "plan_cost": pc, "bca": bca, "metrics": metrics, "validation": validation,
         "mass_error_pct": round(float(wres.mass_error_pct), 5), "water_cached": water_cached,

@@ -134,7 +134,11 @@
   "source": "Damage-state definitions: Hazus Hurricane Model (FEMA Hazus Hurricane Technical Manual; Vickery et al. 2006, 'HAZUS-MH Hurricane Model Methodology II: Damage and Loss Estimation', Nat. Hazards Rev. 7(2):94-103, Table 1): DS1 minor (roof cover loss >2-15%, <=1 window), DS2 moderate (15-50%, 1-3 roof deck panels), DS3 severe (>50%, roof deck 3-25%), DS4 destruction (roof structure or wall failure); thresholds as recalled from that table, not re-verified online 25.10.2026. roof_cover_lost_frac = DS-range midpoints. DS medians in local roof-height gust and loss ratios (excluding glazing, which sim/damage.py prices) are assumed, pending calibration. Flood: collapse needs flow velocity >= 2.0 m/s ('such a critical level is given for a flow velocity of 2.0 m/s', Claußen & Clark 1990 as cited by Kreibich et al. 2009, NHESS 9:1679-1692, https://nhess.copernicus.org/articles/9/1679/2009/nhess-9-1679-2009.pdf) and depth x velocity >= 7 m2/s (Claußen & Clark 1990 masonry destruction threshold as widely cited, not re-verified); partial structural damage at v*h >= 1.5 m2/s (Kreibich et al. 2009: significant jump in damage grade above 1.5 m2/s, Elbe 2002 data).",
   "flood_partial_dv_m2s": 1.5,
   "flood_collapse_v_ms": 2.0,
-  "flood_collapse_dv_m2s": 7.0
+  "flood_collapse_dv_m2s": 7.0,
+  "collapse_debris_reach_h": 0.5,
+  "collapse_debris_source": "assumed: collapse debris spreads about half the building height beyond the footprint (equivalent radius), downing wires, poles and trolley wire there",
+  "flood_min_footprint_m2": 25.0,
+  "flood_min_footprint_source": "assumed: footprints under 25 m2 are kiosks, vents and station entrances, not occupiable buildings; excluded from flood structural failure (they sat next to a 12 m DEM pit at ~UTM 552116, 4182056 that sim/water.py fills)"
  },
  "roof_debris": {
   "piece_area_m2": 0.25,
@@ -154,7 +158,11 @@
   "restore_h_span": 12.0,
   "restore_h_pole": 24.0,
   "restore_h_ocs": 8.0,
-  "source": "assumed storm restoration times after the storm ends (crew backlog dominates; PG&E reports multi-day restoration in the Jan 2023 storms). Customer-hours x LBNL ICE outage cost (see unit costs)."
+  "source": "assumed storm restoration times after the storm ends (crew backlog dominates; PG&E reports multi-day restoration in the Jan 2023 storms). Customer-hours x LBNL ICE outage cost (see unit costs).",
+  "access_radius_m": 150.0,
+  "access_delay_h_per_block": 2.0,
+  "access_delay_cap_h": 12.0,
+  "access_source": "assumed: each blocked roadway within 150 m of a fault adds 2 h before a line crew can reach it (cap 12 h); a tree into an overhead-served building tears its service drop (restored like a span)"
  },
  "tree_fallback": {
   "sat_storage_mm": 60.0,

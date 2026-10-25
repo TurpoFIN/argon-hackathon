@@ -9,8 +9,9 @@ API:     GET  /api/health
          POST /api/benchmark  {storm?, budget_usd?, max_runs?, max_minutes?, entries?}   -> {job_id}
          POST /api/managed    {storm?, plan_code? | job_id?, mode?}                       -> {job_id}
          GET  /api/jobs, /api/jobs/{id}, /api/jobs/{id}/events (SSE; Last-Event-ID / ?since=)
-         POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate)
-         GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts
+         POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate; writes EOP)
+         GET  /api/jobs/{id}/eop                                                   (cited EOP JSON)
+         GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts, /api/forecast
 """
 from __future__ import annotations
 
@@ -181,17 +182,46 @@ async def api_events(job_id: str, request: Request, since: int = -1):
         if not p.exists():
             raise HTTPException(404, "no such job")
 
-        async def replay():
-            for line in p.read_text().splitlines():
-                try:
-                    ev = json.loads(line)
-                except Exception:
-                    continue
-                if ev.get("seq", 0) > since:
-                    yield f"id: {ev['seq']}\nevent: {ev['type']}\ndata: {line}\n\n"
-        return StreamingResponse(replay(), media_type="text/event-stream")
+        async def replay():  # follows the JSONL live (jobs from other processes / CLI) until 'done' or idle 2 h
+            import asyncio
+            pos, last, idle = 0, since, 0.0
+            while idle < 7200:
+                with open(p) as fh:
+                    fh.seek(pos)
+                    chunk = fh.read()
+                    pos = fh.tell()
+                done = False
+                for line in chunk.splitlines():
+                    try:
+                        ev = json.loads(line)
+                    except Exception:
+                        continue
+                    if ev.get("seq", 0) > last:
+                        last = ev["seq"]
+                        yield f"id: {ev['seq']}\nevent: {ev['type']}\ndata: {line}\n\n"
+                    done = done or ev.get("type") == "done"
+                if done:
+                    return
+                if not chunk:
+                    idle += 0.5
+                    if int(idle * 2) % 30 == 0:
+                        yield ": keepalive\n\n"
+                else:
+                    idle = 0.0
+                await asyncio.sleep(0.5)
+        return StreamingResponse(replay(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
     return StreamingResponse(sse_stream(j, since), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/jobs/{job_id}/briefing")
+def api_briefing(job_id: str):
+    from agent.briefing import build_briefing
+    try:
+        return build_briefing(job_id)
+    except FileNotFoundError:
+        raise HTTPException(404, "no such job")
 
 
 @app.post("/api/jobs/{job_id}/approve")
@@ -206,9 +236,43 @@ def api_approve(job_id: str, req: ApproveReq):
     j.emit("approval", **rec)
     res = dict(j.result or {})
     res["approval"] = rec
+    # The planner's approval is the hand-off point from a scored plan to field
+    # operations.  Build the cited EOP from the submitted run; all numerical
+    # values remain sourced from result.json and the locked cost tables.
+    if req.approved:
+        try:
+            from agent.action_plan import generate_eop_for_job
+            eop = generate_eop_for_job(job_id, res, repo=REPO)
+            rec.update({"eop_json": eop["eop_json"], "eop_html": eop["eop_html"]})
+            if not eop["document"].get("eligible_for_dispatch", False):
+                rec["eop_blocked"] = True
+            res["approval"] = rec
+            res["eop_path"] = eop["eop_json"]
+            (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
+            j.emit("document", kind="eop", title="Emergency Operations Plan",
+                   json_path=eop["eop_json"], html_path=eop["eop_html"])
+        except Exception as exc:
+            # Approval remains durable even if a malformed historical job cannot
+            # be rendered; the API exposes the exact failure for remediation.
+            rec["eop_error"] = f"{type(exc).__name__}: {exc}"
+            res["approval"] = rec
+            (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
+            j.emit("eop_error", error=rec["eop_error"])
     j.finish("approved" if req.approved else "rejected", res)
     j.status = "completed"
     return {"ok": True, **rec}
+
+
+@app.get("/api/jobs/{job_id}/eop")
+def api_job_eop(job_id: str):
+    """Return the cited EOP generated when the planner approved this job."""
+    p = RUNS / job_id / "eop.json"
+    if not p.exists() or RUNS.resolve() not in p.resolve().parents:
+        raise HTTPException(404, "no EOP for this job")
+    try:
+        return JSONResponse(json.loads(p.read_text()))
+    except Exception as exc:
+        raise HTTPException(500, f"invalid EOP: {exc}")
 
 
 def _run_summary(d: Path) -> dict | None:
@@ -296,6 +360,20 @@ def api_alerts(live: bool = True):
     if p.exists():
         return {"source": "data/raw/nws_alerts_now.json (cached)", "live_error": err, **json.loads(p.read_text())}
     return {"source": "none", "features": [], "live_error": err}
+
+
+@app.get("/api/forecast")
+def api_forecast(refresh: bool = False):
+    """Return the tracked live tide/wind/QPF forecast and its provenance.
+
+    The default is offline-safe and reads ``data/reference/storm/forecast_live.json``.  A
+    ``?refresh=true`` request explicitly performs the NOAA/NWS fetch before returning.
+    """
+    try:
+        from sim.forecast import load_or_create
+        return load_or_create(refresh=refresh)
+    except Exception as exc:
+        raise HTTPException(502, f"forecast unavailable: {type(exc).__name__}: {exc}") from exc
 
 
 @app.get("/data/{path:path}")

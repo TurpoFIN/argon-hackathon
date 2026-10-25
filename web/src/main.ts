@@ -12,6 +12,9 @@ import { TYPE_COLORS } from './plan';
 import { Walker } from './nav';
 import { createAgentPanel } from './agentPanel';
 import { cloudDeck, rainCurtains, spray, WindowLights, StormAudio, windDir, skyDome } from './fx';
+import { mountProductShell } from './shell';
+
+mountProductShell();
 
 const q = new URLSearchParams(location.search);
 const shotMode = q.has('shot');
@@ -22,6 +25,21 @@ loading.innerHTML = '<div class="l1">STORMSIM SF</div><div class="l2">loading ci
 document.body.append(loading);
 const setLoading = (s: string) => { (loading.querySelector('.l2') as HTMLElement).textContent = s; };
 const container = document.getElementById('scene')!;
+
+function webglAvailable(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || c.getContext('webgl', { failIfMajorPerformanceCaveat: false }));
+  } catch { return false; }
+}
+
+function showGpuFallback(): void {
+  document.body.classList.add('gpu-fallback');
+  container.innerHTML = `<div class="gpu-fallback-stage"><img src="/stills/baseline-flood.jpg" alt="Rendered StormSim flood replay still"><div><b>Rendered replay preview</b><span>WebGL is unavailable in this browser session · the live MacBook replay uses the same scene</span></div></div>`;
+  setLoading('GPU-less replay preview'); loading.classList.add('done'); setTimeout(() => loading.remove(), 1200);
+  (window as any).storm = { setT: () => {}, play: () => {}, sideBySide: () => {}, shot: () => {}, get t() { return 0; } };
+  window.dispatchEvent(new CustomEvent('storm-ready'));
+}
 
 interface Shot { lon: number; lat: number; dist: number; heading: number; tilt: number; compare?: boolean }
 const SHOTS: Record<string, Shot> = {
@@ -37,6 +55,7 @@ const URL_SHOTS = ['plan', 'basin', 'embarcadero', 'canyon', 'overview', 'compar
 const SHOT_KEYS = ['overview', 'basin', 'canyon', 'embarcadero', 'compare'];
 
 async function main() {
+  if (!webglAvailable()) { showGpuFallback(); return; }
   setLoading('loading city');
   const city = await loadCity();
   (window as any).__x0 = city.meta.x0; (window as any).__y0 = city.meta.y0;
@@ -156,8 +175,10 @@ async function main() {
   const CAP_GAP = 0.034, CAP_LEN = 0.036;
   let slots: CaptionSlot[] = [];
   const phasesFor = (v: RunVisual | undefined): Phase[] => {
-    const s = v ? statsOf(visuals[noneIdx] || v) : null; const tp = s ? s.t[s.peakF] : tEnd / 2;
-    const p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000);
+    // storm peak = strongest rain + gust in the forcing
+    let tp = tEnd / 2;
+    if (base) { let bv = -1; const mr = Math.max(1, ...base.rain), mg = Math.max(1, ...base.gust); base.t.forEach((tt, i) => { const x = base.rain[i] / mr + base.gust[i] / mg; if (x > bv) { bv = x; tp = tt; } }); }
+    let p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000); if (p1 - p0 < 2400) p0 = Math.max(600, p1 - 3600);
     const plan = v && !isNoneV(v);
     return [
       { u0: 0, u1: PREP_U, label: 'PREP  −72 h → −1 h', sub: plan ? 'Gemini’s plan deploys' : 'no plan · nothing deployed', cls: 'prep' },
@@ -316,7 +337,14 @@ async function main() {
   };
   hud.onRun = (r) => { stopAuto(); setView(r); };
   hud.onSeek = (u) => { t = tOf(u); hud.resetToasts(); };
-  hud.onPlay = () => { playing = !playing; if (playing && t >= tEnd) t = tStart; };
+  const startPlayback = () => {
+    // The presenter starts at T−72 h for orientation, then play jumps to landfall so
+    // the physical verification loop is visible within a few seconds on stage.
+    if (t < 0) { t = 0; speed = Math.max(speed, 2); }
+    if (t >= tEnd) t = tStart;
+    playing = true;
+  };
+  hud.onPlay = () => { if (playing) playing = false; else startPlayback(); };
   hud.onSpeed = (s) => { speed = s; };
   hud.onCtl = (c) => { if (c === 'walk') setWalk(true); else if (c === 'orbit') setWalk(false); else if (c === 'dir') toggleDirector(); };
 
@@ -332,7 +360,7 @@ async function main() {
     if (walker.active) setWalk(false);
     if (isNoneV(visuals[active]) || compare) setView('plan');
     syncInspector(); const items = [...insp.items].sort((a, b) => a.o.t_s - b.o.t_s);
-    if (!items.length) { tourToken = 0; return; }
+    if (!items.length) { capOverride = { key: 'notour', time: '', text: 'This run has no plan objects to show', color: '#ff9d7a' }; await sleep(2500); capOverride = null; tourToken = 0; hud.setCtl(walker.active, !!dirToken, false); return; }
     // steps: majors one by one, minor items batched per category
     type Step = { its: InspItem[] };
     const steps: Step[] = []; const minor = new Map<string, InspItem[]>();
@@ -430,7 +458,7 @@ async function main() {
     if (k === 'Escape') { if (walker.active) setWalk(false); stopAuto(); setFocus(null); return; }
     if (k === 'p' || k === 'P') { toggleDirector(); return; }
     if (k === 'b' || k === 'B') { runTour(); return; }
-    if (k === ' ') { playing = !playing; if (t >= tEnd) { t = tStart; hud.resetToasts(); } e.preventDefault(); }
+    if (k === ' ') { if (playing) playing = false; else startPlayback(); e.preventDefault(); }
     else if (k >= '1' && k <= '5') { stopAuto(); goShot(SHOT_KEYS[+k - 1]); }
     else if (k === 'c' || k === 'C') setView(compare ? 'plan' : 'cmp');
     else if (k === 'v' || k === 'V') setView(compare ? 'none' : active === noneIdx ? 'plan' : 'cmp');
@@ -515,6 +543,25 @@ async function main() {
     if (e > 1.5) flashT = -1; return a;
   };
 
+  // ---- cinema mode (public/cinema.js) shows the weather of the moment on this timeline ----
+  (window as any).sfCinemaHost = {
+    conditions: () => {
+      const preK = t < 0 ? Math.max(0, Math.min(1, 1 + t / (12 * 3600))) : 1;
+      const gust = Math.max(0, interp(base?.gust, t)) * preK;
+      const hour = STORM_START.getUTCHours() - 7 + STORM_START.getUTCMinutes() / 60 + t / 3600;
+      return {
+        rainMmH: Math.max(0, interp(base?.rain, t)) * preK,
+        gustMs: gust,
+        meanMs: gust / 1.45, // gust factor of the sim/storm.py forcing (El Niño peak: 25.2 / 17.4 m/s)
+        fromDeg: base?.manifest?.wind_dir_deg ?? 200, // sim/storm.py elnino_ar_2026: from 200° (SSW)
+        tideM: interp(base?.tide, t, 1),
+        localHour: ((hour % 24) + 24) % 24,
+        sun: [7.48, 18.2], // San Francisco, 27 Oct: sunrise 07:29, sunset 18:12 PDT
+        flash: shared.lightning.value,
+      };
+    },
+  };
+
   // ---- main loop ----
   refreshStory(); syncInspector(); hud.setCtl(false, false, false);
   let last = performance.now(), weatherT = 0, hudT = 0;
@@ -540,7 +587,7 @@ async function main() {
     audio.set(rn, gn, shared.time.value);
     if (!shotMode && !pre && !walker.active) { const sh = Math.max(0, gn - 0.75) * 6 + L * 1.5; container.style.transform = sh > 0.05 ? `scale(1.008) translate(${(Math.sin(now * 0.061) + Math.sin(now * 0.137)) * sh}px, ${(Math.cos(now * 0.053) + Math.sin(now * 0.171)) * sh * 0.6}px)` : ''; } else container.style.transform = '';
     if (wind && !pre) { wind.lines.visible = true; wind.update(dt, gust, uref); } else if (wind) wind.lines.visible = false;
-    if (arc && now - weatherT > 400) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
+    if (arc && now - weatherT > 400 && !(window as any).sfCinema?.state?.active) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
     // camera
     applyWalk(dt);
     if (orbit && arc && !walker.active) { const s = orbit.s; s.heading = (s.heading + dt * 1.6) % 360; arc.setCamera(shotCam(s)); }
@@ -593,7 +640,7 @@ async function main() {
       if (mouse && !walker.active && !insp.pinned) { const it = pickAt(mouse.x, mouse.y); if (it !== insp.hovered) { insp.hovered = it; insp.show(it); } }
       else if (!mouse && insp.hovered && !insp.pinned) { insp.hovered = null; insp.show(null); }
     }
-    if (t > 600 && !shotMode && !dirToken) hud.hideBanner();
+    if ((t > 600 || tourToken) && !shotMode) hud.hideBanner();
     document.body.classList.toggle('agent-open', !!panel?.isOpen());
   };
 
@@ -603,7 +650,8 @@ async function main() {
   if (arc) { setLoading('streaming textured buildings'); await Promise.race([arc.ready, new Promise((r) => setTimeout(r, shotMode ? 30000 : 9000))]); }
   loading.classList.add('done'); setTimeout(() => loading.remove(), 1500);
   requestAnimationFrame(loop);
-  (window as any).storm = { setT: (x: number) => (t = x), play: () => (playing = true), shot: goShot, visuals, frame, tile, city, director: runDirector, tour: runTour, walk: setWalk, get t() { return t; } };
+  (window as any).storm = { setT: (x: number) => (t = x), play: startPlayback, shot: goShot, sideBySide: () => setView('cmp'), visuals, frame, tile, city, director: runDirector, tour: runTour, walk: setWalk, get t() { return t; } };
+  window.dispatchEvent(new CustomEvent('storm-ready'));
   if (q.get('demo') === '1') setTimeout(() => runDirector(), 1500);
   if (shotMode) {
     // render-watch-critique: fixed camera, fixed time, signal readiness for the server's headless screenshot

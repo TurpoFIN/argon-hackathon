@@ -10,7 +10,10 @@ merge_ledger(ledger, res)                 # adds destruction_* causes to sim/dam
 write_web(res, "runs/<id>/frames")         # frames/destruction.json for the viewer
 ```
 
-CLI: `python3 -m sim.destruction --storm elnino_ar_2026 --png [--gust-scale 1.6]` writes `runs/destruction_<storm>/`
+`physics_inputs(storm)` gives the team's physics: the LBM wind field (`sim/wind.py`, cached 16 m lattice) and
+`sim/trees.py` failures with fall directions. The CLI and the viewer export use it by default; `--fallback` skips it.
+
+CLI: `python3 -m sim.destruction --storm elnino_ar_2026 --png [--gust-scale 1.6] [--fallback]` writes `runs/destruction_<storm>/`
 (`destruction_result.json`, `frames/destruction.json`, `destruction.png` top-down render).
 
 ## What it simulates
@@ -40,6 +43,7 @@ difference is the plan's effect only.
 - Trees (fallback model): calibrated so the 31.12.2022 replay fails 9 trees in the tile = 9 SF 311 tree reports
   there. That anchor implies sound trees almost never fail (only decayed / poorly anchored ones), which is stricter
   than the Virot 42 m/s median; 311 undercounts, so this is a low estimate.
-- Without `sim/wind.py` the local gust is the ASCE 7 exposure-B profile x a tall-building proxy, so street-canyon
-  speed-ups are approximate until the LBM field is passed.
+- Local gust = storm reference gust x LBM speed amplification at the asset's height (same convention as
+  `sim/trees.py`). The ASCE 7 exposure-B profile x tall-building proxy is only the fallback when no field is passed.
+- Viewer: `python3 -m sim.destruction_web` exports `data/web/destruction_*.json` for `destruction-layer.js`.
 - Counted but not priced (no verified repair unit cost found): power spans, trolley wire, signal heads and mast arms, masts.

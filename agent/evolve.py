@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
 import concurrent.futures as cf
 import hashlib
 import json
@@ -42,6 +43,7 @@ from agent.events import Job, new_job
 REPO = Path(__file__).resolve().parent.parent
 OUT = REPO / "runs" / "evolve"
 ARCHITECT = "gemini-4-argon"
+WATCH_MODEL = "gemini-4-argon"
 MUTATOR = "gemini-3.8-flash"
 
 STRATEGIES = ["grey", "green", "building", "response", "trees", "mixed"]
@@ -95,14 +97,16 @@ def roster(architect_model: str, mutator_model: str, use_llm: bool) -> list[dict
     if use_llm:
         out.append({"key": "architect", "label": "Architect", "model": architect_model, "color": "#b48cff",
                     "role": "reads the whole archive, dispatches work to the specialists, writes a crossover each generation"})
+        out.append({"key": "watch", "label": "Visual verifier", "model": WATCH_MODEL, "color": "#ff7ab6",
+                    "role": "watches the storm replay and depth/damage stills, then turns failures into concrete directives"})
         out += [{"key": k, "label": v[0], "model": mutator_model, "color": v[1], "role": v[2]} for k, v in SPECIALISTS.items()]
         out.append({"key": "reviewer", "label": "Reviewer", "model": REVIEWER, "color": "#9fb3ff",
                     "role": "predicts each change's effect before it is simulated (calibration is scored)"})
     out += [{"key": "tweak", "label": "Hill-climber", "model": None, "color": "#ffb54a",
              "role": "no LLM: rescales sizing literals of an elite"},
-            {"key": "sandbox", "label": "Sandbox + cost planner", "model": None, "color": "#8fa1b6",
+            {"key": "sandbox", "label": "Sandbox + cost planner", "model": None, "color": "#7f9cff",
              "role": "runs the plan with no network and prices it from cited unit costs"},
-            {"key": "sim", "label": "Storm simulator", "model": None, "color": "#cfe3f2",
+            {"key": "sim", "label": "Storm simulator", "model": None, "color": "#4fb8ff",
              "role": "deterministic storm: flood, wind, trees, people, damage"}]
     return out
 
@@ -300,6 +304,63 @@ def render_video(run_id: str) -> str | None:
     return str(v) if v else None
 
 
+def render_watch_stills(run_id: str) -> list[str]:
+    """Return small, model-readable stills for a scored run.
+
+    ``agent.screens`` uses the web renderer when it is available and falls back to
+    a deterministic matplotlib map with max flood depth and the damage ledger.
+    Rendering is deliberately best-effort: the watch step must never stop Evolve.
+    """
+    try:
+        from agent.screens import plan_screenshots
+
+        rd = runner.RUNS / run_id
+        objects = []
+        op = rd / "plan_objects.json"
+        if op.exists():
+            objects = json.loads(op.read_text()).get("objects") or []
+        shots = [p for p in plan_screenshots(rd, objects) if p and Path(p).exists()][:2]
+        # Add an explicit depth + damaged-building frame. This is the compact
+        # visual evidence the watch panel can show without opening the 3D app.
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            from agent.tools import max_depth
+
+            md = max_depth(str(rd))
+            result = runner.load_result(rd)
+            led = result.get("ledger") or {}
+            by_b = led.get("by_building") or {}
+            if md and by_b:
+                depth, dx, x0, y0 = md
+                fig, ax = plt.subplots(figsize=(9, 5), dpi=120, facecolor="#0d1117")
+                ax.set_facecolor("#0d1117")
+                ax.imshow(depth, origin="lower", extent=[x0, x0 + depth.shape[1] * dx, y0, y0 + depth.shape[0] * dx],
+                          cmap="Blues", vmin=0, vmax=max(1.0, float(depth.max())), alpha=0.9)
+                buildings = json.loads((REPO / "data" / "grid" / "buildings.json").read_text())
+                by_id = {str(b.get("id")): b for b in buildings}
+                top = sorted(((float(v), by_id[str(bid)]) for bid, v in by_b.items() if str(bid) in by_id),
+                             reverse=True, key=lambda x: x[0])[:40]
+                if top:
+                    xs = [b["x"] for _, b in top]; ys = [b["y"] for _, b in top]
+                    ax.scatter(xs, ys, s=16, facecolors="none", edgecolors="#ffdb4d", linewidths=0.8, label="damaged buildings")
+                    for usd, b in top[:10]:
+                        ax.annotate(str(b.get("id")), (b["x"], b["y"]), color="#fff2a8", fontsize=5)
+                ax.set_title("StormSim watch evidence · max flood depth + damaged building ids", color="white", fontsize=10)
+                ax.set_xlabel("local x (m)", color="#cfe3f2"); ax.set_ylabel("local y (m)", color="#cfe3f2")
+                ax.tick_params(colors="#9aa8b8"); ax.legend(loc="upper right", fontsize=7)
+                p = rd / "watch_damage.png"
+                fig.savefig(p, facecolor=fig.get_facecolor(), bbox_inches="tight")
+                plt.close(fig)
+                shots.append(str(p))
+        except Exception:
+            pass
+        return shots[:3]
+    except Exception:
+        return []
+
+
 def _worker_init():
     os.environ.setdefault("NUMBA_NUM_THREADS", "16")
 
@@ -347,7 +408,7 @@ class Evolver:
             "archive": {"strategies": STRATEGIES, "strategy_labels": STRATEGY_LABELS,
                         "cost_bands": band_edges(self.budget), "cells": {}},
             "best_id": None, "usage": {}, "log": [],
-            "agents": roster(architect_model, mutator_model, use_llm), "activity": [], "funnel": {},
+            "agents": roster(architect_model, mutator_model, use_llm), "activity": [], "funnel": {}, "watch": [],
         }
         self.n = 0
         self.api_doc = None
@@ -382,7 +443,7 @@ class Evolver:
             sid = len(self.state["activity"])
             self.state["activity"].append({"id": sid, "agent": agent, "model": model, "kind": kind, "cand": cand,
                                            "gen": self.state["generation"], "t0": round(time.time(), 2), "t1": None, "ok": None})
-        self.save()
+        self.save(True)
         return sid
 
     def span_end(self, sid: int, ok: bool | None = True):
@@ -517,6 +578,146 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 self.log("api_error", f"{model}: {type(e).__name__}: {str(e)[:200]}")
                 time.sleep(4 * (attempt + 1))
         raise RuntimeError(f"{model} failed: {last}")
+
+    def call_media(self, model: str, parts: list[dict], thinking: str = "medium",
+                   cand: str | None = None) -> str:
+        """One bounded multimodal Interactions API call used by the visual verifier.
+
+        Watch intentionally has no retry loop: a failed visual check is recorded and
+        the deterministic evolution loop continues with the architect's normal
+        directions. The media is inline, matching Alex's judge input contract.
+        """
+        sid = self.span_start("watch", "watch", cand, model)
+        try:
+            with self.llm_sem:
+                it = self.client.interactions.create(
+                    model=model, input=parts, system_instruction=(
+                        "You are a visual verifier for a deterministic San Francisco storm-plan search. "
+                        "The attached replay and stills are evidence; the ledger is authoritative for dollars. "
+                        "Return only the requested JSON and never invent a street, coordinate, building id or cause."
+                    ),
+                    response_format={"type": "text", "mime_type": "application/json"},
+                    generation_config={"thinking_level": thinking, "max_output_tokens": 6000}, timeout=300)
+            self.usage(model, it)
+            text = getattr(it, "output_text", None) or ""
+            self.span_end(sid, True)
+            return text
+        except Exception:
+            self.span_end(sid, False)
+            raise
+
+    @staticmethod
+    def _inline_media(path: str, mime: str) -> dict | None:
+        try:
+            data = Path(path).read_bytes()
+            # Keep one watch request bounded even when a real replay is unusually large.
+            if len(data) > 22 * 1024 * 1024:
+                return None
+            return {"type": "video" if mime.startswith("video/") else "image", "mime_type": mime,
+                    "data": base64.b64encode(data).decode()}
+        except Exception:
+            return None
+
+    def _bounded_render(self, fn, timeout: float):
+        ex = cf.ThreadPoolExecutor(max_workers=1)
+        fut = ex.submit(fn)
+        try:
+            return fut.result(timeout=timeout)
+        except Exception:
+            fut.cancel()
+            return None
+        finally:
+            ex.shutdown(wait=False, cancel_futures=True)
+
+    def watch_generation(self, gen: int) -> dict:
+        """Watch the current best and one contrasting elite before architect dispatch.
+
+        The method is deliberately fail-open. It always writes a state record (and
+        emits an event) so the live view can explain a missing replay or API result.
+        """
+        scored = self.scored()
+        if not scored:
+            return {"directives": [], "records": []}
+        best = self.best()
+        elites = sorted(set(self.cells.values()), key=lambda cid: self.cands[cid]["score"]["net_benefit_usd"])
+        targets = [best] if best else []
+        if elites:
+            worst = self.cands[elites[0]]
+            if best and worst["id"] != best["id"]:
+                targets.append(worst)
+        # The no-LLM path remains useful for pipeline tests, but does not render or call Argon.
+        if not self.use_llm:
+            records = [{"gen": gen, "applied_to_gen": gen, "cand": c["id"], "status": "skipped", "critique": "Visual watch disabled (--no-llm).",
+                        "failures": [], "directives": [], "media": {}} for c in targets]
+            with self.lock:
+                self.state["watch"].extend(records)
+            self.emit("evolve_watch", gen=gen, watch=records)
+            self.save(True)
+            return {"directives": [], "records": records}
+
+        bundles = []
+        for i, c in enumerate(targets):
+            cid, run_id = c["id"], c.get("run_id")
+            media = {"video": None, "images": []}
+            local_video = self._bounded_render(lambda rid=run_id: render_video(rid), 240) if run_id else None
+            local_images = self._bounded_render(lambda rid=run_id: render_watch_stills(rid), 90) if run_id else []
+            local_images = local_images or []
+            if local_video:
+                media["video"] = runner_rel(local_video)
+            media["images"] = [runner_rel(p) for p in local_images]
+            bundles.append({"cand": cid, "candidate": self.cand_brief(cid), "summary": self.summaries.get(cid) or {},
+                           "media": media, "video_path": local_video if i == 0 else None,
+                           "image_paths": local_images})
+
+        text = [
+            f"Watch generation {gen} of the {self.storm} plan search. Inspect each candidate's replay/stills and ledger.",
+            "For every candidate, identify what failed, where (street, local x/y coordinates, or building id), and the damage cause.",
+            "Give 1-3 concrete directives that a specialist can apply in the next generation. Keep directives tied to observed evidence.",
+            "Return ONLY JSON: {\"candidates\":[{\"cand\":\"c001\",\"critique\":\"...\",\"failures\":[{\"where\":\"...\",\"cause\":\"...\",\"evidence\":\"...\"}],\"directives\":[\"...\"]}]}"
+        ]
+        parts = [{"type": "text", "text": "\n\n".join(text)}]
+        for b in bundles:
+            parts[0]["text"] += f"\n\n## {b['cand']} LEDGER AND PLAN\n{b['candidate']}\nSUMMARY JSON:\n{json.dumps(b['summary'], default=str)[:18000]}"
+            parts.append({"type": "text", "text": f"MEDIA FOR CANDIDATE {b['cand']}: first stills are max flood depth/damaged-building evidence; replay is the storm timeline."})
+            for p in b["image_paths"]:
+                part = self._inline_media(p, "image/png")
+                if part:
+                    parts.append(part)
+            if b["video_path"]:
+                part = self._inline_media(b["video_path"], "video/mp4")
+                if part:
+                    parts.append(part)
+        records = []
+        directives = []
+        try:
+            decoded = parse_json(self.call_media(WATCH_MODEL, parts, "medium", cand=targets[0]["id"])) or {}
+            raw_entries = decoded.get("candidates") if isinstance(decoded.get("candidates"), list) else []
+            by_cand = {str(x.get("cand")): x for x in raw_entries if isinstance(x, dict)}
+            for b in bundles:
+                x = by_cand.get(b["cand"], decoded if len(bundles) == 1 else {})
+                ds = [str(d).strip() for d in (x.get("directives") or []) if str(d).strip()][:3]
+                failures = []
+                for f in x.get("failures") or []:
+                    if isinstance(f, dict):
+                        failures.append({"where": str(f.get("where") or "unknown")[:240],
+                                         "cause": str(f.get("cause") or "unknown")[:160],
+                                         "evidence": str(f.get("evidence") or "")[:400]})
+                rec = {"gen": gen, "applied_to_gen": gen, "cand": b["cand"], "status": "ok",
+                       "critique": str(x.get("critique") or "No specific failure returned.")[:2400],
+                       "failures": failures[:8], "directives": ds, "media": b["media"]}
+                records.append(rec)
+                directives.extend(ds)
+        except Exception as e:
+            self.log("watch_error", f"generation {gen}: {type(e).__name__}: {str(e)[:240]}")
+            records = [{"gen": gen, "applied_to_gen": gen, "cand": b["cand"], "status": "error",
+                        "critique": f"Visual watch unavailable: {type(e).__name__}: {str(e)[:220]}",
+                        "failures": [], "directives": [], "media": b["media"]} for b in bundles]
+        with self.lock:
+            self.state["watch"].extend(records)
+        self.emit("evolve_watch", gen=gen, watch=records)
+        self.log("watch", f"generation {gen}: watched {', '.join(b['cand'] for b in bundles)}; {len(directives)} directives")
+        self.save(True)
+        return {"directives": directives[:6], "records": records}
 
     # ---- archive
     def scored(self, within_budget=True) -> list[dict]:
@@ -830,6 +1031,7 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         elites = sorted(set(self.cells.values()), key=lambda e: -self.cands[e]["score"]["net_benefit_usd"])
         best = elites[0] if elites else None
         prev = self.state["generations"][-1] if self.state["generations"] else None
+        watch = self.state.get("watch") or []
         prompt = (f"You are the lead engineer steering generation {gen} of {self.generations} of the evolutionary search.\n"
                   "Read the whole program database below, find what the evidence says (which measures pay back, which "
                   "waste money, where damage remains, which lineages are stuck), then direct the next generation.\n\n"
@@ -838,6 +1040,8 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                   (f"\n\n# CURRENT BEST, full code\n{self.cand_brief(best, code=True, code_chars=40000)}" if best else "") +
                   (f"\n\n# YOUR DIRECTIONS LAST GENERATION\n" + json.dumps(prev.get("directions_full") or prev.get("directions"))
                    if prev else "") +
+                  (f"\n\n# VISUAL WATCH RESULTS (treat as evidence and turn directives into specialist work)\n"
+                   + json.dumps(watch[-4:], default=str)[:18000] if watch else "") +
                   f"\n\nReturn ONLY a JSON object:\n{{\"insights\": [3-5 short evidence-based findings],\n"
                   f" \"directions\": [exactly {n_dirs} objects {{\"parent\": \"<candidate id from the archive>\", "
                   "\"agent\": \"<one of: " + ", ".join(f"{k} ({v[2]})" for k, v in SPECIALISTS.items()) + ">\", "
@@ -897,6 +1101,7 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         t_start = round(time.time(), 2)
         with self.lock:
             self.state["generation"] = gen
+        watch_result = self.watch_generation(gen)
         n_tweak = 2 if self.population >= 6 else 1
         n_cross = 1 if self.use_llm else 0
         n_mut = (self.population - n_tweak - n_cross) if self.use_llm else 0
@@ -920,6 +1125,14 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                     self.log("insight", ins)
             except Exception as e:
                 self.log("api_error", f"architect failed, using default directions: {e}")
+            # Visual failures take precedence over generic archive directions so a
+            # replay observation reaches a specialist in this very generation.
+            visual = []
+            for rec in watch_result.get("records") or []:
+                for directive in rec.get("directives") or []:
+                    visual.append({"parent": rec["cand"],
+                                   "directive": f"Visual verification directive: {directive}", "agent": ""})
+            directions = visual + directions
             with self.lock:
                 self.state["generations"].append({"gen": gen, "directions": [d["directive"] for d in directions],
                                                   "insights": insights, "architect_model": self.architect_model,

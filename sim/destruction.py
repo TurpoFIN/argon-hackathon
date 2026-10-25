@@ -142,10 +142,15 @@ class _City:
         if grid is not None and _g(grid, "bldg_id") is not None:
             self.bldg_id = np.asarray(_g(grid, "bldg_id"))
             self.bldg_h = np.asarray(_g(grid, "bldg_h"))
+            cover = _g(grid, "cover")
         else:
             z = np.load(os.path.join(GRID, "city.npz"))
-            self.bldg_id, self.bldg_h = z["bldg_id"], z["bldg_h"]
+            self.bldg_id, self.bldg_h, cover = z["bldg_id"], z["bldg_h"], z["cover"]
         self.ny, self.nx = self.bldg_id.shape
+        # Roadway: paved cells at least ~6 m from any building (sidewalks and building edges excluded).
+        from scipy.ndimage import distance_transform_edt
+        dist = distance_transform_edt(self.bldg_id < 0) * self.dx
+        self.roadway = (np.asarray(cover) == 0) & (dist >= 6.0) if cover is not None else (dist >= 6.0)
 
     def cell(self, x, y):
         ix = np.clip(np.floor((np.asarray(x, float) - self.x0) / self.dx).astype(int), 0, self.nx - 1)
@@ -167,7 +172,11 @@ class WindModel:
         tb = P["tall_building_speedup"]
         r = int(round(tb["radius_m"] / city.dx))
         self._tall = maximum_filter(city.bldg_h.astype(np.float32), size=2 * r + 1, mode="nearest")
-        self.source = "sim/wind.py field" if wind is not None else "ASCE 7 exposure-B profile x tall-building proxy (no LBM field passed)"
+        if wind is not None:
+            self.source = (f"sim/wind.py LBM field ({_g(wind, 'dx', 0):.0f} m lattice, {_g(wind, 'wind_dir_deg', 0):.0f} deg)"
+                           if hasattr(wind, "wind_at") else "wind field passed in")
+        else:
+            self.source = "ASCE 7 exposure-B profile x tall-building proxy (no LBM field passed)"
 
     def _kz(self, z, exp):
         e = self.P["wind_profile"][exp]
@@ -185,14 +194,24 @@ class WindModel:
             if hasattr(w, "speedup"):
                 return np.asarray(w.speedup(x, y, z), float)
             if hasattr(w, "wind_at"):
-                v = np.asarray(w.wind_at(x, y, z), float)
-                uref = float(_g(w, "u_ref") or _g(w, "U_ref"))
-                return np.linalg.norm(v.reshape(len(x), -1)[:, :3], axis=1) / uref
+                v = np.nan_to_num(np.asarray(w.wind_at(x, y, np.ascontiguousarray(z)), float))
+                uref = _g(w, "u_ref") or _g(w, "U_ref")
+                if v.ndim == 1 and uref is None:
+                    # sim/wind.py WindField: speed amplification vs the 10 m inflow, U = gust(t) x A (as sim/trees.py)
+                    return v
+                return np.linalg.norm(v.reshape(len(x), -1)[:, :3], axis=1) / float(uref)
         f = self.profile(z)
         if street:
             tb = self.P["tall_building_speedup"]
             f = f * np.minimum(tb["max_factor"], 1.0 + tb["k_per_100m"] * self.city.sample(self._tall, x, y) / 100.0)
         return f
+
+    def design_ratio(self, z):
+        """Undisturbed wind at height z relative to 10 m (>= 1): the LBM inflow log law, or the exposure-B profile."""
+        if self.wind is not None and hasattr(self.wind, "wind_at"):
+            from sim.wind import log_profile
+            return np.maximum(1.0, log_profile(z))
+        return np.maximum(1.0, self.profile(z) / self.profile(10.0))
 
     def V(self, factor):
         return np.asarray(factor, float)[:, None] * self.gust[None, :]
@@ -429,6 +448,100 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
             frame[upd], dbh[upd] = k, d
         return frame, dbh
 
+    # ---------------- flood at assets (when water.py result is passed)
+    maxd = _g(water, "max_depth")
+    maxd = np.asarray(maxd, float) if maxd is not None else None
+
+    def depth_at(px, py):
+        if maxd is None or len(px) == 0:
+            return np.zeros(len(px))
+        return city.sample(maxd, px, py)
+
+    k_peak = int(np.argmax(W.gust))
+    w_t = _g(water, "t_frames")
+    to_storm_k = (lambda kw: np.clip(np.searchsorted(t, np.asarray(w_t, float)[np.asarray(kw)], "left"), 0, nf - 1)) if w_t is not None else None
+    k_kmax = _g(water, "k_max_depth")
+    k_flood = int(to_storm_k(int(_g(water, "k_flood_peak")))) if (to_storm_k is not None and _g(water, "k_flood_peak") is not None) else k_peak
+
+    def flood_k(px, py):
+        """Storm frame the water peaks at each point (the gust peak when the water run has no timing)."""
+        if k_kmax is None or to_storm_k is None or len(px) == 0:
+            return np.full(len(px), k_peak)
+        return to_storm_k(city.sample(k_kmax, px, py))
+
+    nb = len(buildings)
+    bx = np.array([b["x"] for b in buildings], float)
+    by_ = np.array([b["y"] for b in buildings], float)
+    # ---------------- buildings: wind damage states + flood structural
+    bp = P["building"]
+    cls = [_class(b) for b in buildings]
+    med = np.array([bp["classes"][c]["ds_median_ms"] for c in cls], float).reshape(-1, 4)
+    beta = np.array([bp["classes"][c]["beta"] for c in cls], float)
+    bid = np.array([int(b.get("id", i)) for i, b in enumerate(buildings)])
+    med *= np.where(np.isin(bid, list(retro)), 1.15, 1.0)[:, None]
+    Hb = np.maximum(np.array([float(b.get("height_m") or 3.0) for b in buildings]), 3.0)
+    ub = _rng(seed, "buildings").random(nb)
+    capb = med * np.exp(beta * ndtri(np.clip(ub, 1e-9, 1 - 1e-9)))[:, None]
+    # Fragility is referenced to the design wind at the roof: taller buildings are designed for the stronger wind
+    # aloft (ASCE 7 Kz), so the local gust is divided by the undisturbed profile ratio at the roof height (>= 1).
+    Vb = W.V(W.factor(bx, by_, Hb + (2.0 if wind is not None else 0.0), street=False) / W.design_ratio(Hb))
+    ds_k = np.stack([_first(Vb >= capb[:, j:j + 1]) for j in range(4)], axis=1)   # frame each DS is reached
+    ds = (ds_k >= 0).sum(1)
+    ds_cause = np.where(ds > 0, "wind", "").astype(object)
+    vmax = _g(water, "max_speed") if water is not None else None
+    vmax = vmax if vmax is not None else _g(water, "max_velocity")
+    if maxd is not None and vmax is not None:
+        from sim.damage import _bldg_adjacent_depth
+        mdv = _g(water, "max_dv")   # per-frame max of depth x speed (max depth x max speed overstates it)
+        dv = _bldg_adjacent_depth(city.bldg_id, np.asarray(mdv, float) if mdv is not None else maxd * np.asarray(vmax, float), nb)
+        vv = _bldg_adjacent_depth(city.bldg_id, np.asarray(vmax, float), nb)
+        occupiable = np.array([float(b.get("area_m2") or 0.0) for b in buildings]) >= bp["flood_min_footprint_m2"]
+        coll = occupiable & (vv >= bp["flood_collapse_v_ms"]) & (dv >= bp["flood_collapse_dv_m2s"])
+        part = occupiable & ~coll & (dv >= bp["flood_partial_dv_m2s"])
+        for m_, lvl in ((coll, 4), (part, 2)):
+            up = m_ & (ds < lvl)
+            ds[up] = lvl
+            ds_cause[up] = "flood"
+            for j in range(lvl):
+                ds_k[up & (ds_k[:, j] < 0), j] = k_flood
+        notes.append(f"flood structural: {int(coll.sum())} collapse, {int(part.sum())} partial (d*v)")
+    elif water is not None:
+        notes.append("flood structural damage skipped: water result has no velocities (max_speed)")
+    # collapse debris field: wires, poles and trolley wire within ~half the building height of a collapsed building
+    coll_i = np.nonzero(ds >= 4)[0]
+    area_b = np.array([float(b.get("area_m2") or 0.0) for b in buildings])
+    coll_reach = {int(i): math.sqrt(max(area_b[i], 1.0) / math.pi) + bp["collapse_debris_reach_h"] * Hb[i] for i in coll_i}
+
+    def collapse_on_segments(a, b_):
+        kk = np.full(len(a), -1)
+        for i in coll_i:
+            if not len(a):
+                break
+            dd, _ = _pt_seg_dist([bx[i]], [by_[i]], a[:, 0], a[:, 1], b_[:, 0], b_[:, 1])
+            k4 = int(ds_k[i, 3])
+            hit = (dd[0] <= coll_reach[int(i)]) & ((kk < 0) | (kk > k4))
+            kk[hit] = k4
+        return kk
+
+    # trees into buildings (sim/trees.py strikes when given, else the first building on the fall line)
+    tree_strikes = []
+    ext_strikes = [s_ for s_ in ((tree_result.get("strikes") if isinstance(tree_result, dict) else None) or []) if s_.get("kind") == "building"]
+    if ext_strikes:
+        tree_strikes = [dict(t=float(s_["t_s"]), tree_id=int(s_["tree_id"]), bldg_id=int(s_["target_id"]),
+                             x=round(float(tby.get(int(s_["tree_id"]), {}).get("x", 0.0)), 1),
+                             y=round(float(tby.get(int(s_["tree_id"]), {}).get("y", 0.0)), 1)) for s_ in ext_strikes]
+    else:
+        for f, (p0, u_, H_, rc_, d_) in TG:
+            ss = np.arange(1.0, H_ + 0.01, 1.0)
+            X, Y = p0[0] + ss * u_[0], p0[1] + ss * u_[1]
+            cid = city.sample(city.bldg_id, X, Y)
+            own = city.sample(city.bldg_id, p0[0], p0[1])
+            hit = np.nonzero((cid >= 0) & (cid != own))[0]
+            if len(hit):
+                tree_strikes.append(dict(t=float(t[f["frame"]]), tree_id=int(f["id"]), bldg_id=int(cid[hit[0]]),
+                                         x=round(float(X[hit[0]]), 1), y=round(float(Y[hit[0]]), 1)))
+    tree_strikes.sort(key=lambda r: (r["t"], r["tree_id"]))
+
     # ---------------- power: spans hit by trees
     pp, sp, lines = assets["power_poles"], assets["power_spans"], assets["power_lines"]
     span_line = np.array([s["line_id"] for s in sp], int)
@@ -438,6 +551,8 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     hw = P["power_span"]["wire_height_m"]
     s_tree_k, s_tree_id, s_tree_dbh = tree_hits_segments(SA, SB, hw, P["power_span"]["contact_reach_m"])
     s_tree_k[~live_span] = -1
+    s_coll_k = collapse_on_segments(SA, SB)
+    s_coll_k[~live_span] = -1
 
     # ---------------- power poles: wind + domino + heavy trees pulling spans
     npole = len(pp)
@@ -450,13 +565,22 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     cap *= np.array([1.5 if i in hardened else 1.0 for i in range(npole)])
     Vp = W.V(W.factor(pole_xy[:, 0], pole_xy[:, 1], 10.0)) if npole else np.zeros((0, nf))
     forced = np.full(npole, nf + 1)
+    forced_cause = np.array([""] * npole, dtype=object)
+    for i in coll_i:   # poles inside a collapse debris field
+        if npole:
+            hit = np.nonzero(np.hypot(pole_xy[:, 0] - bx[i], pole_xy[:, 1] - by_[i]) <= coll_reach[int(i)])[0]
+            k4 = int(ds_k[i, 3])
+            for e in hit:
+                if k4 < forced[e]:
+                    forced[e], forced_cause[e] = k4, "collapse"
     for s_i in np.nonzero((s_tree_k >= 0) & (s_tree_dbh >= heavy_dbh))[0]:
         s = sp[s_i]
         ends = [e for e in (s["pole_a"], s["pole_b"]) if e is not None]
         if ends:   # the nearer pole to the impact takes the pull
             tr = tby[int(s_tree_id[s_i])]
             e = min(ends, key=lambda j: math.hypot(pp[j]["x"] - tr["x"], pp[j]["y"] - tr["y"]))
-            forced[e] = min(forced[e], s_tree_k[s_i])
+            if s_tree_k[s_i] < forced[e]:
+                forced[e], forced_cause[e] = s_tree_k[s_i], "tree"
     nbrs = [set() for _ in range(npole)]
     for s in sp:
         if s["pole_a"] is not None and s["pole_b"] is not None:
@@ -474,7 +598,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
                 break
             for i in new:
                 pole_k[i] = k
-                pole_cause[i] = "tree" if by_force[i] else ("domino" if mult[i] < 1 else "wind")
+                pole_cause[i] = forced_cause[i] if by_force[i] else ("domino" if mult[i] < 1 else "wind")
                 for j in nbrs[i]:
                     mult[j] = pc["domino_factor"]
     for i in np.nonzero(pole_k >= 0)[0]:
@@ -483,6 +607,8 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     # spans down: tree on the wire or a supporting pole down
     span_k = s_tree_k.copy()
     span_cause = np.where(s_tree_k >= 0, "tree", "").astype(object)
+    c_first = (s_coll_k >= 0) & ((span_k < 0) | (s_coll_k < span_k))
+    span_k[c_first], span_cause[c_first] = s_coll_k[c_first], "collapse"
     for i, s in enumerate(sp):
         for e in (s["pole_a"], s["pole_b"]):
             if e is not None and pole_k[e] >= 0 and live_span[i] and (span_k[i] < 0 or pole_k[e] < span_k[i]):
@@ -498,9 +624,6 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         if line_k[L] < 0 or span_k[i] < line_k[L]:
             line_k[L] = span_k[i]
         line_pole[L] |= span_cause[i] == "pole"
-    nb = len(buildings)
-    bx = np.array([b["x"] for b in buildings], float)
-    by_ = np.array([b["y"] for b in buildings], float)
     b_line = np.full(nb, -1)
     if len(sp):
         live_idx = np.nonzero(live_span)[0]
@@ -517,16 +640,20 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     units = np.where(occ == "RES1", 1.0, np.maximum(1.0, fa / P["people"]["unit_floor_area_m2"]))
     cust = np.where(res, np.round(units), 1.0)
     oc = costs["outage_usd_per_event"]
-    out_b = (b_line >= 0) & (line_k[np.maximum(b_line, 0)] >= 0)
-    restore = np.where(line_pole[np.maximum(b_line, 0)], P["outage"]["restore_h_pole"], P["outage"]["restore_h_span"])
-    dur_h = np.where(out_b, (t_end - t[np.maximum(line_k[np.maximum(b_line, 0)], 0)]) / 3600.0 + restore, 0.0)
-    ec = _interp_event_cost(None, oc, dur_h)
-    cls_cost = np.where(res, ec["residential"], np.where(fa < 300.0, ec["small_ci"], ec["medium_large_ci"]))
-    outage_usd = float((cls_cost * cust * out_b).sum())
-    customers_out = int((cust * out_b).sum())
-    customer_hours = float((cust * dur_h * out_b).sum())
+    # a tree into an overhead-served building tears its service drop: that building is out on its own
+    idx_of = {int(b.get("id", i)): i for i, b in enumerate(buildings)}
+    svc_k = np.full(nb, -1)
+    for r in tree_strikes:
+        i = idx_of.get(r["bldg_id"])
+        k = int(np.clip(np.searchsorted(t, r["t"], "left"), 0, nf - 1))
+        if i is not None and b_line[i] >= 0 and (svc_k[i] < 0 or k < svc_k[i]):
+            svc_k[i] = k
+    line_out_k = np.where(b_line >= 0, line_k[np.maximum(b_line, 0)], -1)
+    out_k = np.where((line_out_k >= 0) & ((svc_k < 0) | (line_out_k <= svc_k)), line_out_k, svc_k)
+    out_b = (out_k >= 0) & (ds < 4)          # collapsed buildings are a total loss, not an outage
+    out_cause = np.where(out_b & (out_k == line_out_k), "line", np.where(out_b, "service_drop", ""))
     for L in np.nonzero(line_k >= 0)[0]:
-        sel = out_b & (b_line == L)
+        sel = out_b & (b_line == L) & (out_cause == "line")
         ev(line_k[L], "outage", L, *SA[[j for j in lines[L]["spans"]][0]], "pole" if line_pole[L] else "span",
            customers=int(cust[sel].sum()), buildings=int(sel.sum()))
 
@@ -548,25 +675,17 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     OA = np.array([s["a"] for s in ocs], float).reshape(-1, 2)
     OB = np.array([s["b"] for s in ocs], float).reshape(-1, 2)
     o_k, o_by, _ = tree_hits_segments(OA, OB, P["ocs"]["wire_height_m"], 0.5)
+    o_coll = collapse_on_segments(OA, OB)
+    o_cfirst = (o_coll >= 0) & ((o_k < 0) | (o_coll < o_k))
+    o_k[o_cfirst], o_by[o_cfirst] = o_coll[o_cfirst], -1
     o_sec = np.array([s["section"] for s in ocs], int)
     o_mid = (OA + OB) / 2
     o_out = np.full(len(ocs), -1)
     for i in np.nonzero(o_k >= 0)[0]:
-        ev(o_k[i], "ocs_span", i, *o_mid[i], "tree", street=ocs[i]["street"], mode=ocs[i]["mode"])
+        ev(o_k[i], "ocs_span", i, *o_mid[i], "collapse" if o_by[i] < 0 else "tree", street=ocs[i]["street"], mode=ocs[i]["mode"])
         sel = (o_sec == o_sec[i]) & (np.hypot(*(o_mid - o_mid[i]).T) <= P["ocs"]["section_half_length_m"])
         o_out[sel] = np.where((o_out[sel] < 0) | (o_out[sel] > o_k[i]), o_k[i], o_out[sel])
     ocs_km_out = float(sum(ocs[i]["length_m"] for i in np.nonzero(o_out >= 0)[0]) / 1000.0)
-
-    # ---------------- flood at assets (when water.py result is passed)
-    maxd = _g(water, "max_depth")
-    maxd = np.asarray(maxd, float) if maxd is not None else None
-
-    def depth_at(px, py):
-        if maxd is None or len(px) == 0:
-            return np.zeros(len(px))
-        return city.sample(maxd, px, py)
-
-    k_peak = int(np.argmax(W.gust))
 
     # ---------------- point assets: streetlights, signals, shelters, masts
     def wind_points(name, items, med, beta, z, degraded=None):
@@ -591,6 +710,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     l_cause = np.where(l_k < 0, "", np.where(l_k == l_wk, "wind", "tree"))
     l_dark = dark_near(lx, ly)
     l_flood = depth_at(lx, ly) >= sl["flood_dark_depth_m"]
+    l_flood_k = np.where(l_flood, flood_k(lx, ly), -1)
     for i in range(len(lights)):
         ev(l_k[i], "streetlight", i, lx[i], ly[i], l_cause[i], fall_dir_deg=round(float(W.toward(l_k[i])), 1) if l_k[i] >= 0 else None)
 
@@ -601,11 +721,13 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     g_tk, g_td = tree_hits_points(gx, gy)
     g_dark = dark_near(gx, gy)
     g_flood = depth_at(gx, gy) >= sg["cabinet_flood_depth_m"]
+    g_flood_k = np.where(g_flood, flood_k(gx, gy), -1)
     sig_state = []
     for i in range(len(sigs)):
         struct_k = min([k for k in (s_wk[i], g_tk[i] if g_td[i] >= heavy_dbh else -1) if k >= 0], default=-1)
         head_k = min([k for k in (h_wk[i], g_tk[i]) if k >= 0], default=-1)
-        st = {"head_k": int(head_k), "struct_k": int(struct_k), "dark_k": int(g_dark[i]), "flooded": bool(g_flood[i])}
+        st = {"head_k": int(head_k), "struct_k": int(struct_k), "dark_k": int(g_dark[i]), "flooded": bool(g_flood[i]),
+              "flood_k": int(g_flood_k[i])}
         sig_state.append(st)
         if struct_k >= 0:
             ev(struct_k, "signal", i, gx[i], gy[i], "tree" if struct_k == g_tk[i] else "wind", what="mast arm down")
@@ -614,7 +736,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         if g_dark[i] >= 0:
             ev(g_dark[i], "signal_dark", i, gx[i], gy[i], "outage")
         if g_flood[i]:
-            ev(k_peak, "signal_dark", i, gx[i], gy[i], "flooded cabinet")
+            ev(int(g_flood_k[i]), "signal_dark", i, gx[i], gy[i], "flooded cabinet")
 
     shel = assets["shelters"]
     sh_wk, hx, hy = wind_points("shelters", shel, P["shelter"]["median_gust_ms"], P["shelter"]["beta"], 2.5)
@@ -647,37 +769,6 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
                 if int(c) not in removed_cars:
                     car_hit.setdefault(int(c), (int(kk[i]), kind, int(i)))
 
-    # ---------------- buildings: wind damage states + flood structural
-    bp = P["building"]
-    cls = [_class(b) for b in buildings]
-    med = np.array([bp["classes"][c]["ds_median_ms"] for c in cls], float).reshape(-1, 4)
-    beta = np.array([bp["classes"][c]["beta"] for c in cls], float)
-    bid = np.array([int(b.get("id", i)) for i, b in enumerate(buildings)])
-    med *= np.where(np.isin(bid, list(retro)), 1.15, 1.0)[:, None]
-    Hb = np.maximum(np.array([float(b.get("height_m") or 3.0) for b in buildings]), 3.0)
-    ub = _rng(seed, "buildings").random(nb)
-    capb = med * np.exp(beta * ndtri(np.clip(ub, 1e-9, 1 - 1e-9)))[:, None]
-    Vb = W.V(W.factor(bx, by_, Hb, street=False))
-    ds_k = np.stack([_first(Vb >= capb[:, j:j + 1]) for j in range(4)], axis=1)   # frame each DS is reached
-    ds = (ds_k >= 0).sum(1)
-    ds_cause = np.where(ds > 0, "wind", "").astype(object)
-    vmax = _g(water, "max_speed") if water is not None else None
-    vmax = vmax if vmax is not None else _g(water, "max_velocity")
-    if maxd is not None and vmax is not None:
-        from sim.damage import _bldg_adjacent_depth
-        dv = _bldg_adjacent_depth(city.bldg_id, maxd * np.asarray(vmax, float), nb)
-        vv = _bldg_adjacent_depth(city.bldg_id, np.asarray(vmax, float), nb)
-        coll = (vv >= bp["flood_collapse_v_ms"]) & (dv >= bp["flood_collapse_dv_m2s"])
-        part = ~coll & (dv >= bp["flood_partial_dv_m2s"])
-        for m_, lvl in ((coll, 4), (part, 2)):
-            up = m_ & (ds < lvl)
-            ds[up] = lvl
-            ds_cause[up] = "flood"
-            for j in range(lvl):
-                ds_k[up & (ds_k[:, j] < 0), j] = k_peak
-        notes.append(f"flood structural: {int(coll.sum())} collapse, {int(part.sum())} partial (d*v)")
-    elif water is not None:
-        notes.append("flood structural damage skipped: water result has no velocities (max_speed)")
     frac = np.r_[0.0, bp["roof_cover_lost_frac"]]
     area = np.array([float(b.get("area_m2") or 0.0) for b in buildings])
     roof_lost = area * frac[ds] * (ds_cause == "wind")
@@ -745,6 +836,69 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         usd_glass[tb_] = nwin * rd["window_hit_m2"] * rate
         win[tb_] = nwin
 
+    # ---------------- incidents: roads blocked by fallen objects / downed wire, trees into buildings
+    street_names = None
+    named = [tr for tr in trees if tr.get("street")]
+    if named:
+        from scipy.spatial import cKDTree
+        st_tree = cKDTree(np.array([[tr["x"], tr["y"]] for tr in named]))
+        street_names = lambda px, py: named[int(st_tree.query([px, py])[1])]["street"]
+    road_blocks = []
+
+    def lay(kind, i, k, x0, y0, bearing, L, tree_id=None):
+        """Walk the fallen object's length from its base; report a road block and, for trees, the first building."""
+        ux, uy = _unit(bearing)
+        ss = np.arange(1.0, L + 0.01, 1.0)
+        X, Y = x0 + ss * ux, y0 + ss * uy
+        cid = city.sample(city.bldg_id, X, Y)
+        own = city.sample(city.bldg_id, x0, y0)
+        hit = np.nonzero((cid >= 0) & (cid != own))[0]
+        stop = hit[0] if len(hit) else len(ss)
+        on_road = city.sample(city.roadway, X[:stop], Y[:stop]).astype(bool)
+        if on_road.sum() >= 3:
+            j = np.nonzero(on_road)[0]
+            road_blocks.append(dict(t=float(t[k]), cause=kind, id=int(i), x=round(float(X[j].mean()), 1), y=round(float(Y[j].mean()), 1),
+                                    length_m=float(on_road.sum()), street=street_names(x0, y0) if street_names else None))
+
+    for f, (p0, u, H, rc, d) in TG:
+        bearing = math.degrees(math.atan2(u[0], u[1])) % 360
+        lay("tree", f["id"], f["frame"], p0[0], p0[1], bearing, H)
+    for i in np.nonzero(pole_k >= 0)[0]:
+        lay("power_pole", i, pole_k[i], pp[i]["x"], pp[i]["y"], float(W.toward(pole_k[i])), P["power_pole"]["height_m"])
+    for i in np.nonzero(l_k >= 0)[0]:
+        lay("streetlight", i, l_k[i], lx[i], ly[i], float(W.toward(l_k[i])), float(lz[i]))
+    for i in np.nonzero(m_k >= 0)[0]:
+        lay("mast", i, m_k[i], mx[i], my[i], float(W.toward(m_k[i])), P["mast"]["height_m"])
+    for i in np.nonzero(span_k >= 0)[0]:   # a downed conductor across the street: assume live, keep out
+        mid = (SA[i] + SB[i]) / 2
+        if city.sample(city.roadway, [mid[0]], [mid[1]])[0]:
+            road_blocks.append(dict(t=float(t[span_k[i]]), cause="power_wire", id=int(i), x=round(float(mid[0]), 1), y=round(float(mid[1]), 1),
+                                    length_m=float(sp[i]["length_m"]), street=street_names(*mid) if street_names else None))
+    road_blocks.sort(key=lambda r: (r["t"], r["cause"], r["id"]))
+
+    # outage cost: restoration starts after the storm and waits on blocked roads near each fault
+    po = P["outage"]
+    delay_h = np.zeros(len(lines))
+    rbx = np.array([[r["x"], r["y"]] for r in road_blocks], float).reshape(-1, 2)
+    for L in np.nonzero(line_k >= 0)[0]:
+        f_ = [j for j in lines[L]["spans"] if span_k[j] >= 0]
+        mids = (SA[f_] + SB[f_]) / 2
+        if len(rbx) and len(mids):
+            near = (np.hypot(rbx[:, None, 0] - mids[None, :, 0], rbx[:, None, 1] - mids[None, :, 1]) <= po["access_radius_m"]).any(1).sum()
+            delay_h[L] = min(po["access_delay_cap_h"], po["access_delay_h_per_block"] * near)
+    restore = np.where(out_cause == "service_drop", po["restore_h_span"],
+                       np.where(line_pole[np.maximum(b_line, 0)], po["restore_h_pole"], po["restore_h_span"]) + delay_h[np.maximum(b_line, 0)])
+    dur_h = np.where(out_b, (t_end - t[np.maximum(out_k, 0)]) / 3600.0 + restore, 0.0)
+    ec = _interp_event_cost(None, oc, dur_h)
+    cls_cost = np.where(res, ec["residential"], np.where(fa < 300.0, ec["small_ci"], ec["medium_large_ci"]))
+    outage_usd = float((cls_cost * cust * out_b).sum())
+    customers_out = int((cust * out_b).sum())
+    customer_hours = float((cust * dur_h * out_b).sum())
+    for r in road_blocks:
+        events.append(dict(t=r["t"], kind="road_block", id=r["id"], x=r["x"], y=r["y"], cause=r["cause"], street=r["street"]))
+    for r in tree_strikes:
+        events.append(dict(t=r["t"], kind="tree_strike", id=r["tree_id"], x=r["x"], y=r["y"], cause="tree", bldg_id=r["bldg_id"]))
+
     # ---------------- ledger
     def price(key, n):
         c = costs.get(key, {})
@@ -797,7 +951,8 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
 
     events.sort(key=lambda e: (e["t"], e["kind"], e["id"]))
     cum = {}
-    for kind in ("tree", "building", "power_pole", "power_span", "ocs_span", "streetlight", "signal", "signal_dark", "shelter", "mast", "outage"):
+    for kind in ("tree", "building", "power_pole", "power_span", "ocs_span", "streetlight", "signal", "signal_dark", "shelter", "mast", "outage",
+                 "road_block", "tree_strike"):
         ts_ = np.array([e["t"] for e in events if e["kind"] == kind])
         cum[kind] = np.searchsorted(np.sort(ts_), t, "right").tolist() if len(ts_) else [0] * nf
     cust_t = [int(sum(e.get("customers", 0) for e in events if e["kind"] == "outage" and e["t"] <= tt)) for tt in t]
@@ -815,6 +970,9 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
             "signals_damaged": n_head + n_struct, "signals_dark": int(sum(1 for s in sig_state if s["dark_k"] >= 0 or s["flooded"])),
             "shelters_smashed": n_shel, "masts_down": n_mast, "debris_particles": len(debris),
             "windows_broken_by_debris": round(float(sum(win.values())), 1), "cars_hit_by_falling_objects": len(car_hit),
+            "roads_blocked": len(road_blocks), "trees_into_buildings": len(tree_strikes),
+            "service_drops_torn": int((out_cause == "service_drop").sum()),
+            "power_spans_down_by_collapse": int((span_cause == "collapse").sum()),
             "inventory": {k: len(assets[k]) for k in ("power_poles", "power_spans", "ocs_spans", "streetlights", "signals", "shelters", "masts")}
                          | {"buildings": nb, "trees": len(trees)},
         },
@@ -832,23 +990,82 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         "ocs_spans": [{"id": int(i), "t": float(t[o_k[i]]), "tree_id": int(o_by[i]), "street": ocs[i]["street"]} for i in np.nonzero(o_k >= 0)[0]],
         "ocs_out": [{"id": int(i), "t": float(t[o_out[i]])} for i in np.nonzero(o_out >= 0)[0]],
         "streetlights": [{"id": int(i), "t": float(t[l_k[i]]) if l_k[i] >= 0 else None, "cause": l_cause[i] or None,
-                          "dark_t": float(t[l_dark[i]]) if l_dark[i] >= 0 else None, "flooded": bool(l_flood[i])}
+                          "dark_t": float(t[l_dark[i]]) if l_dark[i] >= 0 else None, "flooded": bool(l_flood[i]),
+                          "flood_t": float(t[l_flood_k[i]]) if l_flood_k[i] >= 0 else None}
                          for i in range(len(lights)) if l_k[i] >= 0 or l_dark[i] >= 0 or l_flood[i]],
         "signals": [dict(id=i, head_t=float(t[s["head_k"]]) if s["head_k"] >= 0 else None,
                          struct_t=float(t[s["struct_k"]]) if s["struct_k"] >= 0 else None,
-                         dark_t=float(t[s["dark_k"]]) if s["dark_k"] >= 0 else None, flooded=s["flooded"])
+                         dark_t=float(t[s["dark_k"]]) if s["dark_k"] >= 0 else None, flooded=s["flooded"],
+                         flood_t=float(t[s["flood_k"]]) if s["flood_k"] >= 0 else None)
                     for i, s in enumerate(sig_state) if s["head_k"] >= 0 or s["struct_k"] >= 0 or s["dark_k"] >= 0 or s["flooded"]],
         "shelters": [{"id": int(i), "t": float(t[sh_k[i]])} for i in np.nonzero(sh_k >= 0)[0]],
         "masts": [{"id": int(i), "t": float(t[m_k[i]])} for i in np.nonzero(m_k >= 0)[0]],
         "cars_hit": [{"id": c, "t": float(t[v[0]]), "by": v[1], "by_id": v[2]} for c, v in sorted(car_hit.items())],
         "debris": debris,
+        "road_blocks": road_blocks,
+        "tree_strikes": tree_strikes,
         "outage": {"customers_out": customers_out, "customer_hours": round(customer_hours, 1), "customers_t": cust_t,
                    "buildings_out": [int(bid[i]) for i in np.nonzero(out_b)[0]],
-                   "buildings_out_t": [[int(bid[i]), float(t[line_k[b_line[i]]])] for i in np.nonzero(out_b)[0]]},
+                   "buildings_out_t": [[int(bid[i]), float(t[out_k[i]])] for i in np.nonzero(out_b)[0]],
+                   "service_drops_torn": int((out_cause == "service_drop").sum()),
+                   "restoration_delay_h": {int(L): float(delay_h[L]) for L in np.nonzero(delay_h > 0)[0]}},
         "timeline": cum,
         "events": events,
         "notes": notes,
     }
+
+
+class WaterSummary:
+    """What the destruction engine and trees.py need from a sim/water.py run, small enough to cache on disk."""
+
+    def __init__(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
+
+
+def water_inputs(storm, verbose=False):
+    """Run sim/water.py for the storm's rain and tide (gusts do not change it, so x1.6 / x2.2 what-ifs share the
+    base storm's run) and cache what destruction needs in runs/destruction_water_<storm>.npz:
+    max depth, max speed, max depth x speed (per frame, not max x max), the frames they peak at, the frame of peak
+    flood volume, and soil saturation at every street tree resampled to the storm frames (for sim/trees.py)."""
+    from sim import water as water_mod
+    from sim.trees import _resample_frames
+    base = storm.name.split("_x")[0]
+    path = os.path.join(ROOT, "runs", f"destruction_water_{base}.npz")
+    if not os.path.exists(path):
+        from sim.storm import load_storm
+        st0 = load_storm(base)
+        wg = water_mod.load_grid()
+        wr = water_mod.run_water(wg, st0, verbose=verbose)
+        sp = np.sqrt(wr.u.astype(np.float32) ** 2 + wr.v.astype(np.float32) ** 2)
+        dv = wr.depth * sp
+        trees = _load("trees.json")
+        tix = np.array([int(t["ix"]) for t in trees]); tiy = np.array([int(t["iy"]) for t in trees])
+        sat = _resample_frames(wr.t_frames, np.asarray(st0.t, float), wr.saturation)[:, tiy, tix].astype(np.float32)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        np.savez_compressed(path, t_frames=np.asarray(wr.t_frames, float), max_depth=wr.max_depth.astype(np.float32),
+                            max_speed=wr.max_speed.astype(np.float32), max_dv=dv.max(0).astype(np.float32),
+                            k_max_depth=wr.depth.argmax(0).astype(np.int16), k_max_dv=dv.argmax(0).astype(np.int16),
+                            k_flood_peak=np.int16(np.argmax(wr.depth.reshape(len(wr.t_frames), -1).sum(1))),
+                            sat_trees=sat, mass_error_pct=np.float32(wr.mass_error_pct), runtime_s=np.float32(wr.runtime_s))
+    z = np.load(path)
+    return WaterSummary({k: z[k] for k in z.files})
+
+
+def physics_inputs(storm, fast=True, water=True, verbose=False):
+    """The team's physics for a storm: LBM wind field (sim/wind.py, cached .npz; 16 m lattice when fast), water
+    (sim/water.py via water_inputs, cached) and tree failures with fall directions and strikes (sim/trees.py, soil
+    saturation from the water run). Returns (wind_field, {trees, strikes}, tree_summary, water_summary or None)."""
+    from sim import trees as trees_mod
+    from sim.wind import get_wind
+    wf = get_wind(storm.wind_dir_deg, fast=fast, verbose=verbose)
+    ws = water_inputs(storm, verbose=verbose) if water else None
+    sat = ws.sat_trees if ws is not None else None
+    if sat is not None and sat.shape[0] != len(storm.t):
+        from sim.trees import _resample_frames
+        sat = _resample_frames(ws.t_frames, np.asarray(storm.t, float), sat)
+    res = trees_mod.run_trees(storm, wf, saturation=sat, verbose=verbose)
+    return wf, {"trees": res.trees, "strikes": res.strikes}, res.summary, ws
 
 
 def merge_ledger(ledger, result):
@@ -905,12 +1122,16 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=None)
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--gust-scale", type=float, default=1.0, help="what-if: multiply the storm's gusts (stress test)")
+    ap.add_argument("--fallback", action="store_true", help="skip sim/wind.py + sim/trees.py; use the built-in proxies")
     a = ap.parse_args()
     st = load_storm(a.storm)
     if a.gust_scale != 1.0:
         st = scaled_storm(st, a.gust_scale)
     t0 = time.time()
-    res = run_destruction(st)
+    wf = trees_out = ws = None
+    if not a.fallback:
+        wf, trees_out, _, ws = physics_inputs(st)
+    res = run_destruction(st, wind=wf, tree_result=trees_out, water=ws)
     out = a.out or os.path.join(ROOT, "runs", f"destruction_{st.name}")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "destruction_result.json"), "w") as fh:

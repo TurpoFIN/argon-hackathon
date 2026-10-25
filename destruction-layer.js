@@ -49,13 +49,36 @@
       sigPole: tube([70, 72, 76], 0.25), sigPoleDown: tube([200, 120, 60], 0.25),
       sigOk: box(C.sigOk, 1.0, 0.5, 1.1), sigBad: box(C.sigBad, 1.0, 0.5, 1.1), sigDark: box(C.sigDark, 1.0, 0.5, 1.1), sigFlood: box(C.sigFlood, 1.0, 0.5, 1.1),
       shelter: box(C.glass, 3.2, 1.6, 2.5), smashed: box(C.smashed, 3.4, 1.8, 0.6),
-      debris: line([...C.debris, 0.95], 1.3)
+      debris: line([...C.debris, 0.95], 1.3),
+      // incident markers float above the street on a callout so they read from far away
+      block: new PointSymbol3D({ symbolLayers: [{ type: "icon", resource: { primitive: "x" }, size: 17, material: { color: [255, 45, 85] }, outline: { color: [255, 45, 85], size: 3 } }],
+        verticalOffset: { screenLength: 34, maxWorldLength: 90, minWorldLength: 6 }, callout: { type: "line", size: 1.2, color: [255, 255, 255, 0.9] } }),
+      strike: new PointSymbol3D({ symbolLayers: [{ type: "icon", resource: { primitive: "triangle" }, size: 15, material: { color: [246, 68, 185] }, outline: { color: [255, 255, 255], size: 2 } }],
+        verticalOffset: { screenLength: 34, maxWorldLength: 90, minWorldLength: 6 }, callout: { type: "line", size: 1.2, color: [255, 255, 255, 0.9] } })
     };
+    const struckCache = new Map();
+    const struckSym = (h) => {
+      const k = Math.round(h);
+      if (!struckCache.has(k)) struckCache.set(k, new PolygonSymbol3D({ symbolLayers: [{ type: "extrude", size: k + 1.2,
+        material: { color: [246, 68, 185, 0.12] }, edges: { type: "solid", color: [246, 68, 185, 1], size: 2 } }] }));
+      return struckCache.get(k);
+    };
+    const CAUSE = { tree: "Tree", power_pole: "Power pole", streetlight: "Streetlight", mast: "Mast", power_wire: "Live wire" };
+    let incidents = [];
     const dsSym = new Map();
     const buildingSym = (ds, h) => {
       const k = `${ds}:${Math.round(h)}`;
       if (!dsSym.has(k)) dsSym.set(k, extrude(DS_COLORS[ds], 0.42, Math.round(h) + 0.8));
       return dsSym.get(k);
+    };
+    // Collapsed buildings keep a red ghost of their original volume so they stand out from afar; the rubble
+    // shows through it.
+    const ghostSym = new Map();
+    const collapsedSym = (h) => {
+      const k = Math.round(h);
+      if (!ghostSym.has(k)) ghostSym.set(k, new PolygonSymbol3D({ symbolLayers: [{ type: "extrude", size: k + 0.8,
+        material: { color: [232, 20, 60, 0.16] }, edges: { type: "solid", color: [255, 30, 60, 1], size: 2 } }] }));
+      return ghostSym.get(k);
     };
     const outSym = new Map();
     const outageSym = (h) => {
@@ -303,8 +326,8 @@
         L.buildings.add(g);
         const fall = dsT[3] !== null ? collapse(id, flat, h, dsT[3]) : null;
         items.push({ times: dsT.filter((v) => v !== null), state: 0, apply(s, anim) {
-          g.visible = s > 0 && s < 4;
-          if (g.visible) g.symbol = buildingSym(s, h);
+          g.visible = s > 0;
+          if (g.visible) g.symbol = s >= 4 ? collapsedSym(h) : buildingSym(s, h);
           if (fall) fall(s >= 4, anim);
         } });
       }
@@ -358,16 +381,17 @@
       }
       if (ocsStatic.length) L.things.add(new Graphic({ geometry: new Polyline({ paths: ocsStatic, hasZ: true, spatialReference: SR }), symbol: S.ocs }));
       // streetlights: topple (wind / tree) or go dark (outage / flooded base)
-      for (const [lon, lat, h, tf, dir, tDark, flooded] of d.lights) {
-        const darkT = flooded ? d.t[d.gust.indexOf(Math.max(...d.gust))] : tDark;
+      for (const [lon, lat, h, tf, dir, tDark, flooded, tFloodL] of d.lights) {
+        const tFl = flooded ? (tFloodL ?? d.t[d.gust.indexOf(Math.max(...d.gust))]) : null;
+        const darkT = [tDark, tFl].filter((v) => v !== null).sort((a, b) => a - b)[0] ?? null;
         toppler({ lon, lat, len: h, tFail: tf, bearing: dir, symUp: S.lightPole, symDown: S.lightDown, head: true,
                   headUp: S.lampOn, headDown: S.lampOff, extraTimes: darkT !== null ? [darkT] : [],
                   headFor: (tt, fallen) => (fallen || (darkT !== null && tt >= darkT) ? S.lampOff : S.lampOn) });
       }
       // traffic signals: heads torn / mast down / dark / flooded cabinet
       const peakT = d.t[d.gust.indexOf(Math.max(...d.gust))];
-      for (const [lon, lat, tHead, tStruct, tDark, flooded] of d.signals) {
-        const tFlood = flooded ? peakT : null;
+      for (const [lon, lat, tHead, tStruct, tDark, flooded, tFloodS] of d.signals) {
+        const tFlood = flooded ? (tFloodS ?? peakT) : null;
         const headFor = (tt) => (tHead !== null && tt >= tHead ? S.sigBad : (tFlood !== null && tt >= tFlood ? S.sigFlood
           : (tDark !== null && tt >= tDark ? S.sigDark : S.sigOk)));
         toppler({ lon, lat, len: d.heights.signal, tFail: tStruct, bearing: 0, symUp: S.sigPole, symDown: S.sigPoleDown, head: true,
@@ -399,6 +423,23 @@
         L.things.add(g);
         items.push({ times: [t0], state: 0, apply(s) { g.visible = s > 0; } });
       }
+      // incidents: blocked roadways and trees into buildings
+      incidents = [];
+      for (const [lon, lat, tb, cause, street, len] of d.road_blocks ?? []) {
+        const g = new Graphic({ geometry: new Point({ longitude: lon, latitude: lat, z: 1, spatialReference: SR }), symbol: S.block, visible: false });
+        L.things.add(g);
+        items.push({ times: [tb], state: 0, apply(s) { g.visible = s > 0; } });
+        incidents.push({ t: tb, lon, lat, kind: "block", text: `${CAUSE[cause] ?? cause} blocks ${street || "the roadway"} (${Math.round(len)} m)` });
+      }
+      for (const [lon, lat, ts, bid, h, flat] of d.tree_strikes ?? []) {
+        const m = new Graphic({ geometry: new Point({ longitude: lon, latitude: lat, z: 1, spatialReference: SR }), symbol: S.strike, visible: false });
+        L.things.add(m);
+        const o = flat.length ? new Graphic({ geometry: new Polygon({ rings: [ring(flat)], spatialReference: SR }), symbol: struckSym(h), visible: false }) : null;
+        if (o) L.buildings.add(o);
+        items.push({ times: [ts], state: 0, apply(s) { m.visible = s > 0; if (o) o.visible = s > 0; } });
+        incidents.push({ t: ts, lon, lat, kind: "strike", text: `Tree fell into building #${bid}` });
+      }
+      incidents.sort((a, b) => a.t - b.t);
       t = -1;
       items.forEach((it) => { it.state = -1; });
       setTime(0);
@@ -416,11 +457,22 @@
         <output class="destruction-clock">T+0:00</output>
       </div>
       <dl class="destruction-stats"></dl>
+      <div class="destruction-feed-head">Latest incidents</div>
+      <ol class="destruction-feed" aria-live="polite"></ol>
       <div class="destruction-cams"><button type="button" data-cam="worst">Worst block</button><button type="button" data-cam="power">Power cascade</button><button type="button" data-hide>Hide</button></div>
       <p class="destruction-note"></p>`;
     document.body.appendChild(panel);
     const sel = panel.querySelector("select"), play = panel.querySelector(".destruction-play"), slider = panel.querySelector("input");
     const clock = panel.querySelector(".destruction-clock"), stats = panel.querySelector(".destruction-stats"), note = panel.querySelector(".destruction-note");
+    const feed = panel.querySelector(".destruction-feed");
+    let feedKey = "";
+    const clockOf = (tt) => `T+${Math.floor(tt / 3600)}:${String(Math.floor((tt % 3600) / 60)).padStart(2, "0")}`;
+    feed.addEventListener("click", (e) => {
+      const li = e.target.closest("li[data-i]");
+      if (!li) return;
+      const it = incidents[Number(li.dataset.i)];
+      view.goTo({ target: new Point({ longitude: it.lon, latitude: it.lat, spatialReference: SR }), zoom: 20, tilt: 60 }, { duration: 1800 });
+    });
 
     function setPlaying(p) {
       playing = p;
@@ -447,9 +499,20 @@
         ["Muni wire de-energised", `${(run.ocs.reduce((s, x, i) => s + (ev(x[5]) ? ocsLen[i] : 0), 0) / 1000).toFixed(1)} km`],
         ["Signals damaged / dark", `${count(run.signals, (x) => ev(x[2]) || ev(x[3]))} / ${count(run.signals, (x) => ev(x[4]) || x[5])}`],
         ["Streetlights down", count(run.lights, (x) => ev(x[3]))],
+        ["Roads blocked", count(run.road_blocks ?? [], (x) => ev(x[2]))],
+        ["Trees into buildings", count(run.tree_strikes ?? [], (x) => ev(x[2]))],
         ["Destruction cost (end)", `$${(run.ledger_total_usd / 1e6).toFixed(2)}M`]
       ];
       stats.innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${typeof b === "number" ? fmt(b) : b}</dd>`).join("");
+      let n = 0;
+      while (n < incidents.length && incidents[n].t <= t) n++;
+      const key = `${run.scenario}:${n}`;
+      if (key !== feedKey) {
+        feedKey = key;
+        const latest = incidents.slice(Math.max(0, n - 6), n).map((it, j) => [it, n - Math.min(6, n) + j]).reverse();
+        feed.innerHTML = latest.length ? latest.map(([it, i]) => `<li data-i="${i}" class="${it.kind}"><button type="button">${clockOf(it.t)} ${it.text}</button></li>`).join("")
+          : "<li class=\"none\">None yet</li>";
+      }
     }
 
     async function load(id, index) {
@@ -459,7 +522,7 @@
       setPlaying(false);
       const d = await (await fetch(entry.file)).json();
       await build(d);
-      note.textContent = `${d.title}. Wind: ${d.wind_source}. Engine: sim/destruction.py.`;
+      note.textContent = `${d.title}. Wind: ${d.wind_source}. Water: ${d.water_source ?? "none"}. Engine: sim/destruction.py.`;
     }
 
     play.addEventListener("click", () => setPlaying(!playing));

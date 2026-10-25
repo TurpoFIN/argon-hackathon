@@ -25,7 +25,8 @@ const PENDING = new Set(['writing', 'checking', 'simulating']);
 let S = null;            // current state
 let jobId = q.get('job');
 let selId = q.get('cand');
-let tab = q.get('tab') === 'architecture' ? 'architecture' : 'evolution';
+let tab = ['architecture', 'agents'].includes(q.get('tab')) ? q.get('tab') : 'evolution';
+let treeMode = q.get('tree') === 'pareto' ? 'pareto' : 'tree';
 let pollTimer = null;
 const seen = new Set();  // candidate ids already drawn (for pop-in animation)
 let firstRender = true;
@@ -120,7 +121,8 @@ function showTip(c, ev) {
   if (c.score) {
     rows.push(['Net benefit', money(sc.net_benefit_usd, { sign: true })], ['Plan cost', money(sc.plan_cost_usd)], ['Damage avoided', money(sc.damage_avoided_usd)], ['BCR', sc.bcr != null ? num(sc.bcr, 2) : '—']);
   } else rows.push(['Status', c.status.replace('_', ' ')]);
-  tip.innerHTML = `<div class="th"><span class="mono">${esc(c.id)}</span><span class="chip"><i style="background:${op.color}"></i>${esc(op.label)}</span><span style="color:var(--faint)">gen ${c.gen}</span></div>
+  const ag = agentOf(c);
+  tip.innerHTML = `<div class="th"><span class="mono">${esc(c.id)}</span><span class="chip"><i style="background:${ag ? ag.color : op.color}"></i>${esc(ag ? ag.label : op.label)}</span><span style="color:var(--faint)">${esc(op.label)} · gen ${c.gen}</span></div>
     ${c.note ? `<div class="tn">${esc(c.note)}</div>` : ''}
     <div class="tg">${rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('')}</div>
     ${c.error ? `<div class="tn" style="color:var(--bad);margin-top:4px">${esc(String(c.error).slice(0, 160))}</div>` : ''}`;
@@ -466,8 +468,10 @@ async function renderDetail() {
   const can3d = !!c.run_id;
   box.innerHTML = `
     <div class="d-h"><span class="cid">${esc(c.id)}</span>${chip(c)}<span class="chip">${esc(modelName(c.model))}</span><span class="chip">gen ${c.gen}</span>${isBest ? '<span class="best-tag">★ Best</span>' : ''}</div>
+    ${metaHtml(c)}
     ${c.note ? `<div class="d-note">${esc(c.note)}</div>` : ''}
     ${c.directive ? `<div class="d-dir"><b>Directive</b>${esc(c.directive)}</div>` : ''}
+    ${reviewHtml(c)}
     ${c.error ? `<div class="err">${esc(c.error)}</div>` : ''}
     ${PENDING.has(c.status) ? `<div class="d-dir live">● ${esc(c.status)}…</div>` : ''}
     ${scores}
@@ -488,6 +492,7 @@ async function renderDetail() {
   box.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => { diffMode = b.dataset.m; lastDetailKey = ''; renderDetail(); }));
   $('#btnVideo').addEventListener('click', () => openVideo(c));
   box.querySelectorAll('[data-approve]').forEach((b) => b.addEventListener('click', () => approve(b.dataset.approve === '1')));
+  const vb = $('#btnVerify'); if (vb) vb.addEventListener('click', verifyManaged);
 
   const tok = ++detailToken;
   const parent = c.parents && c.parents.length ? D.byId.get(c.parents[0]) : null;
@@ -532,7 +537,19 @@ addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
 // ---------------------------------------------------------------- architecture
 function archCounts() {
-  const c = { argon: 0, flash: 0, tweak: 0, check: 0, sim: 0 };
+  const c = { argon: 0, flash: 0, tweak: 0, review: 0, check: 0, sim: 0 };
+  if (S.activity && S.activity.length) {
+    S.activity.forEach((a) => {
+      if (a.t1 != null) return;
+      if (a.kind === 'sim') c.sim++;
+      else if (a.kind === 'check') c.check++;
+      else if (a.kind === 'review') c.review++;
+      else if (a.kind === 'tweak') c.tweak++;
+      else if (a.agent === 'architect' || /argon/.test(a.model || '')) c.argon++;
+      else c.flash++;
+    });
+    return c;
+  }
   D.cands.forEach((x) => {
     if (x.status === 'writing') {
       if (!x.model) c.tweak++;
@@ -550,7 +567,7 @@ function renderArch() {
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
   box.appendChild(svg);
   const defs = el('defs', {}, svg);
-  [['ah', 'rgba(95,225,255,.6)'], ['ahg', 'rgba(93,255,157,.65)'], ['ahp', 'rgba(180,140,255,.7)']].forEach(([id, col]) => {
+  [['ah', 'rgba(95,225,255,.6)'], ['ahg', 'rgba(93,255,157,.65)'], ['ahp', 'rgba(180,140,255,.7)'], ['ahb', 'rgba(159,179,255,.7)']].forEach(([id, col]) => {
     const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6.5, markerHeight: 6.5, orient: 'auto-start-reverse' }, defs);
     el('path', { d: 'M0,0L10,5L0,10z', fill: col }, mk);
   });
@@ -561,35 +578,44 @@ function renderArch() {
   const nScored = D.scored.length;
   const nCells = Object.keys(S.archive?.cells || {}).length;
   const llmOn = cnt.argon + cnt.flash + cnt.tweak > 0;
+  const specialists = roster().filter((a) => a.model && a.key !== 'architect' && a.key !== 'reviewer');
+  const persona = specialists.length > 1
+    ? [specialists.slice(0, 3).map((a) => a.label).join(' · '), specialists.slice(3, 6).map((a) => a.label).join(' · ')].filter(Boolean)
+    : ['one directive each from the architect'];
+  const hasReviewer = !!agentByKey('reviewer') || D.cands.some((c) => c.review);
   const nodes = {
-    sampler: { x: 30, y: 96, w: 270, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell, the top', 'elites as inspiration, their ledgers'], c: '#5fe1ff', on: running && (llmOn || st === 'architect' || st === 'mutating') },
-    db: { x: 30, y: 352, w: 270, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#5dff9d', on: running && st === 'selecting', n: nCells },
-    argon: { x: 400, y: 40, w: 310, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, writes research', 'directions and a crossover plan'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
-    flash: { x: 400, y: 166, w: 310, h: 100, k: `Mutators × ${Math.max(1, N - 3)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', 'plan, one directive each'], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
-    tweak: { x: 400, y: 292, w: 310, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#ffb54a', on: running && cnt.tweak > 0, n: cnt.tweak },
-    sandbox: { x: 800, y: 70, w: 210, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#5fe1ff', on: running && cnt.check > 0, n: cnt.check },
-    cost: { x: 1050, y: 70, w: 210, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical diff', 'from cited unit costs'], c: '#ffb54a', on: running && cnt.check > 0 },
-    sim: { x: 800, y: 300, w: 460, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood on 4 m lidar · LBM wind', 'tree failure · people & response · Hazus damage', 'same plan → same ledger, every time'], c: '#5fe1ff', on: running && cnt.sim > 0, n: cnt.sim },
-    eop: { x: 400, y: 446, w: 340, h: 92, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
+    sampler: { x: 20, y: 96, w: 250, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell,', 'top elites as inspiration'], c: '#5fe1ff', on: running && (llmOn || st === 'architect' || st === 'mutating') },
+    db: { x: 20, y: 352, w: 250, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#5dff9d', on: running && st === 'selecting', n: nCells },
+    argon: { x: 330, y: 22, w: 300, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, dispatches', 'specialists, writes a crossover plan'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
+    flash: { x: 330, y: 144, w: 300, h: 136, k: `${specialists.length > 1 ? specialists.length + ' specialist' : ''} mutators × ${Math.max(1, N - 3)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', ...persona], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
+    tweak: { x: 330, y: 302, w: 300, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#ffb54a', on: running && cnt.tweak > 0, n: cnt.tweak },
+    review: { x: 676, y: 160, w: 200, h: 100, k: 'Pre-sim critic', t: 'Reviewer', s: [modelName(agentByKey('reviewer')?.model || 'gemini-3.5-flash-lite'), 'predicts better / same / worse'], c: '#9fb3ff', on: running && cnt.review > 0, n: cnt.review, off: !hasReviewer },
+    sandbox: { x: 920, y: 60, w: 170, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#5fe1ff', on: running && cnt.check > 0, n: cnt.check },
+    cost: { x: 1106, y: 60, w: 168, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical', 'diff, cited unit costs'], c: '#ffb54a', on: running && cnt.check > 0 },
+    sim: { x: 920, y: 300, w: 354, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood · LBM wind', 'tree failure · people · Hazus damage', 'same plan → same ledger, every time'], c: '#4fb8ff', on: running && cnt.sim > 0, n: cnt.sim },
+    eop: { x: 330, y: 446, w: 300, h: 92, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
   };
   const simOut = running && (cnt.sim > 0 || st === 'selecting');
+  const chk = cnt.check > 0 && running;
   const edges = [
-    { d: 'M165,350 L165,198', on: nodes.sampler.on, c: '#5fe1ff', label: 'elites', lx: 176, ly: 278 },
-    { d: 'M302,130 C350,130 350,90 398,90', on: nodes.argon.on, c: '#b48cff', m: 'ahp' },
-    { d: 'M302,146 C350,146 350,216 398,216', on: cnt.flash > 0 && running, c: '#5fe1ff' },
-    { d: 'M302,162 C342,162 350,331 398,331', on: cnt.tweak > 0 && running, c: '#ffb54a' },
-    { d: 'M712,90 C756,90 756,104 798,104', on: cnt.check > 0 && running, c: '#5fe1ff' },
-    { d: 'M712,216 C756,216 756,126 798,126', on: cnt.check > 0 && running, c: '#5fe1ff' },
-    { d: 'M712,331 C770,331 760,148 798,148', on: cnt.check > 0 && running, c: '#ffb54a' },
-    { d: 'M1012,120 L1048,120', on: cnt.check > 0 && running, c: '#ffb54a' },
-    { d: 'M1155,172 L1155,298', on: cnt.sim > 0 && running, c: '#5fe1ff', label: 'within budget', lx: 1166, ly: 240 },
-    { d: 'M798,384 C620,384 480,408 302,408', on: simOut, c: '#5dff9d', m: 'ahg', label: 'ledger + score', lx: 480, ly: 392 },
-    { d: 'M240,466 C240,486 330,486 398,486', on: DONE.has(S.status), c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 270, ly: 504 },
-    { d: 'M555,38 C555,8 110,8 110,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 128, ly: 76 },
+    { d: 'M145,350 L145,198', on: nodes.sampler.on, c: '#5fe1ff', label: 'elites', lx: 154, ly: 278 },
+    { d: 'M272,124 C300,124 300,72 328,72', on: nodes.argon.on, c: '#b48cff', m: 'ahp' },
+    { d: 'M272,146 C300,146 300,212 328,212', on: cnt.flash > 0 && running, c: '#5fe1ff' },
+    { d: 'M272,168 C300,168 300,341 328,341', on: cnt.tweak > 0 && running, c: '#ffb54a' },
+    { d: 'M632,90 C656,90 652,190 674,190', on: (cnt.argon > 0 || cnt.review > 0) && running, c: '#b48cff', m: 'ahp' },
+    { d: 'M632,212 L674,212', on: (cnt.flash > 0 || cnt.review > 0) && running, c: '#5fe1ff' },
+    { d: 'M878,206 C900,206 896,124 918,124', on: chk, c: '#9fb3ff', m: 'ahb' },
+    { d: 'M632,336 C800,336 940,312 940,164', on: chk, c: '#ffb54a' },
+    { d: 'M1092,110 L1104,110', on: chk, c: '#ffb54a' },
+    { d: 'M1190,162 L1190,298', on: cnt.sim > 0 && running, c: '#4fb8ff', label: 'within budget', lx: 1198, ly: 236 },
+    { d: 'M918,392 C720,400 480,408 272,408', on: simOut, c: '#5dff9d', m: 'ahg', label: 'ledger + score', lx: 700, ly: 416 },
+    { d: 'M200,466 C200,492 280,492 328,492', on: DONE.has(S.status), c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 214, ly: 512 },
+    { d: 'M480,20 C480,2 96,2 96,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 112, ly: 64 },
   ];
+  if (!hasReviewer) { edges.splice(4, 3, { d: 'M632,90 C780,90 800,110 918,110', on: chk, c: '#b48cff', m: 'ahp' }, { d: 'M632,212 C780,212 800,134 918,134', on: chk, c: '#5fe1ff' }); delete nodes.review; }
   edges.forEach((e) => {
-    const p = el('path', { d: e.d, class: 'aedge' + (e.on ? ' on' : '') + (e.exit ? ' exit' : ''), style: `--c:${e.c}`, 'marker-end': `url(#${e.m || 'ah'})` }, svg);
-    if (e.thin && !e.on) p.setAttribute('stroke-dasharray', '2 5');
+    const pth = el('path', { d: e.d, class: 'aedge' + (e.on ? ' on' : '') + (e.exit ? ' exit' : ''), style: `--c:${e.c}`, 'marker-end': `url(#${e.m || 'ah'})` }, svg);
+    if (e.thin && !e.on) pth.setAttribute('stroke-dasharray', '2 5');
     if (e.label) el('text', { x: e.lx, y: e.ly, class: 'alabel' }, svg).textContent = e.label;
   });
   Object.values(nodes).forEach((n) => {
@@ -598,7 +624,7 @@ function renderArch() {
     el('rect', { class: 'stripe', x: 0, y: 14, width: 3, height: n.h - 28, rx: 1.5 }, g);
     el('text', { class: 'k', x: 18, y: 25 }, g).textContent = n.k;
     el('text', { class: 't', x: 18, y: 46 }, g).textContent = n.t;
-    n.s.forEach((s, i) => { el('text', { class: 's', x: 18, y: 66 + i * 16 }, g).textContent = s; });
+    n.s.forEach((s2, i) => { el('text', { class: 's' + (n === nodes.flash && i > 0 ? ' persona' : ''), x: 18, y: 66 + i * 17 }, g).textContent = s2; });
     if (n.n) {
       const cg = el('g', { class: 'cnt', transform: `translate(${n.w - 12},12)` }, g);
       const label = String(n.n);
@@ -650,6 +676,7 @@ function setTab(t) {
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === t));
   $('#view-evolution').classList.toggle('hidden', t !== 'evolution');
   $('#view-architecture').classList.toggle('hidden', t !== 'architecture');
+  $('#view-agents').classList.toggle('hidden', t !== 'agents');
   const u = new URL(location.href); u.searchParams.set('tab', t); history.replaceState(null, '', u);
   renderAll();
 }
@@ -661,7 +688,8 @@ function renderAll() {
   D = derive(S);
   if (!selId && D.best) selId = D.best.id;
   renderTop();
-  if (tab === 'evolution') { renderMain(); renderPareto(); renderArchive(); renderBoard(); renderGens(); }
+  if (tab === 'evolution') { renderMain(); renderTreeCard(); renderArchive(); renderBoard(); renderGens(); }
+  else if (tab === 'agents') renderAgents();
   else renderArch();
   const c = selId && D.byId.get(selId);
   const key = c ? `${c.id}|${c.status}|${c.score?.net_benefit_usd}|${diffMode}|${D.best?.id}` : '';
@@ -759,7 +787,7 @@ setInterval(() => { if (S && S.status === 'running') renderTop(); }, 1000);
 
 (async function boot() {
   renderLegend();
-  if (tab === 'architecture') setTab('architecture');
+  if (tab !== 'evolution') setTab(tab);
   const list = await loadJobs();
   if (!FIXTURE && !jobId) {
     if (!list.length) { showEmpty('No evolution runs yet.'); return; }
@@ -784,7 +812,8 @@ function approvalHtml() {
   }
   if (S.status !== 'awaiting_approval' || FIXTURE) return '';
   return `<div class="approval ask"><div><b>Planner approval</b><span>Nothing is built or spent until a person approves this plan.</span></div>
-    <span class="acts"><button class="btn" data-approve="0">Reject</button><button class="btn primary" data-approve="1">Approve plan</button></span></div>`;
+    <span class="acts"><button class="btn" data-approve="0">Reject</button><button class="btn" id="btnVerify" title="An Antigravity managed agent re-runs the storm in its own sandbox and audits the plan">Verify in Antigravity</button><button class="btn primary" data-approve="1">Approve plan</button></span></div>
+    <div class="verify-out" id="verifyOut">${managedJob ? verifyLine(managedJob) : ''}</div>`;
 }
 async function approve(ok) {
   if (!S || !S.id) return;
@@ -792,4 +821,347 @@ async function approve(ok) {
   const r = await fetch(`/api/evolve/${encodeURIComponent(S.id)}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ approved: ok, approver: 'planner', note }) });
   if (!r.ok) { alert('Approval failed: ' + (await r.text()).slice(0, 200)); return; }
   S.updated = 0; lastDetailKey = ''; poll();
+}
+
+// ================================================================ agents (round 2)
+const FALLBACK_AGENTS = [
+  { key: 'architect', label: 'Architect', model: 'gemini-4-argon', role: 'reads the whole archive, writes directions and crossovers', color: '#b48cff' },
+  { key: 'flash', label: 'Mutators', model: 'gemini-3.8-flash', role: 'write SEARCH/REPLACE diffs on a parent plan', color: '#5fe1ff' },
+  { key: 'tweak', label: 'Hill-climber', model: null, role: 'no LLM: rescales sizes, heights and flows', color: '#ffb54a' },
+  { key: 'sandbox', label: 'Sandbox + cost planner', model: null, role: 'Landlock sandbox, locked cited cost table', color: '#8fa1b6' },
+  { key: 'sim', label: 'Storm simulator', model: null, role: 'deterministic flood, wind, trees, people, damage', color: '#4fb8ff' },
+];
+let _rosterCache = null;
+function roster() {
+  if (_rosterCache && _rosterCache.S === S) return _rosterCache.list;
+  const list = (S.agents && S.agents.length ? S.agents : FALLBACK_AGENTS).map((a, i) => ({ ...a, color: a.color || ['#5fe1ff', '#b48cff', '#ffb54a', '#5dff9d', '#ff7ab6'][i % 5] }));
+  _rosterCache = { S, list, by: new Map(list.map((a) => [a.key, a])) };
+  return list;
+}
+const agentByKey = (k) => { roster(); return _rosterCache.by.get(k); };
+function agentKeyOfCand(c) {
+  if (c.agent) return c.agent;
+  if (c.op === 'tweak' || !c.model) return S.agents ? 'tweak' : (c.op === 'seed' && !c.model ? 'tweak' : 'tweak');
+  if (/argon/.test(c.model || '') && c.op !== 'seed') return 'architect';
+  return S.agents ? (c.op === 'crossover' ? 'architect' : 'hydrologist') : 'flash';
+}
+function agentOf(c) {
+  if (!c) return null;
+  const a = agentByKey(agentKeyOfCand(c));
+  if (a) return a;
+  const k = agentKeyOfCand(c);
+  return { key: k, label: c.agent_label || EXTRA_LABELS[k] || k, color: '#8fa1b6', model: c.model };
+}
+const EXTRA_LABELS = { import: 'Imported', repair: 'Repair', flash: 'Mutators' };
+const initials = (label) => { const w = String(label || '?').split(/[\s+]+/).filter(Boolean); return (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); };
+
+/** Activity log; reconstructed from candidate timestamps for older runs. */
+let _actCache = null;
+function activities() {
+  if (_actCache && _actCache.S === S) return _actCache.list;
+  let list = S.activity;
+  let recon = false;
+  if (!list || !list.length) {
+    recon = true;
+    list = [];
+    D.cands.forEach((c) => {
+      const t0 = c.t_created; if (!t0) return;
+      const ak = agentKeyOfCand(c);
+      const llm = c.llm_s || (c.op === 'tweak' ? 0.5 : null);
+      const kind = c.op === 'tweak' ? 'tweak' : c.op === 'crossover' ? 'crossover' : c.op === 'seed' ? 'seed' : 'mutate';
+      const writingEnd = c.status === 'writing' ? null : t0 + (llm || 5);
+      if (!(c.op === 'seed' && !c.model)) list.push({ agent: ak, kind, cand: c.id, gen: c.gen, t0, t1: writingEnd, ok: c.status === 'failed' && !c.run_id ? false : true });
+      if (c.eval_s && c.t_done) list.push({ agent: 'sim', kind: 'sim', cand: c.id, gen: c.gen, t0: c.t_done - c.eval_s, t1: c.t_done, ok: true });
+      else if (c.status === 'simulating') list.push({ agent: 'sim', kind: 'sim', cand: c.id, gen: c.gen, t0: writingEnd || t0, t1: null, ok: null });
+    });
+    (S.generations || []).forEach((g) => { if (g.gen > 0 && g.t_start && S.config?.architect_model) {
+      const first = Math.min(...D.cands.filter((c) => c.gen === g.gen).map((c) => c.t_created || Infinity));
+      list.push({ agent: 'architect', kind: 'architect', cand: null, gen: g.gen, t0: g.t_start, t1: isFinite(first) ? first : (S.status === 'running' && S.stage === 'architect' ? null : g.t_start + 60), ok: true });
+    } });
+  }
+  _actCache = { S, list, recon };
+  return list;
+}
+const nowT = () => (S.status === 'running' ? (FIXTURE ? S.updated : Date.now() / 1000) : Math.max(S.updated || 0, ...activities().map((a) => a.t1 || 0)));
+
+// ---------------------------------------------------------------- detail extras
+function metaHtml(c) {
+  const ag = agentOf(c);
+  const bits = [];
+  if (ag) bits.push(`<span class="agent-chip" style="--ac:${ag.color}"><span class="av">${esc(initials(ag.label))}</span>${esc(ag.label)}${ag.model ? `<span class="am">${esc(modelName(ag.model))}</span>` : ''}</span>`);
+  if (c.selection) bits.push(`<span class="sel-m" title="How the parent was chosen">parent: ${esc(c.selection)}</span>`);
+  if (c.repaired) bits.push('<span class="badge repaired" title="Rejected by the cascade once and fixed by its author">↺ repaired</span>');
+  return bits.length ? `<div class="d-meta">${bits.join('')}</div>` : '';
+}
+function reviewHtml(c) {
+  const r = c.review;
+  if (!r) return '';
+  const held = c.improved == null ? null : (r.predicted === 'better') === !!c.improved;
+  const outcome = c.improved == null ? '<span class="faint">outcome pending</span>'
+    : `<span class="${held ? 'ok' : 'no'}">${held ? '✓ prediction held' : '✕ prediction missed'}</span> <span class="faint">· actually ${c.improved ? 'better' : 'not better'} than its parent</span>`;
+  return `<div class="review"><div class="rv-h"><span class="av" style="--ac:${agentByKey('reviewer')?.color || '#9fb3ff'}">RV</span><b>Reviewer</b><span class="faint">${esc(modelName(r.model || 'gemini-3.5-flash-lite'))}</span>
+    <span class="pred ${esc(r.predicted)}">predicted ${esc(r.predicted)}</span>${r.verdict === 'risky' ? '<span class="badge risky">risky</span>' : ''}</div>
+    ${r.reason ? `<div class="rv-r">${esc(r.reason)}</div>` : ''}<div class="rv-o">${outcome}</div></div>`;
+}
+let managedJob = null;
+const verifyLine = (j) => j.error ? `<span style="color:var(--bad)">${esc(j.error)}</span>`
+  : `Antigravity verification started · job <span class="mono">${esc(j.job_id)}</span> · <a href="${esc(j.events_url || `/api/jobs/${j.job_id}/events`)}" target="_blank">live events ↗</a>`;
+async function verifyManaged() {
+  if (!S?.id || FIXTURE) return;
+  const b = $('#btnVerify'); if (b) b.disabled = true;
+  try {
+    managedJob = await getJSON('/api/managed', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ job_id: S.id, storm: S.config?.storm || 'elnino_ar_2026' }) });
+  } catch (e) { managedJob = { error: 'Could not start: ' + e.message }; if (b) b.disabled = false; }
+  const o = $('#verifyOut'); if (o) o.innerHTML = verifyLine(managedJob);
+}
+
+// ---------------------------------------------------------------- family tree (phylogeny)
+document.querySelectorAll('#treeSeg button').forEach((b) => b.addEventListener('click', () => {
+  treeMode = b.dataset.m;
+  const u = new URL(location.href); u.searchParams.set('tree', treeMode); history.replaceState(null, '', u);
+  renderTreeCard();
+}));
+function renderTreeCard() {
+  document.querySelectorAll('#treeSeg button').forEach((x) => x.classList.toggle('on', x.dataset.m === treeMode));
+  $('#treeTitle').textContent = treeMode === 'tree' ? 'Family tree' : 'Cost vs damage avoided';
+  $('#treeHint').textContent = treeMode === 'tree' ? 'every plan, parent → child · best lineage glows' : 'Pareto front · BCR = 1 diagonal';
+  if (treeMode === 'tree') renderTree(); else renderPareto();
+}
+function renderTree() {
+  const box = $('#pareto');
+  const { svg, W, H } = svgIn(box);
+  const cands = D.cands;
+  if (!cands.length) { el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle' }, svg).textContent = 'waiting for the first plans…'; return; }
+  const gens = [...new Set(cands.map((c) => c.gen))].sort((a, b) => a - b);
+  const showLeg = W > 340 && !!S.agents;
+  const m = { l: 14, r: 14, t: showLeg ? 28 : 10, b: 22 };
+  const colW = (W - m.l - m.r) / Math.max(1, gens.length);
+  const pos = new Map();
+  const rank = (c) => (D.ok(c) ? c.score.net_benefit_usd : PENDING.has(c.status) ? -1e30 : -1e31);
+  gens.forEach((g, gi) => {
+    const col = cands.filter((c) => c.gen === g).sort((a, b) => rank(b) - rank(a));
+    const n = col.length;
+    const step = (H - m.t - m.b) / Math.max(1, n);
+    col.forEach((c, k) => pos.set(c.id, [m.l + colW * (gi + 0.5), m.t + step * (k + 0.5)]));
+    el('text', { x: m.l + colW * (gi + 0.5), y: H - 6, 'text-anchor': 'middle', class: 'genlabel' }, svg).textContent = g === gens[0] && cands.some((c) => c.gen === g && c.op === 'seed') ? 'Seeds' : `Gen ${g}`;
+    if (gi % 2 === 0) el('rect', { x: m.l + colW * gi, y: m.t - 4, width: colW, height: H - m.t - m.b + 4, class: 'genband', rx: 6 }, svg);
+  });
+  const bestLine = new Set(D.best ? lineage(D.best).map((c) => c.id) : []);
+  const sel = selId && D.byId.get(selId);
+  const selLine = new Set(sel ? lineage(sel).map((c) => c.id) : []);
+  const edgeG = el('g', {}, svg);
+  cands.forEach((c) => (c.parents || []).forEach((pid, pi) => {
+    const a = pos.get(pid), b = pos.get(c.id);
+    if (!a || !b) return;
+    const mx = (a[0] + b[0]) / 2;
+    const onBest = bestLine.has(c.id) && bestLine.has(pid) && pi === 0;
+    const onSel = selLine.has(c.id) && selLine.has(pid) && pi === 0;
+    const ag = agentOf(c);
+    el('path', { d: `M${a[0]},${a[1]} C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]}`,
+      class: 'tedge' + (onBest ? ' best' : '') + (onSel ? ' sel' : '') + (pi > 0 ? ' x2' : ''), style: `--ec:${ag ? ag.color : opOf(c).hex}` }, edgeG);
+  }));
+  const r = Math.max(4, Math.min(7.5, (H - m.t - m.b) / Math.max(...gens.map((g) => cands.filter((c) => c.gen === g).length)) / 3.2));
+  cands.forEach((c) => {
+    const [x, y] = pos.get(c.id);
+    const ag = agentOf(c);
+    const col = ag ? ag.color : opOf(c).hex;
+    let cls = 'pt tnodept';
+    if (PENDING.has(c.status)) cls += ' pending'; else if (!D.ok(c)) cls += ' reject';
+    if (!seen.has(c.id) && !firstRender) cls += ' new';
+    if (c.id === selId) cls += ' sel';
+    if (bestLine.has(c.id)) cls += ' onbest';
+    const dot = el('circle', { cx: x, cy: y, r: D.best && c.id === D.best.id ? r + 2 : r, fill: col, stroke: PENDING.has(c.status) ? col : 'rgba(7,11,17,.95)', 'stroke-width': 1.3, class: cls }, svg);
+    bindTip(dot, c);
+  });
+  if (D.best && pos.get(D.best.id)) {
+    const [x, y] = pos.get(D.best.id);
+    el('circle', { cx: x, cy: y, r: r + 2, class: 'selring', style: 'stroke:var(--good)' }, svg);
+  }
+  // compact agent legend (only agents that produced plans)
+  const used = [...new Set(cands.map((c) => agentOf(c)?.key).filter(Boolean))].map(agentByKey).filter(Boolean);
+  if (used.length && showLeg) {
+    const fo = el('foreignObject', { x: 0, y: 0, width: W, height: 18 }, svg);
+    const div = document.createElement('div'); div.className = 'tree-leg';
+    div.innerHTML = used.map((a) => `<span><i style="background:${a.color}"></i>${esc(a.label)}</span>`).join('');
+    fo.appendChild(div);
+  }
+}
+
+// ---------------------------------------------------------------- agents tab
+function renderAgents() {
+  renderRoster();
+  renderSwim();
+  renderFunnel();
+  renderCalib();
+}
+function agentStats(a) {
+  const acts = activities().filter((x) => x.agent === a.key);
+  const kids = D.cands.filter((c) => agentKeyOfCand(c) === a.key);
+  const judged = kids.filter((c) => c.improved != null);
+  const imp = judged.filter((c) => c.improved).length;
+  const best = kids.filter(D.ok).reduce((b, c) => (!b || c.score.net_benefit_usd > b.score.net_benefit_usd ? c : b), null);
+  const working = acts.some((x) => x.t1 == null) && S.status === 'running';
+  const busy = acts.reduce((s, x) => s + ((x.t1 ?? nowT()) - x.t0), 0);
+  return { calls: acts.length, kids: kids.length, imp, judged: judged.length, best, working, busy };
+}
+function renderRoster() {
+  const list = roster();
+  $('#rosterHint').textContent = S.agents ? `${list.length} agents · ${list.filter((a) => a.model).length} of them are models` : 'older run: agents reconstructed from the candidates';
+  $('#roster').innerHTML = `<div class="roster">${list.map((a) => {
+    const st = agentStats(a);
+    const isEval = a.key === 'sandbox' || a.key === 'sim';
+    const stats = isEval
+      ? `<span><b>${num(st.calls)}</b> ${a.key === 'sim' ? 'storm runs' : 'checks'}</span><span><b>${dur(st.busy)}</b> busy</span>`
+      : `<span><b>${num(st.calls)}</b> calls</span><span><b>${num(st.kids)}</b> plans</span>${st.judged ? `<span><b>${Math.round((100 * st.imp) / st.judged)}%</b> beat parent</span>` : ''}${st.best ? `<span class="bn" data-id="${esc(st.best.id)}">best <b>${money(st.best.score.net_benefit_usd, { sign: true })}</b></span>` : ''}`;
+    return `<div class="agent ${st.working ? 'working' : ''}" style="--ac:${a.color}">
+      <div class="ag-h"><span class="av">${esc(initials(a.label))}</span><div class="ag-n"><div class="nm">${esc(a.label)}</div>
+        <div class="md">${a.model ? esc(modelName(a.model)) : isEval ? 'locked evaluator' : 'no LLM'}</div></div>
+        <span class="state">${st.working ? '<i></i>working' : st.calls ? 'idle' : 'waiting'}</span></div>
+      <div class="ag-r">${esc(a.role || '')}</div>
+      <div class="ag-s">${stats}</div></div>`;
+  }).join('')}</div>`;
+  $('#roster').querySelectorAll('.bn[data-id]').forEach((n) => n.addEventListener('click', () => select(n.dataset.id)));
+}
+const KIND_LABEL = { architect: 'reads the archive, writes directions', seed: 'writes a seed plan', mutate: 'writes a diff', crossover: 'writes a crossover', repair: 'repairs a rejected plan', review: 'reviews a change', tweak: 'numeric tweak', check: 'sandbox + cost check', sim: 'storm simulation' };
+function renderSwim() {
+  const box = $('#swim');
+  box.innerHTML = '';
+  const acts = activities();
+  const recon = _actCache.recon;
+  $('#swimHint').textContent = recon ? 'reconstructed from candidate timestamps (older run) · click a bar to open its plan' : 'every model call, review, sandbox check and storm run on one clock · click a bar to open its plan';
+  if (!acts.length) { box.innerHTML = '<div class="empty-note">No activity yet.</div>'; return; }
+  const t0 = Math.min(S.started || Infinity, ...acts.map((a) => a.t0));
+  const t1 = Math.max(nowT(), ...acts.map((a) => a.t1 || 0)) + 2;
+  const W = Math.max(600, box.getBoundingClientRect().width);
+  const labelW = W < 900 ? 150 : 196, padR = 16, rowH = 15, laneGap = 9, axisH = 36;
+  const x = (t) => labelW + ((t - t0) / (t1 - t0)) * (W - labelW - padR);
+  const lanes = [];
+  roster().forEach((a) => {
+    const items = acts.filter((x2) => x2.agent === a.key).sort((p, q2) => p.t0 - q2.t0);
+    const rowsEnd = [];
+    items.forEach((it) => {
+      const end = it.t1 ?? t1;
+      let r = rowsEnd.findIndex((e) => e <= it.t0 - 0.5);
+      if (r < 0) { r = rowsEnd.length; rowsEnd.push(end); } else rowsEnd[r] = end;
+      it._row = r;
+    });
+    let rows = Math.max(1, rowsEnd.length);
+    if (a.key === 'sim') rows = Math.max(rows, S.config?.sim_workers || 1);
+    lanes.push({ a, items, rows });
+  });
+  // agents present in activity but missing from roster
+  const known = new Set(roster().map((a) => a.key));
+  [...new Set(acts.map((a) => a.agent))].filter((k) => !known.has(k)).forEach((k) => {
+    const items = acts.filter((x2) => x2.agent === k);
+    const rowsEnd = [];
+    items.sort((p, q2) => p.t0 - q2.t0).forEach((it) => { const end = it.t1 ?? t1; let r = rowsEnd.findIndex((e) => e <= it.t0 - 0.5); if (r < 0) { r = rowsEnd.length; rowsEnd.push(end); } else rowsEnd[r] = end; it._row = r; });
+    lanes.push({ a: { key: k, label: EXTRA_LABELS[k] || k, color: '#8fa1b6' }, items, rows: Math.max(1, rowsEnd.length) });
+  });
+  let y = axisH;
+  lanes.forEach((L) => { L.y = y; L.h = L.rows * rowH + 8; y += L.h + laneGap; });
+  const H = y + 4;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, width: '100%', height: H, class: 'swim' });
+  box.appendChild(svg);
+  const defs = el('defs', {}, svg);
+  const pat = el('pattern', { id: 'stripes', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+  el('rect', { width: 4, height: 8, fill: 'rgba(255,255,255,0.22)' }, pat);
+  // axis ticks (elapsed)
+  const span = t1 - t0;
+  const step = [10, 15, 30, 60, 120, 300, 600, 900, 1800].find((s2) => span / s2 <= 12) || 3600;
+  for (let t = 0; t <= span; t += step) {
+    const xx = x(t0 + t);
+    el('line', { x1: xx, x2: xx, y1: axisH - 6, y2: H, class: 'sw-grid' }, svg);
+    el('text', { x: xx, y: 10, 'text-anchor': 'middle', class: 'sw-tick' }, svg).textContent = t >= 3600 ? dur(t) : `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, '0')}`;
+  }
+  // generation boundaries
+  (S.generations || []).forEach((g) => {
+    if (!g.t_start || g.gen === 0) return;
+    const xx = x(g.t_start);
+    el('line', { x1: xx, x2: xx, y1: axisH - 8, y2: H, class: 'sw-gen' }, svg);
+    el('text', { x: xx + 4, y: axisH - 9, class: 'sw-genl' }, svg).textContent = `Gen ${g.gen}`;
+  });
+  lanes.forEach((L, li) => {
+    if (li % 2 === 0) el('rect', { x: 0, y: L.y - 3, width: W, height: L.h + 6, class: 'sw-band', rx: 6 }, svg);
+    const g = el('g', { transform: `translate(8,${L.y})` }, svg);
+    const st = L.items.some((it) => it.t1 == null) && S.status === 'running';
+    el('circle', { cx: 11, cy: 11, r: 10, class: 'sw-av' + (st ? ' on' : ''), style: `--ac:${L.a.color}` }, g);
+    el('text', { x: 11, y: 14.5, 'text-anchor': 'middle', class: 'sw-avt', style: `fill:${L.a.color}` }, g).textContent = initials(L.a.label);
+    el('text', { x: 28, y: 10, class: 'sw-name' }, g).textContent = L.a.label;
+    el('text', { x: 28, y: 22, class: 'sw-model' }, g).textContent = L.a.model ? modelName(L.a.model) : (L.a.key === 'sim' ? `${L.rows} parallel slots` : 'no LLM');
+    L.items.forEach((it) => {
+      const xa = x(it.t0), xb = x(it.t1 ?? t1 - 2);
+      const w = Math.max(3, xb - xa);
+      const yy = L.y + 4 + it._row * rowH;
+      const running = it.t1 == null && S.status === 'running';
+      const r = el('rect', { x: xa, y: yy, width: w, height: rowH - 4, rx: 3, class: 'sw-bar' + (running ? ' run' : '') + (it.ok === false ? ' bad' : '') + (it.cand && it.cand === selId ? ' sel' : ''), style: `--ac:${L.a.color}` }, svg);
+      if (running) el('rect', { x: xa, y: yy, width: w, height: rowH - 4, rx: 3, fill: 'url(#stripes)', class: 'sw-stripe' }, svg);
+      r.addEventListener('mouseenter', (e) => showActTip(it, L.a, e));
+      r.addEventListener('mousemove', moveTip);
+      r.addEventListener('mouseleave', hideTip);
+      if (it.cand) r.addEventListener('click', () => select(it.cand));
+    });
+  });
+  if (S.status === 'running') {
+    const xx = x(nowT());
+    el('line', { x1: xx, x2: xx, y1: axisH - 8, y2: H, class: 'sw-now' }, svg);
+    el('text', { x: xx, y: axisH - 9, 'text-anchor': 'end', dx: -4, class: 'sw-nowl' }, svg).textContent = 'now';
+  }
+}
+function showActTip(it, a, ev) {
+  const c = it.cand && D.byId.get(it.cand);
+  const d = (it.t1 ?? nowT()) - it.t0;
+  tip.innerHTML = `<div class="th"><span class="chip"><i style="background:${a.color}"></i>${esc(a.label)}</span><span style="color:var(--faint)">${it.gen != null ? 'gen ' + it.gen : ''}</span></div>
+    <div class="tn">${esc(KIND_LABEL[it.kind] || it.kind)}${c ? ` · <span class="mono" style="color:#fff">${esc(c.id)}</span>` : ''}</div>
+    <div class="tg"><span>Duration</span><span>${d < 60 ? d.toFixed(1) + ' s' : dur(d)}</span>${it.model ? `<span>Model</span><span>${esc(modelName(it.model))}</span>` : ''}
+    <span>Result</span><span style="color:${it.t1 == null ? 'var(--accent)' : it.ok === false ? 'var(--bad)' : 'var(--good)'}">${it.t1 == null ? 'running' : it.ok === false ? 'failed' : 'ok'}</span></div>
+    ${c && c.note ? `<div class="tn" style="margin-top:4px">${esc(c.note)}</div>` : ''}`;
+  tip.classList.add('on');
+  moveTip(ev);
+}
+function deriveFunnel() {
+  if (S.funnel) return S.funnel;
+  const C = D.cands;
+  const syntax = (c) => /SyntaxError|no usable|define a top-level/.test(String(c.error || ''));
+  return {
+    proposed: C.length, compiled: C.filter((c) => !syntax(c) && c.status !== 'writing').length,
+    cost_ok: C.filter((c) => c.run_id || c.status === 'simulating').length, repaired: C.filter((c) => c.repaired || /\(repaired\)/.test(c.note || '')).length,
+    simulated: C.filter((c) => c.run_id).length, within_budget: D.scored.length, elites: Object.keys(S.archive?.cells || {}).length,
+    improved: C.filter((c) => c.improved === true || (c.improved == null && c.parents?.length && D.ok(c) && D.byId.get(c.parents[0]) && D.ok(D.byId.get(c.parents[0])) && c.score.net_benefit_usd > D.byId.get(c.parents[0]).score.net_benefit_usd)).length,
+  };
+}
+function renderFunnel() {
+  const F = deriveFunnel();
+  const stages = [['proposed', 'Plans proposed', 'every seed, diff, crossover and tweak'], ['compiled', 'Compile', 'parses and defines apply(city)'],
+    ['cost_ok', 'Sandbox + cost', 'runs without error, within budget'], ['simulated', 'Storm simulated', 'full deterministic storm run'],
+    ['within_budget', 'Scored in budget', 'measured cost ≤ budget'], ['elites', 'Archive elites', 'best in their strategy × cost cell'],
+    ['improved', 'Beat their parent', 'net benefit above the parent plan']];
+  const max = Math.max(1, F.proposed || 0);
+  $('#funnel').innerHTML = `<div class="funnel">${stages.map(([k, label, sub], i) => {
+    const v = F[k] ?? 0;
+    const pct = (100 * v) / max;
+    return `<div class="fs" style="--w:${Math.max(4, pct)}%;--d:${i * 60}ms">
+      <div class="fl"><b>${esc(label)}</b><span>${esc(sub)}</span></div>
+      <div class="fb"><span></span></div>
+      <div class="fv"><b>${num(v)}</b><span>${Math.round(pct)}%</span></div></div>
+      ${k === 'cost_ok' && F.repaired ? `<div class="fr">↺ ${num(F.repaired)} rejected plan${F.repaired === 1 ? '' : 's'} went back to ${F.repaired === 1 ? 'its' : 'their'} author with the error for one repair round</div>` : ''}`;
+  }).join('')}</div>`;
+}
+function renderCalib() {
+  const rev = D.cands.filter((c) => c.review && c.review.predicted);
+  if (!rev.length) { $('#calib').innerHTML = `<div class="empty-note">${S.agents ? 'No reviews yet.' : 'This run had no reviewer agent.'}</div>`; return; }
+  const P = ['better', 'same', 'worse'];
+  const cell = {}; let n = 0, right = 0, pending = 0, risky = 0;
+  rev.forEach((c) => {
+    if (c.review.verdict === 'risky') risky++;
+    if (c.improved == null) { pending++; return; }
+    const k = `${c.review.predicted}|${c.improved ? 1 : 0}`; cell[k] = (cell[k] || 0) + 1; n++;
+    if ((c.review.predicted === 'better') === !!c.improved) right++;
+  });
+  const mx = Math.max(1, ...Object.values(cell));
+  const td = (p, a) => { const v = cell[`${p}|${a}`] || 0; const good = (p === 'better') === !!a; return `<td class="${good ? 'g' : 'b'}" style="--o:${(0.08 + 0.6 * v / mx).toFixed(2)}">${v}</td>`; };
+  $('#calib').innerHTML = `<div class="calib">
+    <div class="acc"><b>${n ? Math.round((100 * right) / n) : '—'}${n ? '%' : ''}</b><span>of ${n} reviewed plans called right${pending ? ` · ${pending} pending` : ''}${risky ? ` · ${risky} flagged risky` : ''}</span></div>
+    <table class="cm"><thead><tr><th></th><th>beat parent</th><th>did not</th></tr></thead><tbody>
+      ${P.map((p) => `<tr><th>predicted ${p}</th>${td(p, 1)}${td(p, 0)}</tr>`).join('')}</tbody></table>
+    <div class="faint cnote">Gemini 3.5 Flash-Lite reads each diff and the parent's ledger and predicts the outcome in a second, before the minutes-long storm run. Green cells are correct calls.</div></div>`;
 }
