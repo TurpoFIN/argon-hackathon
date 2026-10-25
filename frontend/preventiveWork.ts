@@ -1,3 +1,4 @@
+import {workEvidence, workFacts, type WorkFindings} from './workEvidence';
 export type WorkSettings={profile:'basic'|'staged'|'specialists';minutes:number};
 type Source={id:string;title:string;url:string;finding:string;locator?:string;kind?:string};
 export type WorkCandidate={id:string;operation_id:string;hazard:string;label:string;site:{id:string;label:string;position:number[];basis:string};role:string;people:number;minimum_minutes:number;maximum_minutes:number;time_basis:string;equipment:Record<string,number>;output:string;without:string;with:string;evidence:string;evidence_grade:string;source_ids:string[];conditions:string[];site_status:string;feasibility:{fits:boolean;reasons:string[];crew_ids:string[];travel_by_crew:Record<string,number[]>;minimum_total:number;maximum_total:number}};
@@ -6,24 +7,7 @@ export type WorkComparison={settings:WorkSettings;profiles:Record<string,{label:
 const names:Record<string,string>={wind:'Wind',flood:'Flooding',trees:'Falling trees',structure:'Structural collapse',power:'Power loss',routes:'Blocked routes'};
 const node=(tag:string,value='',cls='')=>{const n=document.createElement(tag);n.textContent=value;n.className=cls;return n;};
 
-const shortNames:Record<string,string>={
-  'backup-pump':'Connect backup pump', 'fit-barrier':'Fit doorway barrier',
-  'move-contents':'Move vulnerable contents', 'secure-items':'Secure loose items',
-  'latch-windows':'Latch windows', 'clear-inlet':'Clear inlet',
-  'prune-defect':'Prune assessed defect', 'engineered-support':'Install designed support',
-  'sandbag-wall':'Build sandbag barrier', 'clear-route':'Clear access',
-  'install-cordon':'Set authorized closure',
-};
-const effects:Record<string,string>={
-  'backup-pump':'Pump backup during an outage', 'fit-barrier':'Protect one doorway',
-  'move-contents':'Raise up to 10 boxes', 'secure-items':'Secure up to 10 debris sources',
-  'latch-windows':'Close up to 10 openings', 'clear-inlet':'Restore one inlet opening',
-  'prune-defect':'Remove one assessed tree defect', 'engineered-support':'Support the designed load path',
-  'sandbag-wall':'Build one 100-bag segment', 'clear-route':'Remove light route debris',
-  'install-cordon':'Keep people out of the closure',
-};
-
-export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(settings:WorkSettings)=>void,focus:(work:SelectedWork)=>void){
+export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(settings:WorkSettings)=>void,focus:(work:SelectedWork)=>void,findings:WorkFindings){
   const root=node('section','','work-comparison');root.id='work-comparison';
   const style=node('style');style.textContent=`
     .work-comparison{margin:12px 0}.work-comparison h2{font-size:15px;margin:12px 0 4px}
@@ -45,6 +29,7 @@ export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(
     .work-option{border-top:1px solid var(--border);padding:8px 0}.work-option summary{font-size:12px}
     .work-study{border-top:1px solid var(--border);padding:8px 0}.work-study strong{font-size:12px;font-weight:500}.work-study p{margin:3px 0}
     .work-vs{border-left:2px solid var(--border);padding-left:8px;margin:8px 0}.work-vs strong{font-weight:500}
+    .work-evidence-inline{display:grid;grid-template-columns:72px minmax(0,1fr);gap:5px 8px;font-size:12px;line-height:1.4;margin:8px 0}.work-evidence-inline dt{color:var(--muted-foreground)}.work-evidence-inline dd{margin:0}.work-evidence-inline a{white-space:normal}
     .work-total{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted-foreground);padding:8px 0;border-top:1px solid var(--border)}
     @media(max-width:420px){.work-row-title{align-items:flex-start}.work-row-title h3{max-width:210px}.work-time{font-size:10px}}
   `;root.append(style);
@@ -65,10 +50,10 @@ export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(
     for(const work of data.selected){
       const row=node('article','','work-plan-row');row.dataset.workId=work.id;
       const body=node('div','','work-row-body'),title=node('div','','work-row-title');
-      title.append(node('h3',shortNames[work.operation_id]??work.label),node('span',`+${work.start}–${work.finish} min`,'work-time'));
-      body.append(title,node('p',`${work.site.label} · ${work.assignment} (${work.people})`,'work-location'),node('p',effects[work.operation_id]??work.output,'work-effect'));
+      title.append(node('h3',workFacts[work.operation_id]?.name??work.label),node('span',`+${work.start}–${work.finish} min`,'work-time'));
+      body.append(title,node('p',`${work.site.label} · ${work.assignment} (${work.people})`,'work-location'),workEvidence(work,data,findings));
       const tools=node('div','','work-row-tools'),map=node('button','Map') as HTMLButtonElement;map.type='button';map.setAttribute('aria-label','Show work at '+work.site.label);map.onclick=()=>focus(work);
-      const why=document.createElement('details');why.className='work-why';why.append(node('summary','Why'),node('p',work.why),comparison(work),detail(work));tools.append(map,why);body.append(tools);row.append(node('span',String(work.priority),'work-number'),body);root.append(row);
+      const why=document.createElement('details');why.className='work-why';why.append(node('summary','Work details'),node('p',work.why),comparison(work),detail(work));tools.append(map,why);body.append(tools);row.append(node('span',String(work.priority),'work-number'),body);root.append(row);
     }
     const total=node('div','','work-total');total.append(node('span',`Finish +${data.totals.latest_finish} min`),node('span',`${data.totals.labor_minutes} person-min`));root.append(total);
     const judgement=document.createElement('details');judgement.append(node('summary','Compared with doing nothing'),node('p','No work uses no crew time or stock, and adds no protection. Local damage reduction has not been measured.'),node('p',data.result.conclusion),node('p',data.result.why_not_do_nothing),node('p',data.result.remaining_gaps));root.append(judgement);
@@ -86,9 +71,9 @@ export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(
     const group=document.createElement('details');group.append(node('summary',names[hazard]));
     for(const work of data.candidates.filter(w=>w.hazard===hazard)){
       const row=node('details','','work-option') as HTMLDetailsElement;row.dataset.selected=String(selectedIds.has(work.id));row.dataset.operation=work.operation_id;
-      row.append(node('summary',`${shortNames[work.operation_id]??work.label} · ${work.site.label}`),node('p',selectedIds.has(work.id)?'Selected':work.feasibility.fits?'Fits this resource and time scenario':'Needs resources or prerequisites'),node('p',`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min including setup${Object.keys(work.feasibility.travel_by_crew).length?' and estimated travel':''}`));
+      row.append(node('summary',`${workFacts[work.operation_id]?.name??work.label} · ${work.site.label}`),node('p',selectedIds.has(work.id)?'Selected':work.feasibility.fits?'Fits this resource and time scenario':'Needs resources or prerequisites'),node('p',`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min including setup${Object.keys(work.feasibility.travel_by_crew).length?' and estimated travel':''}`));
       if(work.feasibility.reasons.length)row.append(node('p',work.feasibility.reasons.join('. ')+'.'));
-      row.append(comparison(work),detail(work));group.append(row);
+      row.append(workEvidence(work,data,findings),detail(work));group.append(row);
     }comparisons.append(group);
   }root.append(comparisons);
   const evidence=document.createElement('details');evidence.append(node('summary','Evidence & limits'),node('p',data.interpretation));
