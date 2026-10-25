@@ -3,6 +3,7 @@ import {installStormRenderer} from './renderer';
 import {followState, loadResult, request, timeAt} from './session';
 import {worldLayer} from './world';
 import {riskView} from './risk';
+import {installCameraControls,type CameraView} from './cameraControls';
 
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
 function fail(error: unknown): void {
@@ -40,6 +41,7 @@ async function main(): Promise<void> {
   });
   window.storm = {manifest, view, frame: 0, renderedFrames: 0, wetVertices: 0, windSegments: 0, elapsedSeconds: 0};
   await view.when();
+  installCameraControls(view as unknown as CameraView);
   status.textContent = 'Loading storm surface…';
   const count = manifest.grid.nx * manifest.grid.ny;
   if (grid.length !== count * 7 || flood.length !== count * manifest.times_seconds.length) {
