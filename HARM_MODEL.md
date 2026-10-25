@@ -1,6 +1,6 @@
 # Evidence-constrained harm model
 
-`backend/harm_model.py` evaluates the same site and storm twice. The only changed input is whether the selected action has been completed. It replaces work completion as the main planner's harm comparison.
+`backend/harm_model.py` retains the strict measurement-based comparison. Following the user's explicit authorization to extrapolate, the main planner displays a separate **illustrative scenario** from `backend/consequence_scenario.py`. Its assumed consequences are not measured or validated local outcomes. See `CONSEQUENCE_MODEL.md`.
 
 No measured San Francisco site inputs have been supplied. Current local before/after harm is therefore **unavailable**, not zero. The research simulator's random capacities and nearest-feeder assumptions remain uncalibrated research; they are not used by this comparison.
 

@@ -1,0 +1,350 @@
+{
+  "model": "gemini-4-argon",
+  "generated_at": "2026-10-25T22:50:30.257766+00:00",
+  "result_sha256": "732e5db5be5f177355bcdbea4e125e8196b61e902725ab283e6fdfbb42e3c581",
+  "interpretation": "Illustrative extrapolation; building geometry mapped, no known basement or surveyed interior",
+  "weather": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon",
+    "coastal_case": "central"
+  },
+  "resources": {
+    "label": "Equipment staged + electrician",
+    "description": "Basic kits plus one fitted barrier, 100 empty bags and fill, one compatible pump/backup circuit, and a two-person electrical team. All are explicit scenario resources.",
+    "equipment": {
+      "handtool_kit": 2,
+      "tie_down": 20,
+      "cart": 1,
+      "fitted_barrier": 1,
+      "empty_sandbag": 100,
+      "sand_fill": 1,
+      "pump": 1,
+      "backup_circuit": 1,
+      "electrical_kit": 1
+    },
+    "specialists": {
+      "electrician": 2
+    },
+    "crews": [
+      {
+        "id": "general-1",
+        "role": "general",
+        "people": 2,
+        "position": [
+          -122.3921159,
+          37.7922949
+        ]
+      },
+      {
+        "id": "general-2",
+        "role": "general",
+        "people": 2,
+        "position": [
+          -122.3970451,
+          37.7895081
+        ]
+      },
+      {
+        "id": "electrician-1",
+        "role": "electrician",
+        "people": 2,
+        "position": [
+          -122.3970451,
+          37.7895081
+        ]
+      }
+    ],
+    "minutes": 120,
+    "profile": "staged",
+    "staging_source": {
+      "world_file": "data/scenarios/968baf61d5bc/world.json",
+      "frame_time": 0,
+      "basis": "Existing scenario crew staging, not live crew GPS"
+    },
+    "travel_assumption": "Walking: straight-line distance \u00d7 1.3\u20131.8 street detour, at 80\u201360 m/min. Estimated route only; live street access is not known. Heavy materials are assumed pre-staged at the work site in the equipment profiles.",
+    "provenance": "Explicit planning scenario, not a confirmed municipal roster. Team sizes, stock and timing assumptions are shown; site permission/condition must be confirmed before dispatch."
+  },
+  "result": {
+    "selected": [
+      {
+        "action_id": "backup-pump@glass-0",
+        "crew_id": "electrician-1",
+        "why": "Deploys the only available compatible pump and backup circuit at 50 California St (glass-0) within 96 upper-bound minutes (16 min walk + 80 min work/overhead). In the illustrative extrapolation, this shifts the outcome from '21 cm indoor water \u00b7 pump off' to 'No accumulated indoor water \u00b7 pump running', supported by real-storm operational evidence from Hurricane Sandy (FEMA P-942) where backup-powered pumps controlled water when supporting components stayed dry."
+      },
+      {
+        "action_id": "fit-barrier@report-16239820",
+        "crew_id": "general-1",
+        "why": "Installs the single staged pre-fitted doorway barrier at 100 Lombard St (report-16239820) as general-1's first task (50 min walk + 30 min work/overhead = 80 min). In the illustrative estimates, this reduces flooding from '14 cm water inside \u00b7 10 boxes flooded' to '0 cm water inside \u00b7 0 boxes flooded' (outperforming inlet clearing or box moving alone at this site), subject to the limiting condition observed in Sandy (FEMA P-942) that floodgates only protect within their design level before overtopping."
+      },
+      {
+        "action_id": "clear-inlet@report-16237271",
+        "crew_id": "general-1",
+        "why": "Assigned as general-1's second serial task at 4 Bay St (inlet 296627), adding 11 upper-bound travel minutes from report-16239820 and 25 work/overhead minutes (total 116/120 min for general-1, using 1 handtool_kit). In the illustrative comparison, surface clearing changes the site outcome from '14 cm water inside \u00b7 10 boxes flooded' to '9 cm water inside \u00b7 10 boxes flooded' based on operating guidance and mechanism, provided surface debris is actually present."
+      },
+      {
+        "action_id": "latch-windows@glass-1",
+        "crew_id": "general-2",
+        "why": "Assigned as general-2's first task at 301 Mission St (5 min walk + 20 min work/overhead = 25 min; no equipment needed). In the illustrative extrapolation, closing and latching up to 10 accessible windows changes the outcome from '3 broken panes \u00b7 332 L rain indoors' to '2 broken panes \u00b7 85 L rain indoors' (avoiding 247 L of indoor rain and 1 broken pane, based on local failure mechanisms in SF's March 2023 glazing investigation)."
+      },
+      {
+        "action_id": "latch-windows@glass-2",
+        "crew_id": "general-2",
+        "why": "Assigned as general-2's second serial task at 350 Mission St (3 min travel from glass-1 + 20 min work/overhead = 23 min; cumulative 48 min). In the illustrative extrapolation, this reduces outcomes at glass-2 from '3 broken panes \u00b7 332 L rain indoors' to '2 broken panes \u00b7 85 L rain indoors', conditional on operable hardware and unlatched windows actually being present."
+      },
+      {
+        "action_id": "latch-windows@glass-0",
+        "crew_id": "general-2",
+        "why": "Assigned as general-2's third serial task at 50 California St (11 min travel from glass-2 + 20 min work/overhead = 31 min; cumulative 79/120 min). In the illustrative extrapolation, this reduces outcomes at glass-0 from '3 broken panes \u00b7 332 L rain indoors' to '2 broken panes \u00b7 85 L rain indoors'."
+      }
+    ],
+    "conclusion": "Within the 120-minute window and staged resource limits, selecting these six conditional physical work packages utilizes all three crews (electrician-1 for 96 max minutes, general-1 for 116 max minutes, and general-2 for 79 max minutes) and commits 1 pump, 1 backup_circuit, 1 electrical_kit, 1 fitted_barrier, and 1 handtool_kit. Compared to doing nothing, the illustrative modeled estimates show this plan avoids 21 cm of indoor water accumulation at glass-0 by keeping a backup pump running, eliminates 14 cm of indoor water and 10 flooded boxes at report-16239820 via a fitted doorway barrier, reduces indoor water from 14 cm to 9 cm at report-16237271 by clearing inlet 296627, and reduces wind-driven damage across three glazing sites (glass-0, glass-1, glass-2) from 3 broken panes and 332 L of indoor rain each to 2 broken panes and 85 L of indoor rain each. All site conditions, permissions, and actual defects are unconfirmed; if protections are already in place or defects are absent (e.g., windows already latched or inlets already clear), the incremental benefit of those tasks is zero.",
+    "why_not_do_nothing": "Doing nothing consumes zero labor or equipment, but incurs the full baseline modeled harm across all sites. By deploying staged crews and equipment within conservative upper-bound travel and work times, we can achieve substantial illustrative reductions in water ingress, flooded contents, and broken glazing without exceeding stock or time budgets. The evidence base supports these interventions with varying strength: Hurricane Sandy field investigations (FEMA P-942) provide observed external outcomes showing backup-powered sump pumps prevented flooding when supporting components were protected, while also establishing a limiting condition where floodgates failed when overtopped; the March 2023 SF DBI/WJE glazing investigation identifies local failure mechanisms (unlatched windows and windborne debris impacts); and SFPUC/FEMA P-234 provide mere operating guidance and mechanisms for surface drain clearing and barrier deployment without quantified local treatment trials.",
+    "remaining_gaps": "Several high-consequence hazards cannot be addressed due to feasibility, time, crew, equipment, and six-package selection limits: (1) Tree defects at report-16572155 and report-16572287 ('Tree falls across road' vs 'Tree stays standing \u00b7 road open') cannot be pruned because no 3-person arborist crew or arborist_kit is staged, the 150\u2013300 min duration exceeds the 120-minute window, and Hurricane Andrew survival data (73% vs 47% in UF/IFAS) is only an external observational association, not a causal justification for last-minute pruning; (2) Structural fa\u00e7ade support at glass-0 ('12 m\u00b2 fa\u00e7ade section collapses') is infeasible (no 3-person building crew, no designed_support staged, 210\u2013420 min duration, and unestablished engineering design/authority); (3) Route cordon installation at report-16291635 ('20 passages through hazard') is infeasible (no traffic crew, no traffic_set, unestablished authority); (4) The 100-bag sandbag wall at report-16239820 takes up to 160 minutes with travel (fits=false), though the pre-fitted barrier addresses the same doorway within time; and (5) With the 6-package cap and crew time limits, we cannot simultaneously secure loose items at glass-0/1/2 (leaving 20 tie-downs unused), clear the route at report-16291635, or clear the remaining 18 candidate storm inlets.",
+    "result_sha256": "732e5db5be5f177355bcdbea4e125e8196b61e902725ab283e6fdfbb42e3c581",
+    "generated_at": "2026-10-25T22:50:30.257766+00:00",
+    "model": "gemini-4-argon",
+    "fingerprint": "a36efea29219028ef8d7516c7b4fc77bf2a0e2c437a37544082101a6acfb95cc"
+  },
+  "selected": [
+    {
+      "id": "backup-pump@glass-0",
+      "crew": "electrician-1",
+      "start": 0,
+      "finish": 96,
+      "before": {
+        "summary": "21 cm indoor water \u00b7 pump off",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 21,
+        "wet_contents": 10,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0
+      },
+      "after": {
+        "summary": "No accumulated indoor water \u00b7 pump running",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": true,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    },
+    {
+      "id": "fit-barrier@report-16239820",
+      "crew": "general-1",
+      "start": 0,
+      "finish": 80,
+      "before": {
+        "summary": "14 cm water inside \u00b7 10 boxes flooded",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 14,
+        "wet_contents": 10,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "street_water_cm": 29,
+        "barrier": false
+      },
+      "after": {
+        "summary": "0 cm water inside \u00b7 0 boxes flooded",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "street_water_cm": 29,
+        "barrier": true
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    },
+    {
+      "id": "clear-inlet@report-16237271",
+      "crew": "general-1",
+      "start": 80,
+      "finish": 116,
+      "before": {
+        "summary": "14 cm water inside \u00b7 10 boxes flooded",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 14,
+        "wet_contents": 10,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "street_water_cm": 29,
+        "barrier": false
+      },
+      "after": {
+        "summary": "9 cm water inside \u00b7 10 boxes flooded",
+        "broken_panes": 0,
+        "rain_inside_l": 0,
+        "water_cm": 9,
+        "wet_contents": 10,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "street_water_cm": 24,
+        "barrier": false
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    },
+    {
+      "id": "latch-windows@glass-1",
+      "crew": "general-2",
+      "start": 0,
+      "finish": 25,
+      "before": {
+        "summary": "3 broken panes \u00b7 332 L rain indoors",
+        "broken_panes": 3,
+        "rain_inside_l": 332,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "after": {
+        "summary": "2 broken panes \u00b7 85 L rain indoors",
+        "broken_panes": 2,
+        "rain_inside_l": 85,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    },
+    {
+      "id": "latch-windows@glass-2",
+      "crew": "general-2",
+      "start": 25,
+      "finish": 48,
+      "before": {
+        "summary": "3 broken panes \u00b7 332 L rain indoors",
+        "broken_panes": 3,
+        "rain_inside_l": 332,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "after": {
+        "summary": "2 broken panes \u00b7 85 L rain indoors",
+        "broken_panes": 2,
+        "rain_inside_l": 85,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    },
+    {
+      "id": "latch-windows@glass-0",
+      "crew": "general-2",
+      "start": 48,
+      "finish": 79,
+      "before": {
+        "summary": "3 broken panes \u00b7 332 L rain indoors",
+        "broken_panes": 3,
+        "rain_inside_l": 332,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "after": {
+        "summary": "2 broken panes \u00b7 85 L rain indoors",
+        "broken_panes": 2,
+        "rain_inside_l": 85,
+        "water_cm": 0,
+        "wet_contents": 0,
+        "tree_fallen": false,
+        "collapse_m2": 0,
+        "pump_on": false,
+        "grid_on": false,
+        "lane_open": true,
+        "lane_width_m": 3,
+        "exposed_passages": 0,
+        "loose_released": 5
+      },
+      "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+      "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6"
+    }
+  ]
+}

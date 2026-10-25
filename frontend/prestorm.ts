@@ -2,6 +2,7 @@ import {workEvidence, workFacts} from './workEvidence';
 import {preventiveWorkView, type WorkCandidate, type SelectedWork, type WorkComparison} from './preventiveWork';
 import {type ActionPlanning} from './actionPlan';
 import type {Constructor, ScenarioState} from './types';
+import {consequenceScene} from './consequenceScene';
 
 type Hazard='wind'|'trees'|'structure'|'flood'|'power'|'routes';
 type Role='general'|'arborist'|'building'|'electrician'|'traffic';
@@ -12,7 +13,7 @@ type Evidence={id:string;label:string;role:Role;check:string;action:string;benef
 type Source={id:string;title:string;url:string;published:string;locator:string;kind:string;finding:string};
 type Row={hazard:Hazard;role:Role;mode:string;status:string;start:number|null;finish:number|null;team?:number};
 type State={preventive_work:WorkComparison;action_planning:ActionPlanning;version:number;updated_at:string|null;plan:Plan;rows:Row[];review_current:boolean;review?:{order:Hazard[];model:string;reasons:Record<Hazard,string>};evidence:{hazards:Evidence[];sources:Source[];incidents:Array<{position:number[];kind:string}>;validation:{method:string}};sites:Record<Hazard,Site[]>;weather:Record<string,number|string>;coverage:Record<string,number>;power_sources:Source[];job?:{status:string;error:string|null}};
-type MapView={goTo(target:unknown,options?:unknown):Promise<unknown>;toScreen?(point:unknown):{x:number;y:number}|null;container?:HTMLElement};
+type MapView={goTo(target:unknown,options?:unknown):Promise<unknown>;toScreen?(point:unknown):{x:number;y:number}|null;container?:HTMLElement;whenLayerView?(layer:unknown):Promise<unknown>};
 const names:Record<Role,string>={general:'General crews',arborist:'Arborists',building:'Building professionals',electrician:'Electricians',traffic:'Traffic teams'};
 const reasons:Record<string,string>={current_concern:'Current concern recorded',historical_incident:'Historical incident at this location',inspection_gap:'Current inspection needed',dependency:'Depends on flooding, power or access'};
 const checks:Record<Hazard,string>={wind:'Check glazing and loose items',trees:'Arrange an arborist check',structure:'Arrange an engineer review',flood:'Check inlets and entry paths',power:'Test the complete backup chain',routes:'Check primary and alternative access'};
@@ -40,7 +41,7 @@ body.planning-mode{--plan-width:480px}.planning-mode .controls,.planning-mode .d
 .plan-pin-layer{position:fixed;inset:0;z-index:7;pointer-events:none;overflow:hidden}
 .plan-pin{position:absolute;pointer-events:auto;text-align:left;display:flex;align-items:flex-start;gap:7px;background:var(--card);color:var(--foreground);border:1px solid var(--border);border-radius:6px;padding:7px 9px;max-width:214px;min-height:38px;height:auto;font:12px/1.35 system-ui;box-shadow:0 2px 8px #0002;cursor:pointer}
 .plan-pin strong{font-size:12px;flex:none;min-width:19px;font-weight:500}.plan-pin span{display:block}.plan-pin small{display:block;color:var(--muted-foreground);font-size:10px;margin-top:3px}.plan-pin[aria-pressed=true]{border:2px solid #215f89;padding:6px 8px}.plan-pin[data-pending=true]{border-style:dashed}
-.plan-pin[hidden],.plan-pin-line[hidden]{display:none}.plan-pin-line{position:absolute;height:1px;background:#215f89;transform-origin:0 0;pointer-events:none}
+.plan-action-select{max-width:280px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--foreground);font:12px system-ui;padding:6px 10px;height:32px}.plan-pin[hidden],.plan-pin-line[hidden]{display:none}.plan-pin-line{position:absolute;height:1px;background:#215f89;transform-origin:0 0;pointer-events:none}
 .planning-mode .plan-map-note{display:block;top:auto;right:auto;left:16px;bottom:24px;max-width:none;width:360px;max-height:calc(100vh - 150px);overflow:auto;pointer-events:auto;padding:14px;border-radius:8px;box-shadow:0 6px 24px #0003;z-index:9;font:12px/1.4 system-ui}
 .plan-map-note[hidden]{display:none!important}.plan-map-note .plan-card-close{position:absolute;right:8px;top:8px;padding:0;min-height:28px;width:28px;height:28px;font-size:20px;line-height:1;border:0;background:transparent}.plan-map-note h2{padding-right:22px;font-size:16px;font-weight:400;margin:4px 0}.plan-map-note p{margin:6px 0}.plan-map-note .work-evidence-inline{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 10px;margin:12px 0;font-size:12px;line-height:1.4}.plan-map-note dt{color:var(--muted-foreground)}.plan-map-note dd{margin:0}.plan-map-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}.plan-map-note strong{display:inline;font-weight:500}.plan-card-controls{display:flex;gap:6px;justify-content:space-between;margin-top:12px}.plan-card-kicker,.plan-card-meta{font-size:11px;color:var(--muted-foreground)}.plan-card-site{font-size:13px}.plan-map-note details{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}.plan-map-note summary{font-size:12px;cursor:pointer}
 .planning-mode.plan-open .plan-map-note{display:none}
@@ -51,7 +52,7 @@ body.planning-mode{--plan-width:480px}.planning-mode .controls,.planning-mode .d
 .work-before-after{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.work-before-after>div{border:1px solid var(--border);border-radius:6px;padding:10px;min-width:0}.work-before-after h3{font-size:12px!important;font-weight:500!important;margin:0 0 6px!important}.work-before-after p{font-size:13px;line-height:1.4;margin:0 0 10px}.work-before-after small{font-size:11px;line-height:1.4;color:var(--muted-foreground);display:block}.work-comparison-qualifier{font-size:11px!important;color:var(--muted-foreground);margin:6px 0!important}
 html[data-map-comparison=before] .work-state-before,html[data-map-comparison=after] .work-state-after{border-color:var(--foreground);background:var(--muted)}
 html[data-map-comparison=before] .plan-pin-line{background:#70757b}html[data-map-comparison=before] .plan-pin[aria-pressed=true]{border-color:#70757b}
-@media(max-width:767px){.plan-tools{max-width:calc(100vw - 16px);gap:5px}.plan-tools button{font-size:11px}.plan-tools .plan-comparison-tabs button{padding:4px 10px}.planning-mode .plan-panel{top:146px}.work-before-after>div{padding:8px}.work-before-after p{font-size:12px}}
+@media(max-width:767px){.plan-tools{max-width:calc(100vw - 16px);gap:5px}.plan-tools button{font-size:11px}.plan-action-select{max-width:100%;width:100%;flex-basis:100%}.plan-tools .plan-comparison-tabs button{padding:4px 10px}.planning-mode .plan-panel{top:146px}.work-before-after>div{padding:8px}.work-before-after p{font-size:12px}}
 `;
 
 export async function planningView(_host:HTMLElement,map:{add(layer:unknown):void},onFlood:(value:Float32Array|undefined)=>void){
@@ -67,10 +68,13 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
 
   const [Layer,Graphic,Point]=await new Promise<Constructor[]>((resolve,reject)=>window.require(['esri/layers/GraphicsLayer','esri/Graphic','esri/geometry/Point'],(...m)=>resolve(m as Constructor[]),reject));
   const layer=new Layer({title:'Historical reports and preparation locations',elevationInfo:{mode:'relative-to-ground',offset:2}}) as {removeAll():void;addMany(a:unknown[]):void};map.add(layer);
+  const consequences=await consequenceScene(map,Boolean(document.querySelector('#scene')));
   let state:State|undefined,selected:Hazard='wind',draft:Plan|undefined,dirty=false,busy=false,polling=false,view:MapView|undefined,showPower=false,showHistory=false,app:ScenarioState|undefined,lastStamp='';
   type Focus=WorkCandidate&Partial<SelectedWork>;
   let focusedAction:Focus|undefined;
   let cardClosed=false;
+  let overview=true;
+  let modelDetail=false;
   let mapMode:'before'|'after'='after';
   let pinLayoutKey='',lastPinFrame=0;
   let pins:Array<{element:HTMLButtonElement;line:HTMLElement;point:unknown;ids:string[]}>=[];
@@ -93,27 +97,33 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     }
     return jobs;
   }
-  function chooseWork(work:Focus){cardClosed=false;focusedAction=work;draw();document.body.classList.remove('plan-open');updateTools();}
+  async function focusWork(work:Focus){
+    const position=await consequences.anchor(work);
+    if(focusedAction?.id!==work.id||!modelDetail)return;
+    const target=new Point({longitude:position[0],latitude:position[1],z:position[2],spatialReference:{wkid:4326}});
+    if(view)void view.goTo({target,scale:1800,tilt:50},{animate:false}).catch(()=>{});
+  }
+  function chooseWork(work:Focus){cardClosed=false;focusedAction=work;draw();document.body.classList.remove('plan-open');updateTools();if(modelDetail)void focusWork(work);}
   function updateTools(){
     const open=document.body.classList.contains('plan-open');
     const comparison=text('div','','plan-comparison-tabs');comparison.setAttribute('role','group');comparison.setAttribute('aria-label','Map comparison');
-    for(const [value,label] of [['before','Do nothing'],['after','After planned work']] as const){const tab=button(label,()=>{mapMode=value;draw();});tab.setAttribute('aria-pressed',String(mapMode===value));comparison.append(tab);}
-    mapTools.replaceChildren(comparison,button(open?'Close plan':'Resources & plan',()=>{document.body.classList.toggle('plan-open');updateTools();}),button('All sites',()=>{if(view&&pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});}),text('small',mapMode==='before'?'Same storm · no added work':'Same storm · planned completion, not observed'));
+    for(const [value,label] of [['before','Do nothing'],['after','Take this action']] as const){const tab=button(label,()=>{mapMode=value;draw();});tab.setAttribute('aria-pressed',String(mapMode===value));comparison.append(tab);}
+    const select=document.createElement('select');select.setAttribute('aria-label','Action to compare');select.className='plan-action-select';for(const work of mapWork()){const option=document.createElement('option');option.value=work.id;option.textContent=(workFacts[work.operation_id]?.name??work.label)+' · '+work.site.label;select.append(option);}select.value=focusedAction?.id??'';select.onchange=()=>{const work=mapWork().find(w=>w.id===select.value);if(work)chooseWork(work);};
+    const detail=button(modelDetail?'Neighborhood':'Model detail',()=>{modelDetail=!modelDetail;overview=!modelDetail;draw();if(modelDetail&&focusedAction)void focusWork(focusedAction);else if(view&&pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});});
+    mapTools.replaceChildren(comparison,select,detail,button(open?'Close plan':'Resources & plan',()=>{document.body.classList.toggle('plan-open');updateTools();}),button('All sites',()=>{modelDetail=false;overview=true;draw();if(view&&pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});}),text('small','Same storm · illustrative model'));
 
   }
   function renderMapCard(){
     if(!state||!draft)return;
     mapNote.hidden=cardClosed;if(cardClosed)return;
-    const work=focusedAction,mapItems=mapWork();mapNote.replaceChildren();
+    const work=focusedAction;mapNote.replaceChildren();
     const close=button('×',()=>{cardClosed=true;mapNote.hidden=true;pinLayoutKey='';positionPins();document.querySelector<HTMLButtonElement>('.plan-pin[aria-pressed=true]')?.focus();});close.className='plan-card-close';close.setAttribute('aria-label','Close action details');mapNote.append(close);
     if(!work){mapNote.append(text('h2','Choose work for this storm'),text('p','Set resources and generate a plan.'),button('Resources & plan',()=>{document.body.classList.add('plan-open');updateTools();}));return;}
     const planned=work.priority!==undefined;
     mapNote.dataset.workId=work.id;
-    mapNote.append(text('div',planned?`Priority ${work.priority} · proposed work`:'Not scheduled · inspection needed','plan-card-kicker'),text('h2',workFacts[work.operation_id]?.name??work.label),text('p',work.site.label,'plan-card-site'),text('p',planned?`${work.assignment} · ${work.people} people · +${work.start}–${work.finish} min`:`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min if feasible`,'plan-card-meta'),workEvidence(work,state.preventive_work,draft.tasks));
-    if(!planned&&work.feasibility.reasons.length)mapNote.append(text('p',work.feasibility.reasons.join('. '),'plan-card-meta'));
-    const details=document.createElement('details');details.append(text('summary','Work scope & conditions'),text('p',work.output));for(const condition of work.conditions)details.append(text('p',condition));details.append(text('p',work.site.basis,'plan-card-meta'));mapNote.append(details);
-    const index=mapItems.findIndex(w=>w.id===work.id),controls=text('div','','plan-card-controls');
-    controls.append(button('Previous',()=>chooseWork(mapItems[(index-1+mapItems.length)%mapItems.length])),button('Locate',()=>{if(view)void view.goTo({center:work.site.position,zoom:16},{animate:false}).catch(()=>{});}),button('Next',()=>chooseWork(mapItems[(index+1)%mapItems.length])));mapNote.append(controls);
+    mapNote.append(text('div',planned?`Priority ${work.priority} · illustrative outcome`:'Preview · not in the current resource plan','plan-card-kicker'),text('h2',workFacts[work.operation_id]?.name??work.label),text('p',work.site.label,'plan-card-site'),text('p',planned?`${work.assignment} · ${work.people} people · +${work.start}–${work.finish} min`:`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min`,'plan-card-meta'));
+    if(['backup-pump','fit-barrier','sandbag-wall','clear-inlet','move-contents'].includes(work.operation_id))mapNote.append(text('p',modelDetail?'Ground-level cutaway · assumed indoor conditions; layout unknown':'Assumed indoor conditions · layout unknown','plan-card-meta'));
+    mapNote.append(workEvidence(work,state.preventive_work,draft.tasks,true));
   }
   function positionPins(){
     if(!view?.toScreen)return;
@@ -123,13 +133,13 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     if(key===pinLayoutKey)return;pinLayoutKey=key;
     const rect=view.container?.getBoundingClientRect()??document.querySelector('#scene,#map')!.getBoundingClientRect();
     const boxes:Array<{x:number;y:number;w:number;h:number}>=[{x:8,y:56,w:innerWidth>767?730:innerWidth-16,h:innerWidth>767?48:90}];
-    if(!cardClosed&&focusedAction&&innerWidth>767){
-      const screen=view.toScreen(new Point({longitude:focusedAction.site.position[0],latitude:focusedAction.site.position[1],spatialReference:{wkid:4326}}));
-      if(screen){const x=screen.x+rect.left,y=screen.y+rect.top,w=mapNote.offsetWidth,h=mapNote.offsetHeight;let left=x+w+42<innerWidth?x+32:x-w-32;left=Math.max(16,Math.min(innerWidth-w-16,left));const top=Math.max(116,Math.min(innerHeight-h-24,y-h/2));mapNote.style.left=left+'px';mapNote.style.top=top+'px';mapNote.style.bottom='auto';boxes.push({x:left,y:top,w,h});}
-    }else{const r=mapNote.getBoundingClientRect();boxes.push({x:r.x,y:r.y,w:r.width,h:r.height});}
+    if(!cardClosed&&innerWidth>767){
+      const w=mapNote.offsetWidth,h=mapNote.offsetHeight,left=innerWidth-w-16,top=120;
+      mapNote.style.left=left+'px';mapNote.style.top=top+'px';mapNote.style.bottom='auto';boxes.push({x:left,y:top,w,h});
+    }
     for(const [index,pin] of pins.entries()){
       const screen=screens[index];const x=(screen?.x??-9999)+rect.left,y=(screen?.y??-9999)+rect.top;
-      const visible=Number.isFinite(x)&&Number.isFinite(y)&&x>0&&x<innerWidth&&y>56&&y<innerHeight-10;
+      const visible=overview&&Number.isFinite(x)&&Number.isFinite(y)&&x>0&&x<innerWidth&&y>56&&y<innerHeight-10;
       pin.element.hidden=!visible;pin.line.hidden=!visible;if(!visible)continue;
       const w=pin.element.offsetWidth,h=pin.element.offsetHeight;
       const choices:number[][]=[];for(let step=0;step<8;step++)for(const dx of [16,-w-16])for(const dy of [-h-14-step*(h+12),16+step*(h+12)])choices.push([dx,dy]);
@@ -155,7 +165,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
       const line=text('div','','plan-pin-line');pinLayer.append(line,pin);pins.push({element:pin,line,point,ids:rows.map(w=>w.id)});
     }
     document.documentElement.dataset.mapComparison=mapMode;
-    layer.removeAll();layer.addMany(items);renderMapCard();updateTools();pinLayoutKey='';lastPinFrame=0;positionPins();
+    layer.removeAll();layer.addMany(items);void consequences.draw(focusedAction,mapMode,modelDetail);renderMapCard();updateTools();pinLayoutKey='';lastPinFrame=0;positionPins();
     document.documentElement.dataset.mapComparison=mapMode;document.documentElement.dataset.planAction=focusedAction?.id??'';document.documentElement.dataset.planHazard=focusedAction?.hazard??selected;document.documentElement.dataset.planLocation=focusedAction?.site.id??siteFor(selected).id;document.documentElement.dataset.planPowerLines=String(showPower?powerLines.length:0);document.documentElement.dataset.planHistoricalReports=String(showHistory?state.evidence.incidents.length:0);
   }
   function focusSite(){focusedAction=undefined;draw();const s=siteFor(selected);void view?.goTo({center:s.position,zoom:16},{animate:false}).catch(()=>{});}
@@ -204,5 +214,5 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
   async function poll(){if(polling||busy)return;polling=true;try{const next=await api<State>('/api/prestorm');const stamp=JSON.stringify([next.version,next.job,next.review_current,next.weather]);if(!dirty&&stamp!==lastStamp){state=next;const active=mapWork(next);focusedAction=active.find(s=>s.id===focusedAction?.id)??active[0];draft=structuredClone(next.plan);lastStamp=stamp;const scroll=panel.scrollTop;render();panel.scrollTop=scroll;}}catch(e){if(state){announce('Refresh failed; saved plan retained. '+String(e),true);mapNote.prepend(text('p','Refresh failed. Showing the saved plan.','plan-error'));}else{mapNote.replaceChildren(text('h2','Work sites could not load'),button('Retry',()=>void poll()));}}finally{polling=false;}}
   try{const assets=await api<{power_lines:typeof powerLines}>('/api/risk/assets');powerLines=assets.power_lines;}catch{/* Failure is also reported by the planning inventory endpoint. */}
   await poll();setInterval(()=>void poll(),2500);
-  return {status(s:ScenarioState){app=s;},draw(_seconds:number){positionPins();},setView(v:MapView){view=v;positionPins();if(pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});}};
+  return {status(s:ScenarioState){app=s;},draw(_seconds:number){positionPins();},setView(v:MapView){view=v;positionPins();}};
 }
