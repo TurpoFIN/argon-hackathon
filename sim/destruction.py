@@ -495,8 +495,9 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         mdv = _g(water, "max_dv")   # per-frame max of depth x speed (max depth x max speed overstates it)
         dv = _bldg_adjacent_depth(city.bldg_id, np.asarray(mdv, float) if mdv is not None else maxd * np.asarray(vmax, float), nb)
         vv = _bldg_adjacent_depth(city.bldg_id, np.asarray(vmax, float), nb)
-        coll = (vv >= bp["flood_collapse_v_ms"]) & (dv >= bp["flood_collapse_dv_m2s"])
-        part = ~coll & (dv >= bp["flood_partial_dv_m2s"])
+        occupiable = np.array([float(b.get("area_m2") or 0.0) for b in buildings]) >= bp["flood_min_footprint_m2"]
+        coll = occupiable & (vv >= bp["flood_collapse_v_ms"]) & (dv >= bp["flood_collapse_dv_m2s"])
+        part = occupiable & ~coll & (dv >= bp["flood_partial_dv_m2s"])
         for m_, lvl in ((coll, 4), (part, 2)):
             up = m_ & (ds < lvl)
             ds[up] = lvl

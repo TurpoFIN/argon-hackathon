@@ -136,7 +136,9 @@
   "flood_collapse_v_ms": 2.0,
   "flood_collapse_dv_m2s": 7.0,
   "collapse_debris_reach_h": 0.5,
-  "collapse_debris_source": "assumed: collapse debris spreads about half the building height beyond the footprint (equivalent radius), downing wires, poles and trolley wire there"
+  "collapse_debris_source": "assumed: collapse debris spreads about half the building height beyond the footprint (equivalent radius), downing wires, poles and trolley wire there",
+  "flood_min_footprint_m2": 25.0,
+  "flood_min_footprint_source": "assumed: footprints under 25 m2 are kiosks, vents and station entrances, not occupiable buildings; excluded from flood structural failure (they sat next to a 12 m DEM pit at ~UTM 552116, 4182056 that sim/water.py fills)"
  },
  "roof_debris": {
   "piece_area_m2": 0.25,
