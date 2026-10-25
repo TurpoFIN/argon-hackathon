@@ -5,6 +5,17 @@ export const emptyMotion=():CameraMotion=>({panX:0,panY:0,yaw:0,pitch:0,zoom:0})
 export const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 export const heading=(value:number)=>((value%360)+360)%360;
 
+export function zoomPosition(position:{longitude:number;latitude:number;z:number},yaw:number,tilt:number,amount:number){
+  const z=clamp(position.z*Math.exp(clamp(amount,-2,2)),20,5000000);
+  // Move along the view ray, rather than asking SceneView to infer a new
+  // distance from map scale (which depends on the terrain under the centre).
+  const distance=(position.z-z)*Math.tan(clamp(tilt,0,85)*Math.PI/180);
+  const bearing=yaw*Math.PI/180,lat=position.latitude*Math.PI/180,arc=distance/6378137;
+  const nextLat=Math.asin(clamp(Math.sin(lat)*Math.cos(arc)+Math.cos(lat)*Math.sin(arc)*Math.cos(bearing),-1,1));
+  const nextLon=position.longitude+Math.atan2(Math.sin(bearing)*Math.sin(arc)*Math.cos(lat),Math.cos(arc)-Math.sin(lat)*Math.sin(nextLat))*180/Math.PI;
+  return {longitude:heading(nextLon+180)-180,latitude:nextLat*180/Math.PI,z};
+}
+
 // Translate in the horizontal camera plane. Panning must not retarget a roof
 // picked by the cursor: doing so lets SceneView change camera height and zoom.
 export function panOffset(dx:number,dy:number,scale:number,yaw:number,tilt:number,latitude:number){
