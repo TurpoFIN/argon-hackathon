@@ -396,12 +396,12 @@ video { width: 100%; max-height: 74vh; border-radius: 8px; background: #000; dis
 .kpi .v.models { font-size: 13px; font-weight: 550; }
 .empty-card { height: 100%; align-items: center; justify-content: center; text-align: center; gap: 10px; }
 .d-h { flex-wrap: wrap; row-gap: 6px; }
-@media (max-width: 1400px) {
+@media (max-width: 1760px) {
   .grid-evo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 300px 310px 330px; height: auto; }
   #card-main { grid-column: span 2; }
   .ar-cell .n { font-size: 12px; }
 }
-@media (max-width: 1400px) { #board th:nth-child(7), #board td:nth-child(7) { display: none; } }
+@media (max-width: 1760px) { #board th:nth-child(7), #board td:nth-child(7) { display: none; } .scores { grid-template-columns: repeat(2, 1fr); } }
 .is-empty .layout { grid-template-columns: minmax(0, 1fr); }
 
 /* long model text: clamp, click to expand */
@@ -427,3 +427,13 @@ video { width: 100%; max-height: 74vh; border-radius: 8px; background: #000; dis
 .approval.ok b { color: var(--good); }
 .approval.no { border-color: rgba(255, 93, 108, 0.4); background: rgba(255, 93, 108, 0.06); color: var(--dim); }
 .approval.no b { color: var(--bad); }
+
+.status { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; }
+@media (max-width: 1400px) { .status { flex-wrap: wrap; white-space: normal; } .status .pill .muted { display: none; } }
+/* header must never push the page wider than the viewport */
+.top > .brand { flex: 0 1 auto; min-width: 0; }
+.top > .brand > div { min-width: 0; }
+.brand .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top > .kpis { min-width: 0; flex-shrink: 1; }
+@media (max-width: 2100px) { .kpi.hide-s { display: none; } }
+@media (max-width: 1760px) { .top .sub { display: none; } .top { gap: 18px; } .kpis { gap: 18px; } #jobPicker { max-width: 170px; } }

@@ -36,6 +36,12 @@ Outputs: `runs/evolve/<job>/state.json` (the view polls it via `GET /api/evolve/
 `best.plan.py`, `final.json`; the best plan is also written to `runs/_jobs/<job>.plan.py`, so
 `POST /api/managed {job_id}` can verify it in the Antigravity sandbox.
 
+## Wall clock
+
+A generation takes the LLM time (Argon ~1.5 min, Flash ~1 min in parallel) plus the slowest storm run. On the mock
+sim a 3-generation run of 8 plans takes ~20 min. With the full sim each storm run is minutes, so size the run to it:
+`--population 4 --sim-workers 4` keeps one generation to about one sim run plus the model time.
+
 ## The view (`/evolve/`)
 
 Evolution chart (net benefit per candidate, best-so-far line), cost vs damage-avoided Pareto front with the budget

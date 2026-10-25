@@ -152,7 +152,9 @@ function renderTop() {
   const cfg = S.config || {};
   const end = S.status === 'running' ? Date.now() / 1000 : S.updated || Date.now() / 1000;
   const elapsed = end - (S.started || end);
-  $('#sub').textContent = `${cfg.storm || 'storm'} · budget ${money(cfg.budget_usd, { dp: 0 })} · ${cfg.population || '?'} per generation · ${cfg.sim_workers || '?'} parallel sims`;
+  const models = cfg.architect_model ? `${modelName(cfg.architect_model)} + ${modelName(cfg.mutator_model)} · ` : 'no LLM (tweaks only) · ';
+  $('#sub').textContent = `${models}${cfg.storm || 'storm'} · budget ${money(cfg.budget_usd, { dp: 0 })} · ${cfg.population || '?'} per generation · ${cfg.sim_workers || '?'} parallel sims`;
+  $('#sub').title = $('#sub').textContent;
   $('#budgetHint').textContent = Math.round((cfg.budget_usd || 50e6) / 1e6);
   const stage = S.status === 'running' ? S.stage : '';
   const label = { running: 'Running', completed: 'Completed', failed: 'Failed', awaiting_approval: 'Awaiting planner approval', approved: 'Approved by planner', rejected: 'Rejected by planner', interrupted: 'Interrupted' }[S.status] || S.status;
@@ -367,7 +369,7 @@ function renderGens() {
       <div class="gen-h"><b>${isSeed ? 'Seeds' : `Generation ${g.gen}`}</b>${!isSeed ? `<span class="chip"><i style="background:var(--argon)"></i>${esc(modelName(g.architect_model || S.config?.architect_model))}</span>` : ''}
         <span class="meta">${meta}${best ? ` · best <a href="#" data-id="${esc(best.id)}" class="glink">${money(bestNet, { sign: true })}</a>` : ''}</span></div>
       ${(g.insights || []).length ? `<div class="ins">${g.insights.map((t) => `<p>${esc(t)}</p>`).join('')}</div>` : ''}
-      ${(g.directions || []).length ? `<ol>${g.directions.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>` : isSeed ? `<div class="seeds">${D.cands.filter((c) => c.gen === 0).length} seed plans, one per strategy.</div>` : '<div class="empty-note">Argon is reading the archive…</div>'}
+      ${(g.directions || []).length ? `<ol>${g.directions.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>` : isSeed ? `<div class="seeds">${D.cands.filter((c) => c.gen === 0).length} seed plans, one per strategy.</div>` : `<div class="empty-note">${!S.config?.architect_model ? 'No architect in this run (numeric tweaks only).' : g.t_end ? 'No directions returned; mutators used default directions.' : 'Argon is reading the archive…'}</div>`}
     </div>`;
   }).join('');
   $('#gens').querySelectorAll('a[data-id]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); select(a.dataset.id); }));
@@ -563,12 +565,12 @@ function renderArch() {
     sampler: { x: 30, y: 96, w: 270, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell, the top', 'elites as inspiration, their ledgers'], c: '#5fe1ff', on: running && (llmOn || st === 'architect' || st === 'mutating') },
     db: { x: 30, y: 352, w: 270, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#5dff9d', on: running && st === 'selecting', n: nCells },
     argon: { x: 400, y: 40, w: 310, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, writes research', 'directions and a crossover plan'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
-    flash: { x: 400, y: 166, w: 310, h: 100, k: `Mutators × ${Math.max(1, N - 2)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', 'plan, one directive each'], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
+    flash: { x: 400, y: 166, w: 310, h: 100, k: `Mutators × ${Math.max(1, N - 3)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', 'plan, one directive each'], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
     tweak: { x: 400, y: 292, w: 310, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#ffb54a', on: running && cnt.tweak > 0, n: cnt.tweak },
     sandbox: { x: 800, y: 70, w: 210, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#5fe1ff', on: running && cnt.check > 0, n: cnt.check },
     cost: { x: 1050, y: 70, w: 210, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical diff', 'from cited unit costs'], c: '#ffb54a', on: running && cnt.check > 0 },
     sim: { x: 800, y: 300, w: 460, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood on 4 m lidar · LBM wind', 'tree failure · people & response · Hazus damage', 'same plan → same ledger, every time'], c: '#5fe1ff', on: running && cnt.sim > 0, n: cnt.sim },
-    eop: { x: 400, y: 446, w: 340, h: 78, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
+    eop: { x: 400, y: 446, w: 340, h: 92, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
   };
   const simOut = running && (cnt.sim > 0 || st === 'selecting');
   const edges = [
@@ -583,7 +585,7 @@ function renderArch() {
     { d: 'M1155,172 L1155,298', on: cnt.sim > 0 && running, c: '#5fe1ff', label: 'within budget', lx: 1166, ly: 240 },
     { d: 'M798,384 C620,384 480,408 302,408', on: simOut, c: '#5dff9d', m: 'ahg', label: 'ledger + score', lx: 480, ly: 392 },
     { d: 'M240,466 C240,486 330,486 398,486', on: DONE.has(S.status), c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 270, ly: 504 },
-    { d: 'M555,38 C555,8 110,8 110,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 150, ly: 58 },
+    { d: 'M555,38 C555,8 110,8 110,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 128, ly: 76 },
   ];
   edges.forEach((e) => {
     const p = el('path', { d: e.d, class: 'aedge' + (e.on ? ' on' : '') + (e.exit ? ' exit' : ''), style: `--c:${e.c}`, 'marker-end': `url(#${e.m || 'ah'})` }, svg);
