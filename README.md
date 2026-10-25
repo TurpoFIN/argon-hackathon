@@ -121,12 +121,14 @@ or structural loading becomes part of the scope.
 - `/` is the 3D view with only the view switch and source attribution.
 - `/analysis` is a top-down analytical map with flood depth, wind speed and
   rainfall fields, wind arrows, a cell-value readout and a shared time slider.
-- Change rain intensity, mean/gust wind, wind direction, added coastal rise,
-  inlet capacity or blockage in Analysis. Valid edits automatically update
-  after a 400 ms pause; no Run button is needed. Advanced surface assumptions
-  expose runoff fraction and Manning roughness. Inputs remain editable during
-  computation; the worker keeps only the latest queued values and discards
-  superseded results.
+- Drag the rain, mean/gust wind, direction, coastal rise, inlet capacity and
+  blockage sliders in Analysis. Values update immediately; requests are sent
+  at most every 200 ms while dragging and flushed on release. No Run button is
+  needed. Advanced sliders expose runoff fraction and Manning roughness.
+  Gust is kept at or above the mean wind. Controls remain editable during
+  computation; the worker interrupts obsolete calculations and computes the
+  latest values. Both views retain the previous complete result until the new
+  simulation is ready.
 - Inputs are validated by Python. The old result remains visible during a run;
   failed runs preserve it and show the error. The latest applied parameters and
   playback state persist locally in `data/scenario-state.json`.

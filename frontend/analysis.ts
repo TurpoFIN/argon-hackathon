@@ -19,11 +19,26 @@ const banner=$<HTMLParagraphElement>('#run-status'),canvas=$<HTMLCanvasElement>(
 const raster=document.createElement('canvas'),rctx=raster.getContext('2d')!;
 let redrawRaster=true,lastFrame=-1,lastDraw=0;
 let editVersion=0,sending=false,sendAgain=false;
-let updateTimer:ReturnType<typeof setTimeout>;
+let updateTimer:ReturnType<typeof setTimeout>|undefined;
 
 function showError(error:unknown):void {banner.textContent=error instanceof Error?error.message:String(error);banner.dataset.error='true';}
 function fillForm(values:Parameters):void {
+  $<HTMLInputElement>('#gust_mps').min=String(values.wind_mps);
   for(const [key,value] of Object.entries(values))$<HTMLInputElement>(`#${key}`).value=String(value);
+  syncSliders();
+}
+function syncSliders():void {
+  const mean=$<HTMLInputElement>('#wind_mps'),gust=$<HTMLInputElement>('#gust_mps');
+  const gustValue=gust.valueAsNumber;
+  gust.min=mean.value;
+  gust.value=String(Math.max(mean.valueAsNumber,gustValue));
+  fields.querySelectorAll<HTMLInputElement>('input[type=range]').forEach(slider=>{
+    const value=slider.valueAsNumber,precision=slider.step.split('.')[1]?.length??0;
+    const formatted=value.toFixed(precision);
+    $<HTMLOutputElement>(`#${slider.id}-value`).value=formatted;
+    slider.setAttribute('aria-valuetext',`${formatted} ${slider.dataset.unit??''}`.trim());
+    slider.style.setProperty('--range-progress',`${(value-Number(slider.min))/(Number(slider.max)-Number(slider.min))*100}%`);
+  });
 }
 function readForm():Parameters {
   return Object.fromEntries(Object.keys(defaults).map(key=>[key,$<HTMLInputElement>(`#${key}`).valueAsNumber])) as unknown as Parameters;
@@ -53,16 +68,22 @@ async function sendLatest():Promise<void> {
   }catch(error){showError(error);}
   finally{
     sending=false;
-    if(sendAgain||editVersion!==submittedVersion){sendAgain=false;clearTimeout(updateTimer);updateTimer=setTimeout(()=>{void sendLatest();},150);}
+    if(sendAgain||editVersion!==submittedVersion){sendAgain=false;queueUpdate();}
   }
 }
+function queueUpdate():void {
+  // Throttle while dragging, rather than postponing every update until release.
+  if(updateTimer===undefined)updateTimer=setTimeout(()=>{updateTimer=undefined;void sendLatest();},200);
+}
 function scheduleUpdate():void {
-  dirty=true;editVersion++;clearTimeout(updateTimer);
-  $('#draft-state').textContent='Editing';banner.textContent='Changes update automatically…';banner.dataset.error='false';
-  updateTimer=setTimeout(()=>{void sendLatest();},400);
+  syncSliders();dirty=true;editVersion++;
+  $('#draft-state').textContent='Updating';banner.textContent='Updating simulation…';banner.dataset.error='false';
+  queueUpdate();
 }
 form.addEventListener('input',scheduleUpdate);
-form.addEventListener('submit',event=>{event.preventDefault();clearTimeout(updateTimer);void sendLatest();});
+function flushUpdate():void {clearTimeout(updateTimer);updateTimer=undefined;void sendLatest();}
+form.addEventListener('change',flushUpdate);
+form.addEventListener('submit',event=>{event.preventDefault();flushUpdate();});
 $('#restore').addEventListener('click',()=>{fillForm(defaults);scheduleUpdate();});
 document.querySelectorAll<HTMLButtonElement>('[data-field]').forEach(button=>button.addEventListener('click',()=>{
   field=button.dataset.field as Field;

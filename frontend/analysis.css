@@ -21,8 +21,15 @@ fieldset { border:0; padding:0; margin:0; min-width:0; }
 section section,fieldset>section { border-top:1px solid var(--border); padding:16px 0; }
 label { display:flex; align-items:center; justify-content:space-between; margin:0 0 6px; gap:5px; font-size:12px; }
 label span { color:var(--muted-foreground); font-size:11px; }
-input[type=number] { display:block; width:100%; height:32px; padding:0 10px; border:1px solid var(--border); border-radius:6px; background:var(--background); color:var(--foreground); font:inherit; font-variant-numeric:tabular-nums; }
-input[type=number]+label { margin-top:12px; }
+label output { color:var(--foreground); font-size:12px; font-variant-numeric:tabular-nums; }
+#parameter-fields input[type=range] { display:block; appearance:none; width:100%; height:28px; margin:0; padding:0; background:transparent; cursor:ew-resize; touch-action:pan-y; }
+#parameter-fields input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:999px; background:linear-gradient(to right,var(--foreground) var(--range-progress),var(--gray-500) var(--range-progress)); }
+#parameter-fields input[type=range]::-webkit-slider-thumb { appearance:none; width:16px; height:16px; margin-top:-6px; border-radius:50%; background:var(--foreground); border:2px solid var(--card); box-shadow:0 0 0 1px var(--foreground); }
+#parameter-fields input[type=range]::-moz-range-track { height:4px; border-radius:999px; background:var(--gray-500); }
+#parameter-fields input[type=range]::-moz-range-progress { height:4px; border-radius:999px; background:var(--foreground); }
+#parameter-fields input[type=range]::-moz-range-thumb { width:12px; height:12px; border-radius:50%; background:var(--foreground); border:2px solid var(--card); box-shadow:0 0 0 1px var(--foreground); }
+#parameter-fields input[type=range]:disabled { cursor:wait; opacity:.5; }
+#parameter-fields input[type=range]+label { margin-top:12px; }
 .pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
 .pair label { min-height:16px; }
 .pair input { margin-bottom:0; }
@@ -62,7 +69,6 @@ a { color:var(--foreground); }
 .timeline input[type=range] { flex:1; min-width:50px; accent-color:var(--accent-solid); }
 .timeline output { width:44px; font-variant-numeric:tabular-nums; }
 .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
-[data-theme=dark] input[type=number] { background:var(--bg-subtle); border-color:var(--gray-700); }
 [data-theme=dark] fieldset>section,[data-theme=dark] details,[data-theme=dark] .apply { border-color:var(--gray-800); }
 @media(max-width:1050px) { .workspace { grid-template-columns:270px minmax(0,1fr); }.map-toolbar{padding:10px;gap:6px}.results-row{gap:12px}.results-row>.muted{display:none} }
 @media(max-width:800px) { .workspace { display:flex; flex-direction:column; }.controls{max-height:34vh;flex:none;border-right:0;border-bottom:1px solid var(--border)}.analysis-view{flex:1}.controls form{padding-top:12px}fieldset>section{padding:12px 0}.app-header{padding:0 12px}.app-header .muted{display:none}.map-toolbar{flex-wrap:wrap}.field-tabs button{padding:0 10px}.legend{width:188px;left:10px;padding:10px}.legend #probe{font-size:10px}.results-row{font-size:11px;gap:14px}.timeline{padding:10px;gap:8px}.timeline button{padding:0 10px} }

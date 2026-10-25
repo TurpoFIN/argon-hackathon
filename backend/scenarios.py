@@ -41,7 +41,16 @@ class PlaybackUpdate(BaseModel):
     speed: float | None = Field(default=None, ge=1, le=60)
 
 
-def calculate(parameters: Parameters, destination: Path):
+class SupersededCalculation(Exception):
+    """The slider moved again; discard this calculation without publishing it."""
+
+
+def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: False):
+    def check_cancelled():
+        if should_cancel():
+            raise SupersededCalculation()
+
+    check_cancelled()
     p = parameters
     with np.load(DATA / "model-inputs.npz") as arrays:
         z, height, walls, ocean = [arrays[name] for name in ["ground", "height", "buildings", "ocean"]]
@@ -52,12 +61,15 @@ def calculate(parameters: Parameters, destination: Path):
     dx = source["grid"]["cell_m"]
     # Matrices retain the same grid as the static public data in both views.
     u, v = potential_wind(walls, p.wind_mps, p.wind_from_deg, dx)
+    check_cancelled()
     tide_base = source["tide_base_navd88_m"]
     h = np.zeros_like(z)
     h[ocean] = np.maximum(tide_base-z[ocean], 0)
     budget = Budget(initial_m3=float(h.sum()*dx**2))
     frames, metrics = [], []
     for step in range(3601):
+        if step % 60 == 0:
+            check_cancelled()
         if step % 120 == 0:
             frames.append(h.astype("float32").copy())
             land_depth = h[~ocean & ~walls]
@@ -153,7 +165,7 @@ class ScenarioStore:
             identity = uuid.uuid4().hex[:12]
             folder = DATA / "scenarios" / identity
             try:
-                calculate(parameters, folder)
+                calculate(parameters, folder, lambda: version != self._request_version)
                 with self.lock:
                     if version != self._request_version:
                         # Never publish an intermediate result after newer edits.

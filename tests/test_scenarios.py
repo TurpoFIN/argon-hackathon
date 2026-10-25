@@ -1,6 +1,8 @@
 import unittest
 import tempfile
 import threading
+import json
+import numpy as np
 from pathlib import Path
 from unittest.mock import patch
 from pydantic import ValidationError
@@ -32,7 +34,7 @@ class LiveQueueTests(unittest.TestCase):
     def test_latest_edit_wins_and_keeps_playback(self):
         started,release=threading.Event(),threading.Event()
         calls=[]
-        def calculate(parameters,folder):
+        def calculate(parameters,folder,should_cancel):
             calls.append(parameters.rain_mm_h)
             if len(calls)==1:
                 started.set();self.assertTrue(release.wait(3))
@@ -59,7 +61,7 @@ class LiveQueueTests(unittest.TestCase):
 
     def test_return_to_current_values_discards_inflight_result(self):
         started,release=threading.Event(),threading.Event()
-        def calculate(parameters,folder):
+        def calculate(parameters,folder,should_cancel):
             started.set();release.wait(3);folder.mkdir(parents=True)
         with tempfile.TemporaryDirectory() as temp,patch.object(scenarios,'DATA',Path(temp)),patch.object(scenarios,'calculate',calculate):
             Path(temp,'model-inputs.npz').touch();store=scenarios.ScenarioStore()
@@ -74,7 +76,7 @@ class LiveQueueTests(unittest.TestCase):
 
     def test_failure_of_superseded_run_does_not_replace_latest(self):
         started,release=threading.Event(),threading.Event()
-        def calculate(parameters,folder):
+        def calculate(parameters,folder,should_cancel):
             if parameters.rain_mm_h==50:
                 started.set();release.wait(3);raise RuntimeError('superseded failure')
             folder.mkdir(parents=True)
@@ -89,6 +91,25 @@ class LiveQueueTests(unittest.TestCase):
             self.assertEqual(state['status'],'ready')
             self.assertEqual(state['parameters']['rain_mm_h'],60)
             self.assertIsNone(state['error'])
+
+    def test_superseded_calculation_stops_before_completing_the_model(self):
+        with tempfile.TemporaryDirectory() as temp,patch.object(scenarios,'DATA',Path(temp)):
+            zeros=np.zeros((4,4))
+            np.savez(Path(temp,'model-inputs.npz'),ground=zeros,height=zeros,
+                buildings=zeros.astype(bool),ocean=zeros.astype(bool),runoff_weights=np.ones((4,4)),
+                drain_counts=zeros,lon=zeros,lat=zeros)
+            Path(temp,'manifest.json').write_text(json.dumps({'grid':{'cell_m':12},'tide_base_navd88_m':2.368}))
+            calls=0
+            advance=scenarios.advance_water
+            def step(*args,**kwargs):
+                nonlocal calls
+                calls+=1
+                return advance(*args,**kwargs)
+            folder=Path(temp,'cancelled')
+            with patch.object(scenarios,'advance_water',step),self.assertRaises(scenarios.SupersededCalculation):
+                scenarios.calculate(Parameters(),folder,lambda:calls>0)
+            self.assertEqual(calls,60)
+            self.assertFalse(folder.exists())
 
 
 if __name__=='__main__':
