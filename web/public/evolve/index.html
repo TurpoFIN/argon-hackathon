@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StormSim SF · Evolve</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="./evolve.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M6 20c4-8 10-12 20-12" />
+        <path d="M6 26c5-6 11-9 20-9" />
+        <circle cx="26" cy="8" r="2.2" />
+      </svg>
+      <div>
+        <div class="title">StormSim SF <span class="sep">·</span> Evolve</div>
+        <div class="sub" id="sub">loading…</div>
+      </div>
+    </div>
+    <div class="status" id="status"></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="actions">
+      <select id="jobPicker" title="Evolution run"></select>
+      <button class="btn primary" id="newRunBtn">New run</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="evolution">Evolution</button>
+    <button class="tab" data-tab="architecture">Architecture</button>
+    <div class="legend" id="legend"></div>
+  </nav>
+
+  <main class="layout">
+    <section class="content">
+      <div class="view" id="view-evolution">
+        <div class="grid-evo">
+          <div class="card span2" id="card-main">
+            <div class="card-h"><h2>Net benefit per candidate</h2><span class="hint">damage avoided − plan cost, within the $<span id="budgetHint">50</span>M budget · line = best so far</span></div>
+            <div class="chart" id="mainChart"></div>
+          </div>
+          <div class="card" id="card-archive">
+            <div class="card-h"><h2>Program database</h2><span class="hint">MAP-Elites archive: best plan per strategy × cost band</span></div>
+            <div id="archive"></div>
+          </div>
+          <div class="card" id="card-pareto">
+            <div class="card-h"><h2>Cost vs damage avoided</h2><span class="hint">Pareto front · BCR = 1 diagonal</span></div>
+            <div class="chart" id="pareto"></div>
+          </div>
+          <div class="card" id="card-board">
+            <div class="card-h"><h2>Leaderboard</h2><span class="hint">top 10 within budget</span></div>
+            <div id="board" class="scroll"></div>
+          </div>
+          <div class="card" id="card-gens">
+            <div class="card-h"><h2>Argon’s research directions</h2><span class="hint">read the whole archive each generation</span></div>
+            <div id="gens" class="scroll"></div>
+          </div>
+        </div>
+      </div>
+      <div class="view hidden" id="view-architecture">
+        <div class="card arch-card">
+          <div class="card-h"><h2>The evolution loop</h2><span class="hint">live: nodes light up with the candidates currently in each stage</span></div>
+          <div id="arch"></div>
+        </div>
+        <div class="arch-foot">
+          <div class="card why">
+            <div class="card-h"><h2>Why this is AlphaEvolve-style</h2></div>
+            <ul>
+              <li><b>Programs, not parameters.</b> Every candidate is a full Python <code>apply(city)</code> plan. Flash edits it with SEARCH/REPLACE diffs; Argon rewrites and crosses over whole plans.</li>
+              <li><b>A machine-checkable evaluator.</b> The storm, solvers, damage curves and cited cost table are locked and deterministic: same plan, same ledger, so the score can't be talked up.</li>
+              <li><b>An evolutionary database.</b> A MAP-Elites archive keeps the best plan for each strategy and cost band, so the search stays diverse instead of collapsing on one idea.</li>
+            </ul>
+          </div>
+          <div class="card usage">
+            <div class="card-h"><h2>Model usage</h2></div>
+            <div id="usage"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="detail" id="detail"></aside>
+  </main>
+
+  <footer class="log" id="log"></footer>
+
+  <div class="tip" id="tip"></div>
+
+  <div class="modal hidden" id="modal">
+    <div class="modal-box" id="modalBox"></div>
+  </div>
+
+  <script type="module" src="./evolve.js"></script>
+</body>
+</html>
