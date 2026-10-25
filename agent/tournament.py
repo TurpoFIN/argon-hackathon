@@ -32,6 +32,7 @@ SUPPLIED = {
     "argon": "/home/ubuntu/work/argonhack/runs/20261025-224323-61b5-final-gemini-4-argon/plan_code.py",
     "walls": "/home/ubuntu/work/argonhack/runs/20261025-224322-3b01-final-walls-everywhere/plan_code.py",
 }
+SUPPLIED_JOB_IDS = {"flash": "224324-c87e", "argon": "224323-61b5", "walls": "224322-3b01", "baseline": "224319-b298"}
 
 
 def _hash(code: str | None) -> str:
@@ -260,9 +261,10 @@ def _no_plan(base_dir: Path, base: dict, budget: float) -> dict:
 def _score_supplied_process(args):
     name, model, code, storm, budget = args
     runner.ensure_video = lambda run_dir, log=None: None
+    t0 = time.time()
     r = runner.execute_run(storm, code, label=f"tournament supplied {name}", budget=budget)
     _, base = runner.baseline(storm)
-    return _entry_from_run(name, model, code, r, base, budget, 0, "supplied_final")
+    return _entry_from_run(name, model, code, r, base, budget, time.time() - t0, "supplied_final")
 
 
 def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: int = 1) -> dict:
@@ -276,13 +278,15 @@ def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: in
     candidates = _candidate_pack()[:max(1, candidate_limit)]
     measured = []
     for c in candidates:
+        t0 = time.time()
         r = runner.execute_run(storm, c["code"], label=f"tournament greedy {c['name']}", budget=budget)
-        measured.append(_entry_from_run(c["name"], None, c["code"], r, base, budget, 0, "greedy_candidate"))
+        measured.append(_entry_from_run(c["name"], None, c["code"], r, base, budget, time.time() - t0, "greedy_candidate"))
     chosen = [c for c, r in zip(candidates, measured) if r.get("status") == "scored" and
               float(r.get("damage_avoided_usd") or 0) > 0 and float(r.get("plan_cost_usd") or 0) <= budget]
     code = _plan("\n\n".join(c["body"] for c in chosen)) if chosen else _plan("pass")
+    t0 = time.time()
     greedy_run = runner.execute_run(storm, code, label="tournament fair greedy", budget=budget)
-    greedy = _entry_from_run("FAIR greedy multi-hazard", "deterministic greedy", code, greedy_run, base, budget, 0, "greedy")
+    greedy = _entry_from_run("FAIR greedy multi-hazard", "deterministic greedy", code, greedy_run, base, budget, time.time() - t0, "greedy")
     greedy.update({"candidate_count": len(candidates), "candidate_measurements": measured,
                    "selection_rule": "one-at-a-time damage avoided / sourced cost; affordable candidates only"})
     entries.append(greedy)
@@ -294,11 +298,19 @@ def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: in
                              None if key == "walls" else f"gemini-{key.replace('argon', '4-argon').replace('flash', '3.8-flash')}", p.read_text()))
     args = [(n, m, c, storm, budget) for n, m, c in supplied]
     with cf.ProcessPoolExecutor(max_workers=min(3, len(args)), mp_context=mp.get_context("spawn")) as pool:
-        entries.extend(pool.map(_score_supplied_process, args))
+        supplied_entries = list(pool.map(_score_supplied_process, args))
+    for e in supplied_entries:
+        if e.get("name") == "Gemini 3.8 Flash":
+            e["source_job_id"] = SUPPLIED_JOB_IDS["flash"]
+        elif e.get("name") == "Gemini 4 Argon":
+            e["source_job_id"] = SUPPLIED_JOB_IDS["argon"]
+        elif e.get("name") == "Walls everywhere":
+            e["source_job_id"] = SUPPLIED_JOB_IDS["walls"]
+    entries.extend(supplied_entries)
     evidence = {"schema_version": 1, "status": "done", "storm": storm, "budget_usd": budget,
                 "started_utc": _utc(), "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1],
                 "baseline_run_id": base_dir.name, "provenance": {"source": "lead final_runs.py supplied plans",
-                "plan_paths": SUPPLIED}, "entries": entries}
+                "plan_paths": SUPPLIED, "source_job_ids": SUPPLIED_JOB_IDS}, "entries": entries}
     greedy_rec = next((e for e in entries if e.get("kind") == "greedy"), None)
     argon_rec = next((e for e in entries if e.get("model") == "gemini-4-argon"), None)
     if argon_rec and greedy_rec and argon_rec.get("status") == greedy_rec.get("status") == "scored":
@@ -313,9 +325,11 @@ def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: in
 
 def _write_report(evidence: dict):
     entries = evidence.get("entries", [])
+    greedy = next((e for e in entries if e.get("kind") == "greedy"), {})
+    measured_note = f"The live deadline run measured {greedy.get('candidate_count', '?')} greedy candidate intervention(s) one at a time; this smaller menu is stated explicitly in the JSON."
     lines = ["# StormSim SF tournament evidence", "", f"Storm: `{evidence['storm']}`; budget: **$50M**; all entries use the locked cost planner.", "",
              evidence.get("headline", "Headline pending: the model runs are still in progress."), "",
-             "The greedy rule measures each candidate intervention as a standalone plan, ranks by damage avoided per sourced dollar, and fills the budget in that order. It is a normal `def apply(city)` plan scored by the same runner. The table is reported as measured, including a greedy win or tie if that is what this storm produces.", "",
+             "The greedy rule measures each candidate intervention as a standalone plan, ranks by damage avoided per sourced dollar, and fills the budget in that order. It is a normal `def apply(city)` plan scored by the same runner. The table is reported as measured, including a greedy win or tie if that is what this storm produces.", measured_note, "",
              "| Entry | Model | Damage | Avoided | Cost | Net benefit | BCR | Run |", "|---|---|---:|---:|---:|---:|---:|---|"]
     for e in entries:
         lines.append(f"| {e.get('name')} | {e.get('model') or 'none'} | ${float(e.get('damage_usd') or 0)/1e6:.1f}M | ${float(e.get('damage_avoided_usd') or 0)/1e6:.1f}M | ${float(e.get('plan_cost_usd') or 0)/1e6:.1f}M | ${float(e.get('net_benefit_usd') or 0)/1e6:.1f}M | {e.get('bcr') if e.get('bcr') is not None else '—'} | `{e.get('run_id', '—')}` |")

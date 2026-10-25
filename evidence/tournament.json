@@ -1,0 +1,791 @@
+{
+  "schema_version": 1,
+  "status": "done",
+  "storm": "elnino_ar_2026",
+  "budget_usd": 50000000.0,
+  "started_utc": "2026-10-25T23:13:20Z",
+  "finished_utc": "2026-10-25T23:13:20Z",
+  "mock_sim": false,
+  "baseline_run_id": "20261025-230037-1a20-tournament-current-basel",
+  "provenance": {
+    "source": "lead final_runs.py supplied plans",
+    "plan_paths": {
+      "flash": "/home/ubuntu/work/argonhack/runs/20261025-224324-c87e-final-gemini-3-8-flash/plan_code.py",
+      "argon": "/home/ubuntu/work/argonhack/runs/20261025-224323-61b5-final-gemini-4-argon/plan_code.py",
+      "walls": "/home/ubuntu/work/argonhack/runs/20261025-224322-3b01-final-walls-everywhere/plan_code.py",
+      "baseline": "/home/ubuntu/work/argonhack/runs/20261025-224319-b298-final-baseline-elnino-ar/plan_code.py"
+    },
+    "source_job_ids": {
+      "No plan": "224319-b298",
+      "Gemini 3.8 Flash": "224324-c87e",
+      "Gemini 4 Argon": "224323-61b5",
+      "Walls everywhere": "224322-3b01",
+      "baseline": "224319-b298"
+    },
+    "source_plan_hashes": {
+      "flash": "f295266fa04765ca",
+      "argon": "bedaff24e8cc5c06",
+      "walls": "910199c5cdf5abb7",
+      "baseline": "noplan"
+    }
+  },
+  "entries": [
+    {
+      "name": "No plan",
+      "kind": "baseline",
+      "model": null,
+      "status": "scored",
+      "run_id": "20261025-230037-1a20-tournament-current-basel",
+      "plan_hash": "noplan",
+      "ledger_hash": "a4086dde580f95a9",
+      "damage_usd": 258483456,
+      "damage_avoided_usd": 0,
+      "plan_cost_usd": 0,
+      "net_benefit_usd": 0,
+      "bcr": null,
+      "within_budget": true,
+      "by_cause": {
+        "flood_structure": {
+          "now": 109223434,
+          "baseline": 109223434,
+          "delta": 0
+        },
+        "flood_contents": {
+          "now": 98823629,
+          "baseline": 98823629,
+          "delta": 0
+        },
+        "life_safety": {
+          "now": 22793600,
+          "baseline": 22793600,
+          "delta": 0
+        },
+        "business_interruption": {
+          "now": 15939003,
+          "baseline": 15939003,
+          "delta": 0
+        },
+        "relocation": {
+          "now": 5760083,
+          "baseline": 5760083,
+          "delta": 0
+        },
+        "vehicles_flood": {
+          "now": 4896985,
+          "baseline": 4896985,
+          "delta": 0
+        },
+        "tree_cleanup_replacement": {
+          "now": 535920,
+          "baseline": 535920,
+          "delta": 0
+        },
+        "tree_strike_buildings": {
+          "now": 471904,
+          "baseline": 471904,
+          "delta": 0
+        },
+        "tree_strike_cars": {
+          "now": 38900,
+          "baseline": 38900,
+          "delta": 0
+        },
+        "wind_glazing": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        },
+        "unmet_needs": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        }
+      },
+      "wall_time_s": 161.8,
+      "source_job_id": "224319-b298"
+    },
+    {
+      "name": "FAIR greedy multi-hazard",
+      "kind": "greedy",
+      "model": "deterministic greedy",
+      "status": "scored",
+      "run_id": "20261025-230821-ccd6-tournament-fair-greedy",
+      "plan_hash": "cecb22790c1fc2b2",
+      "ledger_hash": "e312425ce7927475",
+      "damage_usd": 251429493,
+      "damage_avoided_usd": 7053963,
+      "plan_cost_usd": 17518800,
+      "net_benefit_usd": -10464837,
+      "bcr": 0.403,
+      "within_budget": true,
+      "by_cause": {
+        "flood_structure": {
+          "now": 106221829,
+          "baseline": 109223434,
+          "delta": -3001605
+        },
+        "flood_contents": {
+          "now": 95861607,
+          "baseline": 98823629,
+          "delta": -2962021
+        },
+        "life_safety": {
+          "now": 21950400,
+          "baseline": 22793600,
+          "delta": -843200
+        },
+        "business_interruption": {
+          "now": 16082061,
+          "baseline": 15939003,
+          "delta": 143058
+        },
+        "relocation": {
+          "now": 5611444,
+          "baseline": 5760083,
+          "delta": -148638
+        },
+        "vehicles_flood": {
+          "now": 4722416,
+          "baseline": 4896985,
+          "delta": -174569
+        },
+        "tree_cleanup_replacement": {
+          "now": 535920,
+          "baseline": 535920,
+          "delta": 0
+        },
+        "tree_strike_buildings": {
+          "now": 412916,
+          "baseline": 471904,
+          "delta": -58988
+        },
+        "tree_strike_cars": {
+          "now": 30900,
+          "baseline": 38900,
+          "delta": -8000
+        },
+        "wind_glazing": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        },
+        "unmet_needs": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        }
+      },
+      "people": {
+        "at_risk_peak": {
+          "now": 575.0,
+          "baseline": 600.0
+        },
+        "evacuated": {
+          "now": 0,
+          "baseline": 0
+        },
+        "expected_fatalities": {
+          "now": 1.614,
+          "baseline": 1.676
+        },
+        "expected_injuries": {
+          "now": 68.09,
+          "baseline": 70.28
+        },
+        "exposed_people": {
+          "now": 3050.0,
+          "baseline": 3225.0
+        },
+        "people_affected": {
+          "now": 3050,
+          "baseline": 3225
+        },
+        "present_population": {
+          "now": 250750.0,
+          "baseline": 250750.0
+        },
+        "rescued": {
+          "now": 75.0,
+          "baseline": 75.0
+        },
+        "rescues_needed": {
+          "now": 1100.0,
+          "baseline": 1150.0
+        },
+        "sheltered_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_end": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "trapped_drivers": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_meals": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_water_gal": {
+          "now": 0.0,
+          "baseline": 0.0
+        }
+      },
+      "wall_time_s": 19.4,
+      "candidate_count": 1,
+      "candidate_measurements": [
+        {
+          "name": "Storage vault at lowest basin",
+          "kind": "greedy_candidate",
+          "model": null,
+          "status": "scored",
+          "run_id": "20261025-230347-6ad1-tournament-greedy-storag",
+          "plan_hash": "cecb22790c1fc2b2",
+          "ledger_hash": "e312425ce7927475",
+          "damage_usd": 251429493,
+          "damage_avoided_usd": 7053963,
+          "plan_cost_usd": 17518800,
+          "net_benefit_usd": -10464837,
+          "bcr": 0.403,
+          "within_budget": true,
+          "by_cause": {
+            "flood_structure": {
+              "now": 106221829,
+              "baseline": 109223434,
+              "delta": -3001605
+            },
+            "flood_contents": {
+              "now": 95861607,
+              "baseline": 98823629,
+              "delta": -2962021
+            },
+            "life_safety": {
+              "now": 21950400,
+              "baseline": 22793600,
+              "delta": -843200
+            },
+            "business_interruption": {
+              "now": 16082061,
+              "baseline": 15939003,
+              "delta": 143058
+            },
+            "relocation": {
+              "now": 5611444,
+              "baseline": 5760083,
+              "delta": -148638
+            },
+            "vehicles_flood": {
+              "now": 4722416,
+              "baseline": 4896985,
+              "delta": -174569
+            },
+            "tree_cleanup_replacement": {
+              "now": 535920,
+              "baseline": 535920,
+              "delta": 0
+            },
+            "tree_strike_buildings": {
+              "now": 412916,
+              "baseline": 471904,
+              "delta": -58988
+            },
+            "tree_strike_cars": {
+              "now": 30900,
+              "baseline": 38900,
+              "delta": -8000
+            },
+            "wind_glazing": {
+              "now": 0,
+              "baseline": 0,
+              "delta": 0
+            },
+            "unmet_needs": {
+              "now": 0,
+              "baseline": 0,
+              "delta": 0
+            }
+          },
+          "people": {
+            "at_risk_peak": {
+              "now": 575.0,
+              "baseline": 600.0
+            },
+            "evacuated": {
+              "now": 0,
+              "baseline": 0
+            },
+            "expected_fatalities": {
+              "now": 1.614,
+              "baseline": 1.676
+            },
+            "expected_injuries": {
+              "now": 68.09,
+              "baseline": 70.28
+            },
+            "exposed_people": {
+              "now": 3050.0,
+              "baseline": 3225.0
+            },
+            "people_affected": {
+              "now": 3050,
+              "baseline": 3225
+            },
+            "present_population": {
+              "now": 250750.0,
+              "baseline": 250750.0
+            },
+            "rescued": {
+              "now": 75.0,
+              "baseline": 75.0
+            },
+            "rescues_needed": {
+              "now": 1100.0,
+              "baseline": 1150.0
+            },
+            "sheltered_peak": {
+              "now": 0.0,
+              "baseline": 0.0
+            },
+            "stranded_end": {
+              "now": 0.0,
+              "baseline": 0.0
+            },
+            "stranded_peak": {
+              "now": 0.0,
+              "baseline": 0.0
+            },
+            "trapped_drivers": {
+              "now": 0.0,
+              "baseline": 0.0
+            },
+            "unmet_meals": {
+              "now": 0.0,
+              "baseline": 0.0
+            },
+            "unmet_water_gal": {
+              "now": 0.0,
+              "baseline": 0.0
+            }
+          },
+          "wall_time_s": 0
+        }
+      ],
+      "selection_rule": "one-at-a-time damage avoided / sourced cost; affordable candidates only"
+    },
+    {
+      "name": "Gemini 3.8 Flash",
+      "kind": "supplied_final",
+      "model": "gemini-3.8-flash",
+      "status": "scored",
+      "run_id": "20261025-230844-6f23-tournament-supplied-gemi",
+      "plan_hash": "1ebb6559ee3adfd5",
+      "ledger_hash": "e97e74a0366ae90f",
+      "damage_usd": 222076777,
+      "damage_avoided_usd": 36406680,
+      "plan_cost_usd": 25599455,
+      "net_benefit_usd": 10807225,
+      "bcr": 1.422,
+      "within_budget": true,
+      "by_cause": {
+        "flood_structure": {
+          "now": 95878795,
+          "baseline": 109223434,
+          "delta": -13344639
+        },
+        "flood_contents": {
+          "now": 92144607,
+          "baseline": 98823629,
+          "delta": -6679021
+        },
+        "business_interruption": {
+          "now": 15711468,
+          "baseline": 15939003,
+          "delta": -227534
+        },
+        "life_safety": {
+          "now": 8105600,
+          "baseline": 22793600,
+          "delta": -14688000
+        },
+        "relocation": {
+          "now": 5684473,
+          "baseline": 5760083,
+          "delta": -75610
+        },
+        "vehicles_flood": {
+          "now": 3572098,
+          "baseline": 4896985,
+          "delta": -1324887
+        },
+        "tree_cleanup_replacement": {
+          "now": 535920,
+          "baseline": 535920,
+          "delta": 0
+        },
+        "tree_strike_buildings": {
+          "now": 412916,
+          "baseline": 471904,
+          "delta": -58988
+        },
+        "tree_strike_cars": {
+          "now": 30900,
+          "baseline": 38900,
+          "delta": -8000
+        },
+        "wind_glazing": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        },
+        "unmet_needs": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        }
+      },
+      "people": {
+        "at_risk_peak": {
+          "now": 275.0,
+          "baseline": 600.0
+        },
+        "evacuated": {
+          "now": 900.0,
+          "baseline": 0
+        },
+        "expected_fatalities": {
+          "now": 0.596,
+          "baseline": 1.676
+        },
+        "expected_injuries": {
+          "now": 26.73,
+          "baseline": 70.28
+        },
+        "exposed_people": {
+          "now": 2400.0,
+          "baseline": 3225.0
+        },
+        "people_affected": {
+          "now": 3300,
+          "baseline": 3225
+        },
+        "present_population": {
+          "now": 250750.0,
+          "baseline": 250750.0
+        },
+        "rescued": {
+          "now": 350.0,
+          "baseline": 75.0
+        },
+        "rescues_needed": {
+          "now": 425.0,
+          "baseline": 1150.0
+        },
+        "sheltered_peak": {
+          "now": 900.0,
+          "baseline": 0.0
+        },
+        "stranded_end": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "trapped_drivers": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_meals": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_water_gal": {
+          "now": 0.0,
+          "baseline": 0.0
+        }
+      },
+      "wall_time_s": 272.2,
+      "source_job_id": "224324-c87e"
+    },
+    {
+      "name": "Gemini 4 Argon",
+      "kind": "supplied_final",
+      "model": "gemini-4-argon",
+      "status": "scored",
+      "run_id": "20261025-230845-ea27-tournament-supplied-gemi",
+      "plan_hash": "bedaff24e8cc5c06",
+      "ledger_hash": "f67c89a0a1656c96",
+      "damage_usd": 54357656,
+      "damage_avoided_usd": 204125800,
+      "plan_cost_usd": 42908145,
+      "net_benefit_usd": 161217656,
+      "bcr": 4.757,
+      "within_budget": true,
+      "by_cause": {
+        "flood_structure": {
+          "now": 29743580,
+          "baseline": 109223434,
+          "delta": -79479853
+        },
+        "flood_contents": {
+          "now": 16099122,
+          "baseline": 98823629,
+          "delta": -82724506
+        },
+        "life_safety": {
+          "now": 4651200,
+          "baseline": 22793600,
+          "delta": -18142400
+        },
+        "vehicles_flood": {
+          "now": 1821241,
+          "baseline": 4896985,
+          "delta": -3075744
+        },
+        "business_interruption": {
+          "now": 718423,
+          "baseline": 15939003,
+          "delta": -15220580
+        },
+        "tree_cleanup_replacement": {
+          "now": 522362,
+          "baseline": 535920,
+          "delta": -13558
+        },
+        "tree_strike_buildings": {
+          "now": 412916,
+          "baseline": 471904,
+          "delta": -58988
+        },
+        "relocation": {
+          "now": 373912,
+          "baseline": 5760083,
+          "delta": -5386171
+        },
+        "tree_strike_cars": {
+          "now": 14900,
+          "baseline": 38900,
+          "delta": -24000
+        },
+        "wind_glazing": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        },
+        "unmet_needs": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        }
+      },
+      "people": {
+        "at_risk_peak": {
+          "now": 75.0,
+          "baseline": 600.0
+        },
+        "evacuated": {
+          "now": 11500.0,
+          "baseline": 0
+        },
+        "expected_fatalities": {
+          "now": 0.342,
+          "baseline": 1.676
+        },
+        "expected_injuries": {
+          "now": 16.79,
+          "baseline": 70.28
+        },
+        "exposed_people": {
+          "now": 1850.0,
+          "baseline": 3225.0
+        },
+        "people_affected": {
+          "now": 13350,
+          "baseline": 3225
+        },
+        "present_population": {
+          "now": 250750.0,
+          "baseline": 250750.0
+        },
+        "rescued": {
+          "now": 250.0,
+          "baseline": 75.0
+        },
+        "rescues_needed": {
+          "now": 250.0,
+          "baseline": 1150.0
+        },
+        "sheltered_peak": {
+          "now": 11500.0,
+          "baseline": 0.0
+        },
+        "stranded_end": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "trapped_drivers": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_meals": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_water_gal": {
+          "now": 0.0,
+          "baseline": 0.0
+        }
+      },
+      "wall_time_s": 272.0,
+      "source_job_id": "224323-61b5"
+    },
+    {
+      "name": "Walls everywhere",
+      "kind": "supplied_final",
+      "model": null,
+      "status": "scored",
+      "run_id": "20261025-230844-4064-tournament-supplied-wall",
+      "plan_hash": "910199c5cdf5abb7",
+      "ledger_hash": "a1c8ef88b8c78cce",
+      "damage_usd": 240445094,
+      "damage_avoided_usd": 18038363,
+      "plan_cost_usd": 10946260,
+      "net_benefit_usd": 7092102,
+      "bcr": 1.648,
+      "within_budget": true,
+      "by_cause": {
+        "flood_structure": {
+          "now": 104402602,
+          "baseline": 109223434,
+          "delta": -4820831
+        },
+        "flood_contents": {
+          "now": 89732359,
+          "baseline": 98823629,
+          "delta": -9091270
+        },
+        "life_safety": {
+          "now": 27580800,
+          "baseline": 22793600,
+          "delta": 4787200
+        },
+        "business_interruption": {
+          "now": 8659293,
+          "baseline": 15939003,
+          "delta": -7279710
+        },
+        "vehicles_flood": {
+          "now": 5697920,
+          "baseline": 4896985,
+          "delta": 800935
+        },
+        "relocation": {
+          "now": 3391131,
+          "baseline": 5760083,
+          "delta": -2368952
+        },
+        "tree_cleanup_replacement": {
+          "now": 535920,
+          "baseline": 535920,
+          "delta": 0
+        },
+        "tree_strike_buildings": {
+          "now": 398169,
+          "baseline": 471904,
+          "delta": -73735
+        },
+        "tree_strike_cars": {
+          "now": 46900,
+          "baseline": 38900,
+          "delta": 8000
+        },
+        "wind_glazing": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        },
+        "unmet_needs": {
+          "now": 0,
+          "baseline": 0,
+          "delta": 0
+        }
+      },
+      "people": {
+        "at_risk_peak": {
+          "now": 700.0,
+          "baseline": 600.0
+        },
+        "evacuated": {
+          "now": 0,
+          "baseline": 0
+        },
+        "expected_fatalities": {
+          "now": 2.028,
+          "baseline": 1.676
+        },
+        "expected_injuries": {
+          "now": 82.56,
+          "baseline": 70.28
+        },
+        "exposed_people": {
+          "now": 3100.0,
+          "baseline": 3225.0
+        },
+        "people_affected": {
+          "now": 3100,
+          "baseline": 3225
+        },
+        "present_population": {
+          "now": 250750.0,
+          "baseline": 250750.0
+        },
+        "rescued": {
+          "now": 50.0,
+          "baseline": 75.0
+        },
+        "rescues_needed": {
+          "now": 1175.0,
+          "baseline": 1150.0
+        },
+        "sheltered_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_end": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "stranded_peak": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "trapped_drivers": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_meals": {
+          "now": 0.0,
+          "baseline": 0.0
+        },
+        "unmet_water_gal": {
+          "now": 0.0,
+          "baseline": 0.0
+        }
+      },
+      "wall_time_s": 276.1,
+      "source_job_id": "224322-3b01"
+    }
+  ],
+  "headline": "Argon avoids $197.1M more damage than the best measured no-AI rule at the same $50M budget."
+}
