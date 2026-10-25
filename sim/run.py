@@ -483,6 +483,9 @@ def run_storm(storm_name: str, plan_code: str | None = None, label: str = "run",
     lh = ledger_hash(led)
     result = {
         "run_id": run_id, "label": label, "storm": storm_name, "storm_title": getattr(st, "title", storm_name),
+        # Keep live forcing provenance alongside the ledger so a run can be audited offline.
+        "storm_stats": getattr(st, "stats", {}), "storm_sources": getattr(st, "sources", []),
+        "storm_alerts": getattr(st, "alerts", []), "storm_provenance": getattr(st, "provenance", {}),
         "mock": False, "has_plan": has_plan, "plan_hash": phash, "seed_key": seed_key, "plan_source": plan_src,
         "ledger": led, "ledger_hash": lh, "plan_cost": pc, "bca": bca, "metrics": metrics, "validation": validation,
         "mass_error_pct": round(float(wres.mass_error_pct), 5), "water_cached": water_cached,
