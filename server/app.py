@@ -11,6 +11,7 @@ API:     GET  /api/health
          GET  /api/jobs, /api/jobs/{id}, /api/jobs/{id}/events (SSE; Last-Event-ID / ?since=)
          POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate; writes EOP)
          GET  /api/jobs/{id}/eop                                                   (cited EOP JSON)
+         GET  /api/eop/argon                                                       (tracked Argon tournament EOP fixture)
          GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts, /api/forecast
 """
 from __future__ import annotations
@@ -273,6 +274,23 @@ def api_job_eop(job_id: str):
         return JSONResponse(json.loads(p.read_text()))
     except Exception as exc:
         raise HTTPException(500, f"invalid EOP: {exc}")
+
+
+@app.get("/api/eop/argon")
+def api_argon_eop():
+    """Serve the verified tournament EOP when the demo has no live job yet."""
+    json_path = REPO / "evidence" / "eop_argon.json"
+    html_path = REPO / "evidence" / "eop_argon.html"
+    if not json_path.exists() or not html_path.exists():
+        raise HTTPException(404, "Argon EOP fixture is not available")
+    try:
+        document = json.loads(json_path.read_text())
+        document["html"] = html_path.read_text()
+        document["eop_json"] = "/evidence/eop_argon.json"
+        document["eop_html"] = "/evidence/eop_argon.html"
+        return JSONResponse(document)
+    except Exception as exc:
+        raise HTTPException(500, f"invalid Argon EOP fixture: {exc}")
 
 
 def _run_summary(d: Path) -> dict | None:
