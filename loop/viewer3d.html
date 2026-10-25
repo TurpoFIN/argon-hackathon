@@ -46,7 +46,7 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
   <ul class="legend">
     <li><span class="sw" style="background:#4a90ff"></span>Peak flood depth (P50), darker is deeper</li>
     <li><span class="sw" style="background:var(--c5)"></span>Sandbag wall (height shown 4×)</li>
-    <li><span class="sw" style="background:var(--c3); border-radius:50%"></span>Portable pump</li>
+    <li><span class="sw" style="background:var(--c3)"></span>Portable pump: drains the one 12 m cell it stands in</li>
     <li><span class="sw" style="background:var(--c7); border-radius:50%"></span>Drain cleared before the storm</li>
     <li><span class="sw" style="background:var(--c4)"></span>Doorway sandbags kept the building dry</li>
     <li><span class="sw" style="background:var(--c2); border-radius:50%"></span>Flooded building, size is loss</li>
@@ -142,9 +142,14 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
       new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', geometryType: 'polyline', elevationInfo: { mode: 'on-the-ground' },
         renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
           uniqueValueInfos: [0.3048, 0.6096, 0.9144].map(h => ({ value: h, symbol: wallSymbol(h) })) } }),
+      // The pump's real footprint in the model: the one 12 m grid cell it drains.
+      new GeoJSONLayer({ url: blob({ type: 'FeatureCollection', features: layers.pumps.map(([lon, lat]) => ({ type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties: {} })) }), title: 'Pump cells', geometryType: 'polygon',
+        elevationInfo: { mode: 'on-the-ground' }, renderer: { type: 'simple', symbol: { type: 'polygon-3d', symbolLayers: [{ type: 'fill',
+          material: { color: [246, 68, 185, 0.95] }, outline: { color: [255, 255, 255, 1], size: 1 } }] } } }),
       new GeoJSONLayer({ url: blob(points(layers.pumps, { kind: 'pump' })), title: 'Pumps', geometryType: 'point', elevationInfo: { mode: 'on-the-ground' },
         renderer: { type: 'simple', symbol: { type: 'point-3d',
-          symbolLayers: [{ type: 'icon', size: 30, resource: { primitive: 'circle' }, material: { color: '#f644b9' }, outline: { color: '#ffffff', size: 3 } }],
+          symbolLayers: [{ type: 'icon', size: 12, resource: { primitive: 'circle' }, material: { color: '#f644b9' }, outline: { color: '#ffffff', size: 1.5 } }],
           verticalOffset: { screenLength: 70, maxWorldLength: 400, minWorldLength: 30 },
           callout: { type: 'line', size: 2, color: '#f644b9', border: { color: [0, 0, 0, .5] } } } } }),
       new GeoJSONLayer({ url: blob(points(layers.drains_cleared, { kind: 'drain' })), title: 'Cleared drains', geometryType: 'point',
