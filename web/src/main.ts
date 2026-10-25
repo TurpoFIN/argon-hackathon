@@ -26,6 +26,21 @@ document.body.append(loading);
 const setLoading = (s: string) => { (loading.querySelector('.l2') as HTMLElement).textContent = s; };
 const container = document.getElementById('scene')!;
 
+function webglAvailable(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || c.getContext('webgl', { failIfMajorPerformanceCaveat: false }));
+  } catch { return false; }
+}
+
+function showGpuFallback(): void {
+  document.body.classList.add('gpu-fallback');
+  container.innerHTML = `<div class="gpu-fallback-stage"><img src="/stills/baseline-flood.jpg" alt="Rendered StormSim flood replay still"><div><b>Rendered replay preview</b><span>WebGL is unavailable in this browser session · the live MacBook replay uses the same scene</span></div></div>`;
+  setLoading('GPU-less replay preview'); loading.classList.add('done'); setTimeout(() => loading.remove(), 1200);
+  (window as any).storm = { setT: () => {}, play: () => {}, sideBySide: () => {}, shot: () => {}, get t() { return 0; } };
+  window.dispatchEvent(new CustomEvent('storm-ready'));
+}
+
 interface Shot { lon: number; lat: number; dist: number; heading: number; tilt: number; compare?: boolean }
 const SHOTS: Record<string, Shot> = {
   overview: { lon: -122.4060, lat: 37.7770, dist: 4600, heading: 245, tilt: 71 },
@@ -40,6 +55,7 @@ const URL_SHOTS = ['plan', 'basin', 'embarcadero', 'canyon', 'overview', 'compar
 const SHOT_KEYS = ['overview', 'basin', 'canyon', 'embarcadero', 'compare'];
 
 async function main() {
+  if (!webglAvailable()) { showGpuFallback(); return; }
   setLoading('loading city');
   const city = await loadCity();
   (window as any).__x0 = city.meta.x0; (window as any).__y0 = city.meta.y0;
@@ -319,7 +335,14 @@ async function main() {
   };
   hud.onRun = (r) => { stopAuto(); setView(r); };
   hud.onSeek = (u) => { t = tOf(u); hud.resetToasts(); };
-  hud.onPlay = () => { playing = !playing; if (playing && t >= tEnd) t = tStart; };
+  const startPlayback = () => {
+    // The presenter starts at T−72 h for orientation, then play jumps to landfall so
+    // the physical verification loop is visible within a few seconds on stage.
+    if (t < 0) { t = 0; speed = Math.max(speed, 2); }
+    if (t >= tEnd) t = tStart;
+    playing = true;
+  };
+  hud.onPlay = () => { if (playing) playing = false; else startPlayback(); };
   hud.onSpeed = (s) => { speed = s; };
   hud.onCtl = (c) => { if (c === 'walk') setWalk(true); else if (c === 'orbit') setWalk(false); else if (c === 'dir') toggleDirector(); };
 
@@ -433,7 +456,7 @@ async function main() {
     if (k === 'Escape') { if (walker.active) setWalk(false); stopAuto(); setFocus(null); return; }
     if (k === 'p' || k === 'P') { toggleDirector(); return; }
     if (k === 'b' || k === 'B') { runTour(); return; }
-    if (k === ' ') { playing = !playing; if (t >= tEnd) { t = tStart; hud.resetToasts(); } e.preventDefault(); }
+    if (k === ' ') { if (playing) playing = false; else startPlayback(); e.preventDefault(); }
     else if (k >= '1' && k <= '5') { stopAuto(); goShot(SHOT_KEYS[+k - 1]); }
     else if (k === 'c' || k === 'C') setView(compare ? 'plan' : 'cmp');
     else if (k === 'v' || k === 'V') setView(compare ? 'none' : active === noneIdx ? 'plan' : 'cmp');
@@ -606,7 +629,8 @@ async function main() {
   if (arc) { setLoading('streaming textured buildings'); await Promise.race([arc.ready, new Promise((r) => setTimeout(r, shotMode ? 30000 : 9000))]); }
   loading.classList.add('done'); setTimeout(() => loading.remove(), 1500);
   requestAnimationFrame(loop);
-  (window as any).storm = { setT: (x: number) => (t = x), play: () => (playing = true), shot: goShot, visuals, frame, tile, city, director: runDirector, tour: runTour, walk: setWalk, get t() { return t; } };
+  (window as any).storm = { setT: (x: number) => (t = x), play: startPlayback, shot: goShot, sideBySide: () => setView('cmp'), visuals, frame, tile, city, director: runDirector, tour: runTour, walk: setWalk, get t() { return t; } };
+  window.dispatchEvent(new CustomEvent('storm-ready'));
   if (q.get('demo') === '1') setTimeout(() => runDirector(), 1500);
   if (shotMode) {
     // render-watch-critique: fixed camera, fixed time, signal readiness for the server's headless screenshot
