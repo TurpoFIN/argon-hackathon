@@ -100,9 +100,9 @@ def roster(architect_model: str, mutator_model: str, use_llm: bool) -> list[dict
                     "role": "predicts each change's effect before it is simulated (calibration is scored)"})
     out += [{"key": "tweak", "label": "Hill-climber", "model": None, "color": "#ffb54a",
              "role": "no LLM: rescales sizing literals of an elite"},
-            {"key": "sandbox", "label": "Sandbox + cost planner", "model": None, "color": "#8fa1b6",
+            {"key": "sandbox", "label": "Sandbox + cost planner", "model": None, "color": "#7f9cff",
              "role": "runs the plan with no network and prices it from cited unit costs"},
-            {"key": "sim", "label": "Storm simulator", "model": None, "color": "#cfe3f2",
+            {"key": "sim", "label": "Storm simulator", "model": None, "color": "#4fb8ff",
              "role": "deterministic storm: flood, wind, trees, people, damage"}]
     return out
 
@@ -382,7 +382,7 @@ class Evolver:
             sid = len(self.state["activity"])
             self.state["activity"].append({"id": sid, "agent": agent, "model": model, "kind": kind, "cand": cand,
                                            "gen": self.state["generation"], "t0": round(time.time(), 2), "t1": None, "ok": None})
-        self.save()
+        self.save(True)
         return sid
 
     def span_end(self, sid: int, ok: bool | None = True):
