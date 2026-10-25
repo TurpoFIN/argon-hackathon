@@ -258,6 +258,18 @@ def api_leaderboard():
     return json.loads(p.read_text())
 
 
+@app.get("/api/tournament")
+def api_tournament():
+    """Headline no-plan / fair-greedy / model comparison for the demo UI."""
+    p = REPO / "evidence" / "tournament.json"
+    if not p.exists():
+        return {"entries": [], "note": "tournament has not produced evidence yet"}
+    try:
+        return json.loads(p.read_text())
+    except Exception as exc:
+        raise HTTPException(500, f"tournament evidence is invalid: {exc}")
+
+
 _alerts_cache: dict = {}
 
 
