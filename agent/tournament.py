@@ -32,7 +32,7 @@ SUPPLIED = {
     "argon": "/home/ubuntu/work/argonhack/runs/20261025-224323-61b5-final-gemini-4-argon/plan_code.py",
     "walls": "/home/ubuntu/work/argonhack/runs/20261025-224322-3b01-final-walls-everywhere/plan_code.py",
 }
-SUPPLIED_JOB_IDS = {"flash": "224324-c87e", "argon": "224323-61b5", "walls": "224322-3b01", "baseline": "224319-b298"}
+SUPPLIED_JOB_IDS = {"flash": "20261025-224324-c87e", "argon": "20261025-224323-61b5", "walls": "20261025-224322-3b01", "baseline": "20261025-224319-b298"}
 
 
 def _hash(code: str | None) -> str:

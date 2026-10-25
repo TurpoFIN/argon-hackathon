@@ -16,11 +16,11 @@
       "baseline": "/home/ubuntu/work/argonhack/runs/20261025-224319-b298-final-baseline-elnino-ar/plan_code.py"
     },
     "source_job_ids": {
-      "No plan": "224319-b298",
-      "Gemini 3.8 Flash": "224324-c87e",
-      "Gemini 4 Argon": "224323-61b5",
-      "Walls everywhere": "224322-3b01",
-      "baseline": "224319-b298"
+      "No plan": "20261025-224319-b298",
+      "Gemini 3.8 Flash": "20261025-224324-c87e",
+      "Gemini 4 Argon": "20261025-224323-61b5",
+      "Walls everywhere": "20261025-224322-3b01",
+      "baseline": "20261025-224319-b298"
     },
     "source_plan_hashes": {
       "flash": "f295266fa04765ca",
@@ -102,7 +102,7 @@
         }
       },
       "wall_time_s": 161.8,
-      "source_job_id": "224319-b298"
+      "source_job_id": "20261025-224319-b298"
     },
     {
       "name": "FAIR greedy multi-hazard",
@@ -512,7 +512,7 @@
         }
       },
       "wall_time_s": 272.2,
-      "source_job_id": "224324-c87e"
+      "source_job_id": "20261025-224324-c87e"
     },
     {
       "name": "Gemini 4 Argon",
@@ -648,7 +648,7 @@
         }
       },
       "wall_time_s": 272.0,
-      "source_job_id": "224323-61b5"
+      "source_job_id": "20261025-224323-61b5"
     },
     {
       "name": "Walls everywhere",
@@ -784,7 +784,7 @@
         }
       },
       "wall_time_s": 276.1,
-      "source_job_id": "224322-3b01"
+      "source_job_id": "20261025-224322-3b01"
     }
   ],
   "headline": "Argon avoids $197.1M more damage than the best measured no-AI rule at the same $50M budget."
