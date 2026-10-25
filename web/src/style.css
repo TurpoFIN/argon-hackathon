@@ -249,3 +249,9 @@ table.bs { width: 100%; border-collapse: collapse; font-size: 20px; } .bs th { t
 body[data-stage="learn"] .kpis { display: none; }
 .banner { display: none !important; }
 .topc { z-index: 3; } .learn { padding-top: 140px; }
+.quad { display:block; margin: 8px auto 18px; max-width: 100%; height: auto; }
+.quad .qa { fill:#8b98a5; font-size:12px; text-anchor: middle; }
+.quad .ql { font-size:14px; font-weight:600; }
+.quad .qq { fill:#5f6b77; font-size:13px; font-style: italic; }
+.quad .qline { stroke:#4fd1ff; stroke-dasharray:4 4; stroke-width:1.5; }
+.quad .qax { stroke:#3a4652; stroke-width:1; }
