@@ -48,6 +48,7 @@ footer a { color:inherit; }
 #live button { height:32px; padding:0 14px; border-radius:9999px; border:0; background:var(--fg); color:var(--bg); font:500 13px var(--font); cursor:pointer; }
 #live button:disabled { opacity:.5; cursor:default; }
 #live span { color:var(--muted); }
+.open3d { display:inline-flex; align-items:center; height:32px; padding:0 14px; border-radius:9999px; background:var(--c1); color:#fff; text-decoration:none; font-weight:500; }
 .fans { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; max-width:1400px; }
 .fan { margin:0; position:relative; background:var(--surface); border-radius:8.4px; box-shadow:inset 0 0 0 .5px var(--edge); padding:12px; }
 .fan figcaption { font-size:13px; font-weight:500; margin-bottom:4px; }
@@ -344,6 +345,7 @@ def build(run: Path):
             f"<p class='lede'>Each model writes a pre-storm plan, the storm simulator runs it, the model watches the rendered result "
             f"and video, names what failed, and revises. Click a map to play that run's storm.</p>"
             f"{LIVE}"
+            f"<p><a class='open3d' href='/3d?run={html.escape(run.name)}&amp;model={'argon' if argon else 'flash'}'>See the plan in the 3D city →</a></p>"
             f"<div class='bars'>{bars}</div>{forecast_section(forcing, reference)}"
             f"<div class='cols'>{column(argon, 'argon', 'Gemini 4 Argon')}{column(flash, 'flash', 'Gemini 3.8 Flash (baseline)')}</div>"
             f"<footer>{sources}</footer></main><script>{SCRIPT}</script></body></html>")

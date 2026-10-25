@@ -150,8 +150,6 @@ def validate(plan: Plan, context, judge):
         return f"stage_ids needs exactly one staging drain per crew ({len(context['crews'])}) when clearing drains."
     if judge.mode == "coupled" and plan.doorway_fd_ids:
         return "Doorway sandbags are not available in this exercise; use walls, pumps and drain crews."
-    if judge.mode != "coupled" and plan.pumps:
-        return "Pumps are not available in this exercise."
     for pump in plan.pumps:
         if not (argon.BBOX[0] <= pump.lon <= argon.BBOX[2] and argon.BBOX[1] <= pump.lat <= argon.BBOX[3]):
             return f"Pump at {pump.lon}, {pump.lat} is outside the map {argon.BBOX}."
@@ -197,6 +195,41 @@ class Judge:
         lat0 = float(self.base.lat.mean())
         self._metric = lambda lon, lat: np.column_stack([np.asarray(lon) * 111320 * np.cos(np.radians(lat0)), np.asarray(lat) * 111320])
         self._cells = cKDTree(self._metric(self.base.lon.ravel(), self.base.lat.ravel()))
+
+    def write_layers(self, label, plan, drawn, sim, ledger, runs):
+        """Map layers for the 3D view: P50 (or design) peak water per wet cell, the plan's walls, pumps,
+        cleared drains, and each affected building's outcome."""
+        world, peak = sim["world"], sim["peak"]
+        lon, lat = self.base.lon, self.base.lat
+        land = ~self.base.walls & ~self.base.ocean
+        wet = np.argwhere(land & (peak >= damage.WET_M))
+        usd, depth = ledger["_per_structure_usd"], ledger["_per_structure_depth_m"]
+        protected = set(plan.get("doorway_fd_ids", []))
+        worst_usd = runs[-1]["ledger"]["_per_structure_usd"]
+        buildings = []
+        for row, value, d, bad in zip(self.exposure.rows, usd, depth, worst_usd):
+            if value <= 0 and row["fd_id"] not in protected:
+                continue
+            status = ("dry" if value <= 0 else "overtopped") if row["fd_id"] in protected else "flooded"
+            buildings.append({"fd_id": row["fd_id"], "lon": round(row["x"], 6), "lat": round(row["y"], 6), "status": status,
+                              "usd": round(float(value)), "usd_p90": round(float(bad)), "depth_m": round(float(d), 2),
+                              "occtype": row["occtype"]})
+        cleared = {a["drain_id"] for a in sim["result"]["preparation"]["actions"] if a["kind"] == "preventive_clearing" and a.get("completed")}
+        payload = {
+            "label": label, "plan": plan, "cell_m": float(self.base.cell),
+            "flood": [[round(float(lon[r, c]), 6), round(float(lat[r, c]), 6), round(float(peak[r, c]), 2)] for r, c in wet],
+            # The whole storm for 3D playback: depth in every cell that is ever wet, one value per saved frame.
+            "frame_minutes": [round(k * 2) for k in range(len(sim["flood"]))],
+            "flood_frames": [[round(float(lon[r, c]), 6), round(float(lat[r, c]), 6), [round(float(v), 2) for v in sim["flood"][:, r, c]]]
+                             for r, c in np.argwhere(land & (sim["flood"].max(axis=0) >= damage.WET_M))],
+            "walls": [{"path": [[round(float(lon[c]), 6), round(float(lat[c]), 6)] for c in cells], "height_m": b["height_ft"] * 0.3048}
+                      for cells, b in zip(drawn["barriers"], plan.get("barriers", []))],
+            "pumps": [[round(float(lon[c]), 6), round(float(lat[c]), 6)] for c in drawn.get("pumps", [])],
+            "drains_cleared": [[d["lon"], d["lat"]] for d in world.drains if d["id"] in cleared],
+            "buildings": buildings,
+            "total_usd": round(sum(r["scenario"]["weight"] * r["ledger"]["total_usd"] for r in runs)),
+        }
+        (self.run_dir / f"{label}_layers.json").write_text(json.dumps(payload, separators=(",", ":")))
 
     def pump_cell(self, pump):
         """Nearest open land cell to the pump's coordinates."""
@@ -259,6 +292,8 @@ class Judge:
             image_path = self.run_dir / f"{label}{suffix}.jpg"
             render.composite(main, render.timeline(sim["world"], sim["flood"])).save(image_path, quality=88)
             runs.append(dict(scenario=scenario, sim=sim, ledger=ledger, image=image_path.name))
+        primary_run = next(r for r in runs if r["scenario"]["base"] is self.base)
+        self.write_layers(label, plan, drawn, primary_run["sim"], primary_run["ledger"], runs)
         worst = runs[-1]  # P90 when forecasting
         video_path = render.video(worst["sim"]["world"], worst["sim"]["flood"], self.run_dir / f"{label}.mp4")
         primary = next(r for r in runs if r["scenario"]["base"] is self.base)
@@ -369,6 +404,8 @@ class Judge:
                if self.mode == "coupled" else
                f"3. Doorway sandbags: up to 120 fd_ids. A protected building takes no damage while the water against it stays "
                f"below {DOOR['height_m']} m; above that the full damage applies. Cost: {BAGS_PER_STRUCTURE} bags per building.\n"
+               f"4. Portable pumps: up to {PUMP_LIMIT}, each removing {PUMP_M3S} m³/s from its cell to the bay; water reaches a pump "
+               "only by flowing over the terrain. Give [lon, lat] for each.\n"
                f"Total sandbag stock: {STOCK} bags for walls plus doorways. Python rejects plans over the stock.\n") +
             "Score (lower is better): dollar flood damage = NSI 2022 structure and contents value x USACE depth-damage curves "
             "on water depth above each building's first floor. Secondary: flood exposure, crew exposure.\n"

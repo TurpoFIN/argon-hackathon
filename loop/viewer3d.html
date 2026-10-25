@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storm Prep Plan 3D</title>
+<link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/dark/main.css">
+<style>
+:root { color-scheme: dark; --bg:#020202; --surface:#161616; --fg:#eeeeee; --muted:#a4a4a4; --edge:rgba(255,255,255,.08);
+  --c1:#006cff; --c3:#f644b9; --c4:#00d1ef; --c5:#ff6d00; --c2:#f2b200; --c7:#00c769;
+  --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; background:#151515; }
+#panel { position:fixed; top:16px; left:16px; width:320px; max-width:calc(100vw - 32px); max-height:calc(100dvh - 64px); overflow:auto;
+  background:var(--surface); color:var(--fg); border-radius:8.4px; box-shadow:inset 0 0 0 .5px var(--edge), 0 2px 4px rgba(0,0,0,.14), 0 24px 48px -12px rgba(0,0,0,.32);
+  font:13px/1.4 var(--font); padding:12px; z-index:1; }
+#panel h1 { font-size:16px; font-weight:500; margin:0 0 2px; }
+#panel .sub { color:var(--muted); font-size:12px; margin:0 0 10px; }
+#plans { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
+#plans button { height:28px; padding:0 10px; border-radius:9999px; border:0; background:transparent; color:var(--fg);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--fg) 20%, transparent); font:500 12px var(--font); cursor:pointer; }
+#plans button[aria-pressed="true"] { background:var(--fg); color:var(--bg); box-shadow:none; }
+#plans button:focus-visible { outline:1px solid var(--muted); outline-offset:2px; }
+.big { font-size:22px; font-variant-numeric:tabular-nums; margin:2px 0 0; }
+.delta { color:var(--c7); font-variant-numeric:tabular-nums; }
+dl { display:grid; grid-template-columns:1fr auto; gap:2px 12px; margin:10px 0; font-variant-numeric:tabular-nums; }
+dt { color:var(--muted); } dd { margin:0; text-align:right; }
+ul.legend { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:3px; font-size:12px; color:var(--muted); }
+ul.legend li { display:flex; gap:8px; align-items:center; }
+.sw { width:12px; height:12px; border-radius:2px; flex:none; }
+.why { font-size:12px; color:var(--muted); white-space:pre-wrap; margin:8px 0 0; max-height:140px; overflow:auto; }
+video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
+#status { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); color:#eee; font:14px var(--font); margin:0; }
+.esri-attribution { font-size:10px; }
+</style>
+<script src="https://js.arcgis.com/4.33/"></script>
+</head>
+<body>
+<main id="scene" aria-label="3D San Francisco with the storm preparation plan"></main>
+<aside id="panel" aria-label="Storm preparation plan">
+  <h1 id="title">Loading plan</h1>
+  <p class="sub" id="sub"></p>
+  <div id="plans" role="group" aria-label="Plan shown"></div>
+  <p class="sub" style="margin:0">Expected flood damage</p>
+  <p class="big" id="total">…</p>
+  <p class="delta" id="delta"></p>
+  <dl id="stats"></dl>
+  <ul class="legend">
+    <li><span class="sw" style="background:#4a90ff"></span>Peak flood depth (P50), darker is deeper</li>
+    <li><span class="sw" style="background:var(--c5)"></span>Sandbag wall (height shown 4×)</li>
+    <li><span class="sw" style="background:var(--c3); border-radius:50%"></span>Portable pump</li>
+    <li><span class="sw" style="background:var(--c7); border-radius:50%"></span>Drain cleared before the storm</li>
+    <li><span class="sw" style="background:var(--c4)"></span>Doorway sandbags kept the building dry</li>
+    <li><span class="sw" style="background:var(--c2); border-radius:50%"></span>Flooded building, size is loss</li>
+  </ul>
+  <div id="storm" style="display:flex;gap:8px;align-items:center;margin-top:10px">
+    <button id="toggle" type="button" style="height:32px;padding:0 14px;border-radius:9999px;border:0;background:var(--c1);color:#fff;font:500 13px var(--font);cursor:pointer">▶ Play the storm</button>
+    <span id="clock" class="sub" style="margin:0;font-variant-numeric:tabular-nums">Peak water</span>
+  </div>
+  <input id="scrub" type="range" min="0" max="30" value="30" step="1" aria-label="Storm time" style="width:100%;margin-top:6px;accent-color:var(--c1)">
+  <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
+  <video id="video" muted playsinline controls></video>
+  <p class="why" id="why"></p>
+</aside>
+<p id="status" role="status">Loading the city…</p>
+<script>
+const params = new URLSearchParams(location.search);
+const run = params.get('run'), model = params.get('model') || 'argon';
+const folder = `/runs/${run}/${model}/`;
+const usd = v => (v < 0 ? '−' : '') + '$' + (Math.abs(v) / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + 'M';
+const square = (lon, lat, half) => {
+  const dlat = half / 111320, dlon = half / (111320 * Math.cos(lat * Math.PI / 180));
+  return [[lon - dlon, lat - dlat], [lon + dlon, lat - dlat], [lon + dlon, lat + dlat], [lon - dlon, lat + dlat], [lon - dlon, lat - dlat]];
+};
+const blob = fc => URL.createObjectURL(new Blob([JSON.stringify(fc)], { type: 'application/geo+json' }));
+
+require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/SceneLayer', 'esri/layers/ElevationLayer',
+         'esri/layers/GeoJSONLayer', 'esri/layers/GroupLayer', 'esri/views/SceneView'],
+(Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupLayer, SceneView) => {
+  const plan = new GroupLayer({ title: 'Plan' });
+  const map = new Map({
+    basemap: new Basemap({ baseLayers: [new TileLayer({ url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer' })] }),
+    ground: { layers: [new ElevationLayer({ url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer' })] },
+    layers: [new SceneLayer({ url: 'https://tiles.arcgis.com/tiles/z2tnIkrLQ2BRzr6P/arcgis/rest/services/SanFrancisco_Bldgs/SceneServer/layers/0',
+                              popupEnabled: false, copyright: 'San Francisco 3D buildings: Precision LightWorks (PLW) / Esri' }), plan]
+  });
+  const view = new SceneView({ container: 'scene', map, qualityProfile: 'high',
+    camera: { position: { longitude: -122.3868, latitude: 37.8012, z: 560 }, heading: 234, tilt: 64 },
+    ui: { components: ['attribution'] },
+    popup: { dockEnabled: true, dockOptions: { buttonEnabled: false, breakpoint: false, position: 'top-right' } },
+    environment: { lighting: { date: new Date('2026-06-21T20:00:00Z'), directShadowsEnabled: true }, atmosphereEnabled: true } });
+  window.planView = view;
+
+  const storm = { frames: 0, minutes: [], frame: null, timer: null, layer: null };
+  const floodRenderer = field => ({ type: 'class-breaks', field, classBreakInfos: [
+    [0.03, 0.15, '#9cc5ff', .62], [0.15, 0.3, '#5c9dff', .72], [0.3, 0.6, '#2f7bff', .8], [0.6, 1.0, '#006cff', .86], [1.0, 99, '#0041a3', .9]
+  ].map(([min, max, color, a]) => ({ minValue: min, maxValue: max, label: `${min}–${max} m`,
+    symbol: { type: 'polygon-3d', symbolLayers: [{ type: 'fill', material: { color: [...hex(color), a] }, outline: { size: 0 } }] } })) });
+  const clock = document.getElementById('clock'), scrub = document.getElementById('scrub'), toggle = document.getElementById('toggle');
+  function setFrame(k) {
+    if (!storm.layer || !storm.frames) return;
+    storm.frame = k;
+    storm.layer.renderer = floodRenderer(k === null ? 'depth' : 'd' + k);
+    scrub.value = k === null ? scrub.max : k;
+    clock.textContent = k === null ? 'Peak water' : `Storm minute ${storm.minutes[k] ?? k * 2} of 60`;
+  }
+  function stop() { clearInterval(storm.timer); storm.timer = null; toggle.textContent = '▶ Play the storm'; }
+  toggle.addEventListener('click', () => {
+    if (storm.timer) return stop();
+    let k = storm.frame === null || storm.frame >= storm.frames - 1 ? 0 : storm.frame;
+    setFrame(k); toggle.textContent = '❚❚ Pause';
+    storm.timer = setInterval(() => { k += 1; if (k >= storm.frames) { stop(); return; } setFrame(k); }, 450);
+  });
+  scrub.addEventListener('input', () => { stop(); setFrame(Number(scrub.value) >= storm.frames - 1 && Number(scrub.value) == scrub.max ? null : Number(scrub.value)); });
+  function hex(c) { return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+
+  async function show(option, log) {
+    document.querySelectorAll('#plans button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.label === option.label)));
+    const layers = await fetch(folder + option.label + '_layers.json').then(r => r.ok ? r.json() : Promise.reject(r.status));
+    const half = layers.cell_m / 2;
+    const frames = layers.flood_frames || layers.flood.map(([lon, lat, d]) => [lon, lat, [d]]);
+    const flood = { type: 'FeatureCollection', features: frames.map(([lon, lat, series]) => {
+      const properties = { depth: Math.max(...series) };
+      series.forEach((v, k) => { properties['d' + k] = v; });
+      return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties };
+    }) };
+    storm.frames = frames.length ? frames[0][2].length : 0;
+    storm.minutes = layers.frame_minutes || [];
+    const walls = { type: 'FeatureCollection', features: layers.walls.map(w => ({ type: 'Feature',
+      geometry: { type: 'LineString', coordinates: w.path }, properties: { height: w.height_m } })) };
+    const points = (list, props) => ({ type: 'FeatureCollection', features: list.map(([lon, lat]) => ({ type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props })) });
+    const buildings = { type: 'FeatureCollection', features: layers.buildings.map(b => ({ type: 'Feature',
+      geometry: { type: 'Point', coordinates: [b.lon, b.lat] }, properties: b })) };
+    const wallSymbol = h => ({ type: 'line-3d', symbolLayers: [{ type: 'path', profile: 'quad', width: 1.6, height: Math.max(1.2, h * 4),
+      anchor: 'bottom', material: { color: '#ff6d00' }, cap: 'butt' }] });
+    const icon = (color, size, primitive = 'circle') => ({ type: 'point-3d', symbolLayers: [{ type: 'icon', size,
+      resource: { primitive }, material: { color }, outline: { color: [0, 0, 0, .6], size: 1 } }] });
+    const keep = storm.frame;
+    plan.layers.removeAll();
+    plan.addMany([
+      storm.layer = new GeoJSONLayer({ url: blob(flood), title: 'Flood depth', renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' },
+        outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }),
+      new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', elevationInfo: { mode: 'on-the-ground' },
+        renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
+          uniqueValueInfos: [0.3048, 0.6096, 0.9144].map(h => ({ value: h, symbol: wallSymbol(h) })) } }),
+      new GeoJSONLayer({ url: blob(points(layers.pumps, { kind: 'pump' })), title: 'Pumps', elevationInfo: { mode: 'on-the-ground' },
+        renderer: { type: 'simple', symbol: { type: 'point-3d', symbolLayers: [{ type: 'object', resource: { primitive: 'cylinder' },
+          width: 4, depth: 4, height: 5, material: { color: '#f644b9' } }] } } }),
+      new GeoJSONLayer({ url: blob(points(layers.drains_cleared, { kind: 'drain' })), title: 'Cleared drains',
+        elevationInfo: { mode: 'on-the-ground' }, renderer: { type: 'simple', symbol: icon('#00c769', 9) } }),
+      new GeoJSONLayer({ url: blob(buildings), title: 'Buildings', elevationInfo: { mode: 'relative-to-scene' }, outFields: ['*'],
+        renderer: { type: 'unique-value', field: 'status', uniqueValueInfos: [
+          { value: 'dry', label: 'Kept dry', symbol: icon('#00d1ef', 16, 'square') },
+          { value: 'overtopped', label: 'Sandbags overtopped', symbol: icon('#ff6d00', 11, 'square') },
+          { value: 'flooded', label: 'Flooded', symbol: icon('#f2b200', 6) }],
+          visualVariables: [{ type: 'size', field: 'usd', stops: [{ value: 0, size: 14 }, { value: 1, size: 3 }, { value: 2e6, size: 6 }, { value: 2e7, size: 13 }] }] },
+        popupTemplate: { title: '{occtype} · {status}', content: [{ type: 'fields', fieldInfos: [
+          { fieldName: 'depth_m', label: 'Water against the building (m, P50)' },
+          { fieldName: 'usd', label: 'Damage, P50 (USD)', format: { digitSeparator: true, places: 0 } },
+          { fieldName: 'usd_p90', label: 'Damage, P90 (USD)', format: { digitSeparator: true, places: 0 } },
+          { fieldName: 'fd_id', label: 'NSI ID', format: { digitSeparator: false } }] }] } })
+    ]);
+    scrub.max = Math.max(0, storm.frames - 1);
+    setFrame(keep === null || keep === undefined ? null : Math.min(keep, storm.frames - 1));
+    const control = log.control.ledger.total_usd, total = option.entry.ledger.total_usd;
+    document.getElementById('total').textContent = usd(total);
+    document.getElementById('delta').textContent = option.label === 'control' ? 'No preparation' : `${usd(total - control)} vs no preparation (${((total - control) / control * 100).toFixed(0)}%)`;
+    const bags = option.entry.sandbags || { total: 0 };
+    const wallMetres = (bags.walls || []).reduce((s, w) => s + w.length_m, 0);
+    const dry = layers.buildings.filter(b => b.status === 'dry').length;
+    const rows = [['Buildings kept dry by sandbags', dry], ['Sandbags used', bags.total.toLocaleString('en-US')],
+      ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
+      ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
+    document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    document.getElementById('why').textContent = option.entry.critique ? 'What Argon saw and changed: ' + option.entry.critique : '';
+    const video = document.getElementById('video'), play = document.getElementById('play');
+    video.style.display = 'none';
+    if (option.entry.video) { play.style.display = 'inline-block'; play.onclick = () => { video.src = folder + option.entry.video; video.style.display = 'block'; video.play(); }; }
+    else play.style.display = 'none';
+  }
+
+  (async () => {
+    const log = await fetch(folder + model + '.json').then(r => r.json());
+    const name = log.model.includes('argon') ? 'Argon' : 'Flash';
+    const rounds = log.rounds.filter(r => r.ledger);
+    const best = rounds.length ? rounds.reduce((a, b) => (b.ledger.total_usd < a.ledger.total_usd ? b : a)) : null;
+    const options = [{ label: 'control', text: 'No preparation', entry: log.control }];
+    if (log.greedy_heuristic) options.push({ label: 'greedy', text: 'Rule (no AI)', entry: log.greedy_heuristic });
+    rounds.forEach(r => options.push({ label: `${model}_round${r.round}`, text: `${name} round ${r.round}${r === best ? ' ★' : ''}`, entry: r }));
+    const available = [];
+    for (const o of options) { if ((await fetch(folder + o.label + '_layers.json', { method: 'HEAD' })).ok) available.push(o); }
+    document.getElementById('title').textContent = `Storm prep plan · ${name}`;
+    document.getElementById('sub').textContent = log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero';
+    const holder = document.getElementById('plans');
+    available.forEach(o => { const b = document.createElement('button'); b.type = 'button'; b.textContent = o.text; b.dataset.label = o.label;
+      b.addEventListener('click', () => show(o, log)); holder.append(b); });
+    const start = available.find(o => best && o.label === `${model}_round${best.round}`) || available[available.length - 1];
+    await view.when();
+    document.getElementById('status').hidden = true;
+    if (start) await show(start, log); else document.getElementById('title').textContent = 'No 3D layers for this run yet';
+  })().catch(error => { document.getElementById('status').textContent = 'Could not load the plan: ' + error; console.error(error); });
+});
+</script>
+</body>
+</html>

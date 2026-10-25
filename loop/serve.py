@@ -95,6 +95,13 @@ class Handler(SimpleHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/api/status":
             return self.send_json({"running": running(), "runs": runs()})
+        if path == "/3d":
+            body = (Path(__file__).resolve().parent / "viewer3d.html").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if path in ("/", "/index.html"):
             names = runs()
             if not names:
@@ -111,6 +118,13 @@ class Handler(SimpleHTTPRequestHandler):
                     pass  # no logs yet: serve whatever exists
             self.path = "/" + "/".join(parts[2:])
             return super().do_GET()
+        self.send_error(404)
+
+    def do_HEAD(self):
+        path = self.path.split("?")[0]
+        if path.startswith("/runs/"):
+            self.path = "/" + "/".join(path.split("/")[2:])
+            return super().do_HEAD()
         self.send_error(404)
 
     def do_POST(self):
