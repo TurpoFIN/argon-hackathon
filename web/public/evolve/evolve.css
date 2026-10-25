@@ -697,3 +697,18 @@ body { grid-template-rows: auto auto 1fr !important; }
 .d-more { margin-top: 8px; } .d-more > summary { cursor: pointer; color: #737373; font-size: 12px; padding: 6px 0; list-style: none; }
 .d-more > summary::before { content: '+ '; } .d-more[open] > summary::before { content: '− '; }
 .card-h .hint, .hint { display: none !important; }
+
+/* Argon watch: one line on the overview, monochrome card on Evolution */
+.ov-watch { display: flex; gap: 14px; align-items: center; margin: 4px 0 14px; padding: 10px 14px; border: 1px solid #e8e8e8; border-radius: 10px; }
+.ov-watch:empty { display: none; }
+.ov-watch img { width: 96px; height: 54px; object-fit: cover; border-radius: 6px; border: 1px solid #e8e8e8; flex: none; }
+.ov-watch > div { min-width: 0; }
+.ov-watch .k { color: #737373; font-size: 13px; } .ov-watch .k a { color: #0a0a0a; }
+.ov-watch .q { color: #0a0a0a; font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#view-evolution #card-watch { grid-column: 1 / -1 !important; grid-row: 3 !important; min-height: 0 !important; }
+#card-watch .watch-row { border-left: 2px solid #0a0a0a !important; background: #fafafa !important; }
+#card-watch .watch-head, #card-watch .watch-fail, #card-watch .watch-dir, #card-watch .watch-applied { color: #737373 !important; }
+#card-watch .watch-crit, #card-watch .watch-head b, #card-watch .watch-media a { color: #0a0a0a !important; }
+#card-watch .watch-thumb, #card-watch .watch-video { border-color: #e8e8e8 !important; }
+.ov-head { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; column-gap: 32px; align-items: center; }
+.ov-head > .ov-watch { grid-column: 1 / -1; margin: 12px 0 0; padding: 8px 14px; }

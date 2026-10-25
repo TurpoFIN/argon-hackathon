@@ -1183,8 +1183,23 @@ function renderOverview() {
   $('#ovStats').innerHTML = `
     <div class="ov-hero"><span class="from">${seedBest != null ? money(seedBest) : '—'}</span><span class="arr">→</span><span class="to">${best != null ? money(best) : '—'}</span></div>
     <div class="ov-cap">net benefit of the best plan, first try → after ${Math.max(0, gens.length - 1)} generations · ${D.cands.length} plans tried</div>`;
+  renderOvWatch();
   renderOvLoop();
   renderOvChart(gens, seedBest);
+}
+// "Argon watched the replay" moment (state.watch is written by the visual-verification step, if enabled)
+function renderOvWatch() {
+  const box = $('#ovWatch');
+  if (!box) return;
+  const w = (S.watch || []).filter((x) => x.status === 'ok' && x.critique).slice(-1)[0];
+  if (!w) { box.innerHTML = ''; return; }
+  const sentence = String(w.critique).split(/(?<=[.!?])\s/)[0];
+  const fixes = D.scored.filter((c) => c.gen === w.applied_to_gen && String(c.directive || '').startsWith('Visual verification directive'));
+  const fix = fixes.sort((a, b) => b.score.net_benefit_usd - a.score.net_benefit_usd)[0];
+  const img = w.media?.images?.[0];
+  box.innerHTML = `${img ? `<img src="${esc(img)}" alt="replay still Argon watched">` : ''}
+    <div><div class="k">Argon watched the replay of ${esc(w.cand)}</div><div class="q">“${esc(sentence)}”</div>
+    ${fix ? `<div class="k">→ fixed in <a href="?job=${encodeURIComponent(S.id)}&tab=evolution&cand=${encodeURIComponent(fix.id)}">${esc(fix.id)}</a> · ${money(fix.score.net_benefit_usd)}</div>` : ''}</div>`;
 }
 function renderOvLoop() {
   const box = $('#ovLoop');
