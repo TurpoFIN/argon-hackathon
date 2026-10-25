@@ -30,6 +30,7 @@
 
   <nav class="tabs">
     <button class="tab active" data-tab="evolution">Evolution</button>
+    <button class="tab" data-tab="agents">Agents</button>
     <button class="tab" data-tab="architecture">Architecture</button>
     <div class="legend" id="legend"></div>
   </nav>
@@ -47,7 +48,8 @@
             <div id="archive"></div>
           </div>
           <div class="card" id="card-pareto">
-            <div class="card-h"><h2>Cost vs damage avoided</h2><span class="hint">Pareto front · BCR = 1 diagonal</span></div>
+            <div class="card-h"><h2 id="treeTitle">Family tree</h2><span class="hint" id="treeHint">every plan, parent → child, best lineage glowing</span>
+              <span class="seg r" id="treeSeg"><button data-m="tree" class="on">Family tree</button><button data-m="pareto">Pareto</button></span></div>
             <div class="chart" id="pareto"></div>
           </div>
           <div class="card" id="card-board">
@@ -57,6 +59,26 @@
           <div class="card" id="card-gens">
             <div class="card-h"><h2>Argon’s research directions</h2><span class="hint">read the whole archive each generation</span></div>
             <div id="gens" class="scroll"></div>
+          </div>
+        </div>
+      </div>
+      <div class="view hidden" id="view-agents">
+        <div class="grid-agents">
+          <div class="card span-all" id="card-roster">
+            <div class="card-h"><h2>The agent team</h2><span class="hint" id="rosterHint">one architect, six specialist mutators, a reviewer, a hill-climber and the locked evaluator</span></div>
+            <div id="roster"></div>
+          </div>
+          <div class="card span-all" id="card-swim">
+            <div class="card-h"><h2>Who worked when</h2><span class="hint" id="swimHint">every model call, review, sandbox check and storm run on one clock · click a bar to open its plan</span></div>
+            <div id="swim"></div>
+          </div>
+          <div class="card" id="card-funnel">
+            <div class="card-h"><h2>Evaluation cascade</h2><span class="hint">cheap checks first, the storm sim only for plans that can win</span></div>
+            <div id="funnel"></div>
+          </div>
+          <div class="card" id="card-calib">
+            <div class="card-h"><h2>Reviewer calibration</h2><span class="hint">did the pre-sim prediction hold?</span></div>
+            <div id="calib"></div>
           </div>
         </div>
       </div>

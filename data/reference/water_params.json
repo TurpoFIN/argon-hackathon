@@ -3,9 +3,9 @@
  "retrieved": "2026-10-25",
  "params": {
   "alpha": {
-   "value": 0.7,
+   "value": 0.6,
    "unit": "-",
-   "source": "Bates, Horritt & Fewtrell 2010, J. Hydrol. 387:33-45, eq. 14: CFL coefficient 0.2-0.7 for the local-inertial scheme"
+   "source": "Bates, Horritt & Fewtrell 2010, J. Hydrol. 387:33-45, eq. 14 (CFL coefficient 0.2-0.7); 0.6 because the StormSim 2D pool-perturbation test is unstable at 0.7 and stable at 0.6 (validation/BUGS.md B1)"
   },
   "theta": {
    "value": 0.8,
@@ -43,9 +43,9 @@
    "source": "NOAA CO-OPS 9414290 datums: MLLW ~0.0 m NAVD88, MHHW 1.798 m; open cells below MLLW+0.5 touching the Bay are water (hydro-flattened lidar)"
   },
   "i_design_mm_h": {
-   "value": 20.0,
+   "value": 10.3,
    "unit": "mm/h",
-   "source": "calibrated equivalent conveyance intensity; SFPUC Sewer System Improvement Program level of service = 5-year 3-hour design storm (SFPUC SSIP Levels of Service, 2016); NOAA Atlas 14 at 37.7765N 122.405W: 5-yr 60-min depth 18 mm, 10-yr 21 mm (data/reference/storm/noaa_atlas14_pfds_sf_37.7765_-122.405_mm.csv)"
+   "source": "SFPUC Sewer System Improvement Program level of service: collection system sized for the 5-year 3-hour design storm; NOAA Atlas 14 at 37.7765N 122.405W gives 31 mm in 3 h for 5-yr ARI (data/reference/storm/noaa_atlas14_pfds_sf_37.7765_-122.405_mm.csv) -> 10.3 mm/h average. Cross-check on the 31.12.2022 replay: CSI vs SFPUC 100-yr map 0.19 / 0.24 / 0.28 for 14 / 12 / 10 mm/h (runs/dev_water/sweep2_*.log)"
   },
   "c_imp": {
    "value": 0.9,
@@ -181,6 +181,26 @@
    "value": 0.7,
    "unit": "-",
    "source": "Rational method, residential multi-unit 0.6-0.75: ASCE/WEF MOP 77 (1992) Table 5.4"
+  },
+  "scheme": {
+   "value": "inertial",
+   "unit": "-",
+   "source": "default surface solver: local-inertial (Bates et al. 2010, LISFLOOD-FP), calibrated on 31.12.2022; 'hll' = full SWE (HLL + Audusse et al. 2004, SIAM J. Sci. Comput. 25:2050), validated on Stoker/Ritter dam breaks, ~2.5x runtime"
+  },
+  "cfl_hll": {
+   "value": 0.45,
+   "unit": "-",
+   "source": "Toro 2001, Shock-Capturing Methods for Free-Surface Shallow Flows, ch. 9/10: 2D unsplit first-order Godunov stable for Courant <= 0.5"
+  },
+  "hvel": {
+   "value": 0.001,
+   "unit": "m",
+   "source": "wet/dry threshold below which velocity is set to 0 (same 1 mm as hmin, LISFLOOD-FP manual)"
+  },
+  "umax": {
+   "value": 10.0,
+   "unit": "m/s",
+   "source": "numerical safety cap on depth-averaged velocity (model choice; never reached in the SF runs, max street velocities stay well below it)"
   }
  }
 }
