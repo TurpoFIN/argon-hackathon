@@ -12,6 +12,9 @@ import { TYPE_COLORS } from './plan';
 import { Walker } from './nav';
 import { createAgentPanel } from './agentPanel';
 import { cloudDeck, rainCurtains, spray, WindowLights, StormAudio, windDir, skyDome } from './fx';
+import { mountProductShell } from './shell';
+
+mountProductShell();
 
 const q = new URLSearchParams(location.search);
 const shotMode = q.has('shot');
