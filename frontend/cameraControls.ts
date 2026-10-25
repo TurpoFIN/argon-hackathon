@@ -1,4 +1,4 @@
-import {clamp,emptyMotion,heading,panOffset,wheelMotion,type CameraInputMode,type CameraMotion} from './cameraInput';
+import {clamp,emptyMotion,heading,panOffset,wheelMotion,zoomPosition,type CameraInputMode,type CameraMotion} from './cameraInput';
 
 type Camera={heading:number;tilt:number;position:{z:number;longitude:number;latitude:number};clone():Camera};
 export type CameraView={
@@ -44,20 +44,24 @@ export function installCameraControls(view:CameraView):void{
     panel.querySelector('output#camera-yaw-value')!.textContent=`${Math.round(h)%360}°`;
     panel.querySelector('output#camera-pitch-value')!.textContent=`${Math.round(p)}°`;
     panel.querySelector('output#camera-altitude')!.textContent=`${Math.round(view.camera.position.z).toLocaleString()} m`;
+    panel.querySelector<HTMLButtonElement>('[data-camera=in]')!.disabled=view.camera.position.z<=20.001;
+    panel.querySelector<HTMLButtonElement>('[data-camera=out]')!.disabled=view.camera.position.z>=4999999.999;
     panel.dataset.yaw=String(h);panel.dataset.pitch=String(p);panel.dataset.scale=String(view.scale);
   }
   function move(target:unknown){void view.goTo(target,{animate:false}).then(sync).catch(error=>{if(error?.name!=='AbortError')console.warn('Camera movement unavailable',error);});}
   function flush(){
     frame=0;const motion=pending;pending=emptyMotion();
     const change:Record<string,unknown>={};
-    if(motion.panX||motion.panY){
+    if(motion.panX||motion.panY||motion.zoom){
       const camera=view.camera.clone(),position=camera.position;
-      const offset=panOffset(motion.panX,motion.panY,view.scale,camera.heading,camera.tilt,position.latitude);
-      position.longitude=heading(position.longitude+offset.longitude+180)-180;
-      position.latitude=clamp(position.latitude+offset.latitude,-84,84);
+      if(motion.panX||motion.panY){
+        const offset=panOffset(motion.panX,motion.panY,view.scale,camera.heading,camera.tilt,position.latitude);
+        position.longitude=heading(position.longitude+offset.longitude+180)-180;
+        position.latitude=clamp(position.latitude+offset.latitude,-84,84);
+      }
+      if(motion.zoom)Object.assign(position,zoomPosition(position,camera.heading,camera.tilt,motion.zoom));
       view.camera=camera;sync();
     }
-    if(motion.zoom)change.scale=clamp(view.scale*Math.exp(clamp(motion.zoom,-2,2)),400,20000000);
     if(motion.yaw)change.heading=heading(view.camera.heading+motion.yaw);
     if(motion.pitch)change.tilt=clamp(view.camera.tilt+motion.pitch,0,85);
     if(Object.keys(change).length)move(change);
@@ -71,7 +75,7 @@ export function installCameraControls(view:CameraView):void{
   yaw.oninput=()=>{pending=emptyMotion();move({heading:Number(yaw.value)});};
   pitch.oninput=()=>{pending=emptyMotion();move({tilt:Number(pitch.value)+90});};
   panel.querySelectorAll<HTMLButtonElement>('button[data-camera]').forEach(button=>button.onclick=()=>{
-    pending=emptyMotion();
+    if(button.dataset.camera!=='in'&&button.dataset.camera!=='out')pending=emptyMotion();
     switch(button.dataset.camera){
       case 'home':move(home.clone());break;
       case 'north':move({heading:0});break;
