@@ -19,14 +19,24 @@ export const workFacts:Record<string,Fact>={
 };
 
 export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:WorkFindings){
-  const fact=workFacts[work.operation_id];
-  const root=document.createElement('dl');root.className='work-evidence-inline';
-  const add=(label:string,value:string)=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;root.append(dt,dd);return dd;};
-  add('No work',fact?.without??work.without);
-  add('With work',fact?.benefit??work.with);
+  const fact=workFacts[work.operation_id],planned=data.selected.find(s=>s.id===work.id);
+  const root=document.createElement('section');root.className='work-evidence-block';
+  const comparison=document.createElement('div');comparison.className='work-before-after';comparison.setAttribute('aria-label','Do nothing versus planned work');
+  const side=(title:string,value:string,cost:string,cls:string)=>{
+    const block=document.createElement('div');block.className=cls;
+    const heading=document.createElement('h3'),body=document.createElement('p'),resource=document.createElement('small');
+    heading.textContent=title;body.textContent=value;resource.textContent=cost;block.append(heading,body,resource);return block;
+  };
+  comparison.append(
+    side('Do nothing',fact?.without??work.without,'0 person-min · no added equipment','work-state-before'),
+    side('After planned work',planned?(fact?.benefit??work.with):'Not scheduled — no change',planned?`${planned.labor_minutes} person-min · ${planned.people} people`:'No crew or equipment assigned','work-state-after'),
+  );root.append(comparison);
+  const qualifier=document.createElement('p');qualifier.className='work-comparison-qualifier';qualifier.textContent=planned?'Same storm. After assumes this work is completed.':'Potential if made feasible: '+(fact?.benefit??work.with);root.append(qualifier);
+  const evidenceList=document.createElement('dl');evidenceList.className='work-evidence-inline';root.append(evidenceList);
+  const add=(label:string,value:string)=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;evidenceList.append(dt,dd);return dd;};
   const evidence=add('Evidence',fact?.evidence??work.evidence_grade);
-  const source=data.sources.find(s=>s.id===fact?.source);
-  if(source){const a=document.createElement('a');a.textContent=fact.sourceLabel+' ↗';a.href=source.url;a.target='_blank';a.rel='noreferrer';a.title=source.title;evidence.append(' ',a);}
+  const source=data.sources.find(s=>s.id===(fact?.source??work.source_ids[0]));
+  if(source){const a=document.createElement('a');a.textContent=(fact?.sourceLabel??source.title)+' ↗';a.href=source.url;a.target='_blank';a.rel='noreferrer';a.title=source.title;evidence.append(' ',a);}
   const finding=findings[work.hazard];
   const applies=finding?.site_id===work.site.id&&finding.condition!=='unchecked'&&finding.note.trim();
   const label=applies?(finding.condition==='clear'?'No concern found':'Site reviewed'):'Inspect first';

@@ -34,7 +34,7 @@ body.planning-mode{--plan-width:480px}.planning-mode .controls,.planning-mode .d
 .planning-mode #scene{left:0;width:100%;top:56px;height:calc(100% - 56px)}
 .planning-mode .plan-panel{display:none;top:116px;left:16px;bottom:24px;width:400px;max-width:calc(100vw - 32px);border:1px solid var(--border);border-radius:8px;padding:16px;box-shadow:0 8px 32px #0003;z-index:15}
 .planning-mode.plan-open .plan-panel{display:block}
-.plan-tools{position:fixed;z-index:16;left:16px;top:68px;display:flex;gap:8px;align-items:center}
+.plan-tools{position:fixed;z-index:16;left:16px;top:68px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100vw - 32px)}
 .plan-tools button,.plan-map-note button{font:inherit;color:var(--foreground);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:6px 12px;min-height:32px;cursor:pointer}
 .plan-tools small{padding:6px 10px;background:var(--card);border-radius:6px;font-size:11px;color:var(--muted-foreground)}
 .plan-pin-layer{position:fixed;inset:0;z-index:7;pointer-events:none;overflow:hidden}
@@ -45,6 +45,13 @@ body.planning-mode{--plan-width:480px}.planning-mode .controls,.planning-mode .d
 .plan-map-note h2{font-size:16px;font-weight:400;margin:4px 0}.plan-map-note p{margin:6px 0}.plan-map-note .work-evidence-inline{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 10px;margin:12px 0;font-size:12px;line-height:1.4}.plan-map-note dt{color:var(--muted-foreground)}.plan-map-note dd{margin:0}.plan-map-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}.plan-map-note strong{display:inline;font-weight:500}.plan-card-controls{display:flex;gap:6px;justify-content:space-between;margin-top:12px}.plan-card-kicker,.plan-card-meta{font-size:11px;color:var(--muted-foreground)}.plan-card-site{font-size:13px}.plan-map-note details{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}.plan-map-note summary{font-size:12px;cursor:pointer}
 .planning-mode.plan-open .plan-map-note{display:none}
 @media(max-width:767px){.planning-mode .workspace{height:calc(100vh - 56px);margin-left:0}.planning-mode #scene{height:calc(100% - 56px)}.plan-tools{left:8px;top:64px}.plan-tools small{display:none}.planning-mode .plan-panel{left:8px;top:106px;bottom:12px;max-width:calc(100vw - 16px)}.planning-mode .plan-map-note{left:8px!important;right:8px!important;top:auto!important;bottom:20px!important;width:auto;max-height:58vh;padding:12px}.plan-pin{max-width:158px;font-size:11px}.plan-pin small{font-size:10px}.plan-pin>span>span{display:none}.plan-pin>span>span:first-child{display:block;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plan-pin>span>small{display:none}}
+
+.plan-comparison-tabs{display:flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:999px;background:var(--card)}
+.plan-tools .plan-comparison-tabs button{border:0;background:transparent;min-height:28px;padding:4px 12px}.plan-comparison-tabs button[aria-pressed=true]{background:var(--muted);box-shadow:inset 0 0 0 1px var(--foreground)}
+.work-before-after{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.work-before-after>div{border:1px solid var(--border);border-radius:6px;padding:10px;min-width:0}.work-before-after h3{font-size:12px!important;font-weight:500!important;margin:0 0 6px!important}.work-before-after p{font-size:13px;line-height:1.4;margin:0 0 10px}.work-before-after small{font-size:11px;line-height:1.4;color:var(--muted-foreground);display:block}.work-comparison-qualifier{font-size:11px!important;color:var(--muted-foreground);margin:6px 0!important}
+html[data-map-comparison=before] .work-state-before,html[data-map-comparison=after] .work-state-after{border-color:var(--foreground);background:var(--muted)}
+html[data-map-comparison=before] .plan-pin-line{background:#70757b}html[data-map-comparison=before] .plan-pin[aria-pressed=true]{border-color:#70757b}
+@media(max-width:767px){.plan-tools{max-width:calc(100vw - 16px);gap:5px}.plan-tools button{font-size:11px}.plan-tools .plan-comparison-tabs button{padding:4px 10px}.planning-mode .plan-panel{top:146px}.work-before-after>div{padding:8px}.work-before-after p{font-size:12px}}
 `;
 
 export async function planningView(_host:HTMLElement,map:{add(layer:unknown):void},onFlood:(value:Float32Array|undefined)=>void){
@@ -63,6 +70,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
   let state:State|undefined,selected:Hazard='wind',draft:Plan|undefined,dirty=false,busy=false,polling=false,view:MapView|undefined,showPower=false,showHistory=false,app:ScenarioState|undefined,lastStamp='';
   type Focus=WorkCandidate&Partial<SelectedWork>;
   let focusedAction:Focus|undefined;
+  let mapMode:'before'|'after'='after';
   let pinLayoutKey='',lastPinFrame=0;
   let pins:Array<{element:HTMLButtonElement;line:HTMLElement;point:unknown;ids:string[]}>=[];
   let powerLines:Array<{geometry:{type:string;coordinates:unknown};installation:string}>=[];
@@ -87,7 +95,10 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
   function chooseWork(work:Focus){focusedAction=work;draw();document.body.classList.remove('plan-open');updateTools();}
   function updateTools(){
     const open=document.body.classList.contains('plan-open');
-    mapTools.replaceChildren(button(open?'Close plan':'Resources & plan',()=>{document.body.classList.toggle('plan-open');updateTools();}),button('All sites',()=>{if(view&&pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});}),text('small','Proposed work · site conditions unverified'));
+    const comparison=text('div','','plan-comparison-tabs');comparison.setAttribute('role','group');comparison.setAttribute('aria-label','Map comparison');
+    for(const [value,label] of [['before','Do nothing'],['after','After planned work']] as const){const tab=button(label,()=>{mapMode=value;draw();});tab.setAttribute('aria-pressed',String(mapMode===value));comparison.append(tab);}
+    mapTools.replaceChildren(comparison,button(open?'Close plan':'Resources & plan',()=>{document.body.classList.toggle('plan-open');updateTools();}),button('All sites',()=>{if(view&&pins.length)void view.goTo({target:pins.map(p=>p.point)},{animate:false}).catch(()=>{});}),text('small',mapMode==='before'?'Same storm · no added work':'Same storm · planned completion, not observed'));
+
   }
   function renderMapCard(){
     if(!state||!draft)return;
@@ -108,7 +119,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     const key=JSON.stringify([innerWidth,innerHeight,mapNote.offsetHeight,focusedAction?.id,document.body.classList.contains('plan-open'),screens.map(s=>s?[Math.round(s.x),Math.round(s.y)]:null)]);
     if(key===pinLayoutKey)return;pinLayoutKey=key;
     const rect=view.container?.getBoundingClientRect()??document.querySelector('#scene,#map')!.getBoundingClientRect();
-    const boxes:Array<{x:number;y:number;w:number;h:number}>=[{x:8,y:56,w:470,h:48}];
+    const boxes:Array<{x:number;y:number;w:number;h:number}>=[{x:8,y:56,w:innerWidth>767?730:innerWidth-16,h:innerWidth>767?48:90}];
     if(focusedAction&&innerWidth>767){
       const screen=view.toScreen(new Point({longitude:focusedAction.site.position[0],latitude:focusedAction.site.position[1],spatialReference:{wkid:4326}}));
       if(screen){const x=screen.x+rect.left,y=screen.y+rect.top,w=mapNote.offsetWidth,h=mapNote.offsetHeight;let left=x+w+42<innerWidth?x+32:x-w-32;left=Math.max(16,Math.min(innerWidth-w-16,left));const top=Math.max(116,Math.min(innerHeight-h-24,y-h/2));mapNote.style.left=left+'px';mapNote.style.top=top+'px';mapNote.style.bottom='auto';boxes.push({x:left,y:top,w,h});}
@@ -134,14 +145,15 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     for(const rows of groups.values()){
       const work=rows[0],s=work.site,selectedHere=rows.some(w=>w.id===focusedAction?.id);
       const point=new Point({longitude:s.position[0],latitude:s.position[1],spatialReference:{wkid:4326}});
-      items.push(new Graphic({geometry:point,symbol:{type:'simple-marker',style:'circle',size:selectedHere?13:9,color:'#215f89',outline:{color:'#fff',width:2}}}));
+      items.push(new Graphic({geometry:point,symbol:{type:'simple-marker',style:'circle',size:selectedHere?13:9,color:mapMode==='before'?'#70757b':'#215f89',outline:{color:'#fff',width:2}}}));
       const pin=button('',()=>chooseWork(rows.find(w=>w.id!==focusedAction?.id)??rows[0]));pin.className='plan-pin';pin.setAttribute('aria-label',rows.map(w=>workFacts[w.operation_id]?.name??w.label).join(', ')+' at '+s.label);pin.setAttribute('aria-pressed',String(selectedHere));pin.dataset.siteId=s.id;pin.dataset.longitude=String(s.position[0]);pin.dataset.latitude=String(s.position[1]);pin.dataset.pending=String(rows.every(w=>w.priority===undefined));
       pin.append(text('strong',rows.filter(w=>w.priority!==undefined).map(w=>w.priority).join(', ')||'Inspect'));
-      const labels=text('span','');for(const row of rows)labels.append(text('span',(workFacts[row.operation_id]?.name??row.label)+(row.priority===undefined?' · not scheduled':'')));labels.append(text('small',s.label+' · '+(rows.every(w=>w.priority===undefined)?'not scheduled':'inspect first')));pin.append(labels);
+      const labels=text('span','');for(const row of rows)labels.append(text('span',mapMode==='before'?(workFacts[row.operation_id]?.without??row.without):(workFacts[row.operation_id]?.name??row.label)+(row.priority===undefined?' · not scheduled':'')));labels.append(text('small',s.label+' · '+(mapMode==='before'?'do nothing':rows.every(w=>w.priority===undefined)?'not scheduled':'if completed')));pin.append(labels);
       const line=text('div','','plan-pin-line');pinLayer.append(line,pin);pins.push({element:pin,line,point,ids:rows.map(w=>w.id)});
     }
+    document.documentElement.dataset.mapComparison=mapMode;
     layer.removeAll();layer.addMany(items);renderMapCard();updateTools();pinLayoutKey='';lastPinFrame=0;positionPins();
-    document.documentElement.dataset.planAction=focusedAction?.id??'';document.documentElement.dataset.planHazard=focusedAction?.hazard??selected;document.documentElement.dataset.planLocation=focusedAction?.site.id??siteFor(selected).id;document.documentElement.dataset.planPowerLines=String(showPower?powerLines.length:0);document.documentElement.dataset.planHistoricalReports=String(showHistory?state.evidence.incidents.length:0);
+    document.documentElement.dataset.mapComparison=mapMode;document.documentElement.dataset.planAction=focusedAction?.id??'';document.documentElement.dataset.planHazard=focusedAction?.hazard??selected;document.documentElement.dataset.planLocation=focusedAction?.site.id??siteFor(selected).id;document.documentElement.dataset.planPowerLines=String(showPower?powerLines.length:0);document.documentElement.dataset.planHistoricalReports=String(showHistory?state.evidence.incidents.length:0);
   }
   function focusSite(){focusedAction=undefined;draw();const s=siteFor(selected);void view?.goTo({center:s.position,zoom:16},{animate:false}).catch(()=>{});}
   async function api<T>(url:string,method='GET',data?:unknown):Promise<T>{const r=await fetch(url,{method,cache:'no-store',headers:{'Content-Type':'application/json'},body:data?JSON.stringify(data):undefined});if(!r.ok){const e=await r.json();throw Error(typeof e.detail==='string'?e.detail:Array.isArray(e.detail)?e.detail.map((v:{msg:string})=>v.msg).join(' '):'Check the location, inspection note and time inputs.');}return r.json() as Promise<T>;}
