@@ -1,0 +1,287 @@
+{
+  "purpose": "Scope audit, not a multi-hazard effectiveness claim",
+  "source_scenario": "fb0a8c631b29",
+  "sources": [
+    {
+      "url": "https://www.weather.gov/mob/wind_mitigation",
+      "fact": "NWS identifies pre-storm tree maintenance, removing loose objects, protecting windows, securing doors and maintaining roofs. This is action evidence, not a quantified effectiveness model."
+    },
+    {
+      "url": "https://sanfrancisco.granicus.com/TranscriptViewer.php?clip_id=44497&view_id=87",
+      "fact": "SF Building Inspection Commission, 20 Sep 2023: investigation and recommendations concerning March 2023 high-rise glass failures."
+    },
+    {
+      "url": "https://www.wje.com/knowledge/webinars/detail/wind-events-and-glass-breakage-lessons-learned-in-san-francisco",
+      "fact": "Engineering investigation of two March 2023 SF wind events, glazing failures and facade inspections. Generic residential shutter advice is not a high-rise repair model."
+    },
+    {
+      "url": "https://nvlpubs.nist.gov/nistpubs/gcr/2023/NIST.GCR.23-045-upd1.pdf",
+      "fact": "NIST performance-based wind design workshop identifies windborne debris and water infiltration after envelope failure as coupled research needs. Search-index excerpt, not a full reviewed technical specification."
+    },
+    {
+      "url": "https://onesanfrancisco.org/sites/default/files/inline-files/2025%20HCR_CalOES_FEMA_Mar10.pdf",
+      "fact": "SF 2025 hazard plan describes March 21 2023 fatalities, tree failures, glass failures and transport disruption. Search-index excerpt; full 40 MB document not downloaded."
+    },
+    {
+      "url": "https://media.api.sf.gov/documents/BIC_Meeting_092023_-_Item_9.pdf",
+      "fact": "Official SF BIC presentation, 20 Sep 2023, pages 4-8: 31 broken panes investigated in seven buildings; 30 had likely causes identifiable and mitigable before the storms. Thermal stress, debris impact, window hardware and contamination; wind loads very low probability. This is not a measured 97% benefit for a new intervention."
+    }
+  ],
+  "cases": [
+    {
+      "case": "original",
+      "flood_exposure_m2_min": 24389061.6,
+      "peak_flooded_area_m2": 643536,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 209443.1714851397,
+      "gravity_and_pumped_m3": 31783.21644520352,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 900902.1959308425,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.938337951898575e-07,
+      "seconds": 8.55,
+      "mean_mps": 20.0,
+      "gust_mps": 28.0,
+      "direction_from_deg": 168.0,
+      "loose_debris": true,
+      "field_sha256": "953e7cd80eb80df8c4e30bb36b6e48f2dc3fb6968e8d1d92c87ad2f70da098b6"
+    },
+    {
+      "case": "gust_only_50",
+      "flood_exposure_m2_min": 24389061.6,
+      "peak_flooded_area_m2": 643536,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 209443.1714851397,
+      "gravity_and_pumped_m3": 31783.21644520352,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 900902.1959308425,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.938337951898575e-07,
+      "seconds": 7.86,
+      "mean_mps": 20.0,
+      "gust_mps": 50.0,
+      "direction_from_deg": 168.0,
+      "loose_debris": true,
+      "field_sha256": "953e7cd80eb80df8c4e30bb36b6e48f2dc3fb6968e8d1d92c87ad2f70da098b6"
+    },
+    {
+      "case": "strong_reversed_mean",
+      "flood_exposure_m2_min": 24416956.8,
+      "peak_flooded_area_m2": 643392,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 209704.37024360694,
+      "gravity_and_pumped_m3": 31489.928530832047,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 900870.1067748964,
+      "final_blocked_drains": 65,
+      "balance_error_m3": -4.511093720793724e-07,
+      "seconds": 8.33,
+      "mean_mps": 35.0,
+      "gust_mps": 50.0,
+      "direction_from_deg": 348.0,
+      "loose_debris": true,
+      "field_sha256": "d9bfbc69cb6b31a841d6e6be4db0782ecc09e3eaf1b062dfc5258725d709d9d4"
+    },
+    {
+      "case": "no_loose_debris_calm",
+      "flood_exposure_m2_min": 24315652.8,
+      "peak_flooded_area_m2": 640656,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 208785.95909432953,
+      "gravity_and_pumped_m3": 32601.928819972065,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 901063.6959148137,
+      "final_blocked_drains": 0,
+      "balance_error_m3": -5.057081580162048e-07,
+      "seconds": 8.39,
+      "mean_mps": 0.0,
+      "gust_mps": 0.0,
+      "direction_from_deg": 168.0,
+      "loose_debris": false,
+      "field_sha256": "1e39e7a543edb14f505a7455888c1cc254a3c93dc277e8804b4e62050b8ad728"
+    },
+    {
+      "case": "no_loose_debris_strong",
+      "flood_exposure_m2_min": 24315652.8,
+      "peak_flooded_area_m2": 640656,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 208785.95909432953,
+      "gravity_and_pumped_m3": 32601.928819972065,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 901063.6959148137,
+      "final_blocked_drains": 0,
+      "balance_error_m3": -5.057081580162048e-07,
+      "seconds": 6.72,
+      "mean_mps": 35.0,
+      "gust_mps": 50.0,
+      "direction_from_deg": 348.0,
+      "loose_debris": false,
+      "field_sha256": "1e39e7a543edb14f505a7455888c1cc254a3c93dc277e8804b4e62050b8ad728"
+    }
+  ],
+  "baseline_parameters": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon"
+  },
+  "findings": {
+    "gust_only_changes_numerical_outcome": false,
+    "wind_changes_numerical_water_without_loose_debris": false,
+    "strong_reversed_mean_exposure_change_pct": 0.11437586430138591,
+    "absent_outcomes": [
+      "glazing/roof damage",
+      "tree failure",
+      "person exposure/injury",
+      "power loss",
+      "transport/network disconnection",
+      "business interruption"
+    ],
+    "interpretation": "Absent outcomes are unmodeled, never zero. Wind/debris motion has only a drain-clogging consequence here."
+  },
+  "implementation_hashes": {
+    "backend/simulation.py": "a38896dc7c56744e4d4585a7bb51dbd91911b07ce72b6c56533d0eef9bcdde47",
+    "backend/coupled.py": "7af26433d66891e715c7a94e04e519f6a03bbc181a802849b7189315701c70b5",
+    "backend/planning.py": "0c01ed34e31a3e6d9f7d9029744fc27356034f5f73cb925f01423a7cde0b959c",
+    "backend/benefit.py": "58ea3b17130f0039bdbc9a28ab5a281ba09d99d528d1bc0f689b6278caf6d536"
+  },
+  "argon_review": {
+    "diagnosis": "The current simulator (`fb0a8c631b29`) reduces wind and debris to a trivial drain-clogging modifier: changing `gust_mps` from 28.0 to 50.0 produces zero numerical difference (`953e7cd8...`), removing all loose debris or zeroing wind alters `flood_exposure_m2_min` by ~0.3% (24,389,061.6 vs 24,315,652.8 m2-min), and reversing mean wind to 35.0 m/s shifts exposure by only 0.114%. Because coastal inflow (900,902 m3) and rain (198,420 m3) dwarf total drainage capacity (31,783 m3), the 30-minute, 2-crew drain-clearing contract cannot materially alter flood volume or peak depth (4.266 m). Meanwhile, documented March 2023 San Francisco storm mechanisms\u2014saturated-soil tree throw, high-rise glazing/envelope failure, windborne debris, rain ingress, power loss, and corridor blockage\u2014are unmodeled (absent, not zero). A useful redesign must separate physical damage reduction (requiring 24\u201372h pre-storm setup or capital projects, specialized trades, and owner authority) from exposure reduction (30-min to 24h closures, cordons, and vehicle/pedestrian relocation with explicit network displacement costs), and must audit and port usable schemas (like the street-tree inventory and action/cost API in `origin/main` at `88cb619`) rather than blindly merging incompatible grids or missing modules (`sim/wind.py`, `sim/trees.py`).",
+    "families": [
+      {
+        "hazard_chain": "Rain soil saturation + wind gusts -> tree uprooting/limb failure -> road blockage, overhead line strike, pedestrian/vehicle strike, and coarse catch-basin obstruction.",
+        "preventive_actions": [
+          "30-min (Exposure reduction): Municipal traffic/transit crews deploy barricades to close high-canopy corridors and reroute buses/pedestrians before gust cutoff.",
+          "24-72h (Exposure + physical reduction): Certified arborists with bucket trucks and chippers perform targeted pre-storm crown thinning/deadwood removal; parking enforcement executes tow-away zones under vulnerable canopies; staging of saw crews for post-cutoff clearance.",
+          "Capital project (Physical reduction): Structural pruning cycles, species replacement, and undergrounding of overhead distribution segments."
+        ],
+        "measured_outcome": "Physical damage: count of failed trees/limbs, blocked road links, and severed overhead spans. Exposure reduction: vehicle-minutes and pedestrian-minutes inside tree-fall hazard polygons, traded off against network travel-time delay (displacement cost) from closures.",
+        "essential_missing_inputs": [
+          "Ported and georeferenced street-tree inventory from origin/main (88cb619) mapped onto the current simulation domain.",
+          "Soil saturation/antecedent precipitation index coupled with directional gust thresholds (activating gust_mps in backend/coupled.py).",
+          "Road network graph with link capacities, travel speeds, and pedestrian/vehicle routing to measure rerouting delay.",
+          "Arborist vs. barricade crew travel times, setup durations, equipment inventories, and safe wind-speed cutoff rules."
+        ],
+        "realistic_lead_time": "30 minutes for corridor cordons/rerouting; 24\u201372 hours for arborist pruning and tow-away enforcement (must halt before high-wind cutoff); multi-year for capital pruning/undergrounding."
+      },
+      {
+        "hazard_chain": "Directional wind gusts + urban canyon acceleration + loose rooftop/street objects -> projectile impact or pressure overload -> glazing/roof envelope breach -> wind-driven rain ingress -> interior building damage and sidewalk drop-zone hazard.",
+        "preventive_actions": [
+          "30-min (Exposure reduction): City and building staff establish sidewalk/plaza cordons and close adjacent traffic lanes in high-rise glazing drop zones; building operators issue shelter-in-place away from windward windows.",
+          "24-72h (Physical reduction): Municipal sanitation and private property crews tie down or remove loose street/rooftop furniture, construction materials, and bins; glazing/facade contractors inspect and secure vulnerable panels or apply temporary film/boarding on accessible low-rise openings before wind cutoff.",
+          "Capital project (Physical reduction): High-rise curtain-wall/glazing retrofits, structural roof anchoring, and wind-tunnel-informed performance-based facade upgrades."
+        ],
+        "measured_outcome": "Physical damage: count of breached envelope/glazing units and volume of wind-driven rain ingress (m3) into breached structures. Exposure reduction: pedestrian-minutes in sidewalk drop zones vs. sidewalk/lane closure displacement cost.",
+        "essential_missing_inputs": [
+          "Building footprint and facade typology inventory (distinguishing high-rise curtain walls, where residential shuttering is invalid, from accessible low-rise openings).",
+          "Spatial inventory of loose/ unsecured debris sources (construction sites, rooftop equipment, commercial bins) separate from generic drain debris_kg.",
+          "Directional gust amplification model coupling wind_from_deg and gust_mps to facade pressure and projectile transport.",
+          "Private asset-owner authority rules (city crews cannot unilaterally modify private facades/rooftops) and high-elevation work wind-cutoff thresholds."
+        ],
+        "realistic_lead_time": "30 minutes for sidewalk drop-zone cordons and interior relocation; 24\u201372 hours for loose-object removal and low-rise opening protection; capital timeline for high-rise glazing retrofits."
+      },
+      {
+        "hazard_chain": "Coastal surge + heavy rain runoff + wind-driven/tree debris -> overland pooling and underpass/basement inundation -> pump station power loss (from wind/tree or flood submergence) -> prolonged standing water and vehicle stranding.",
+        "preventive_actions": [
+          "30-min (Exposure reduction): Automated gates or traffic crews close low-lying underpasses and seawall promenades; building staff close pre-installed flood gates.",
+          "24-72h (Physical + exposure reduction): Public works crews deploy portable flood barriers/sandbags at critical building entries and substation perimeters, pre-position mobile diesel pumps, and clear major trash racks; tow-away relocation of parked vehicles from flood-prone blocks.",
+          "Capital project (Physical reduction): Seawall elevation, backflow preventers, stormwater pump station expansion, and elevated electrical switchgear."
+        ],
+        "measured_outcome": "Physical damage: interior water ingress volume (m3) in protected vs. unprotected structures and count of inundated vehicles/substations. Exposure reduction: stranded vehicles and person-minutes in floodwater >0.3m, balanced against parking loss and traffic detour time.",
+        "essential_missing_inputs": [
+          "Building entry elevations, basement presence, and flood-barrier inventory.",
+          "Pump station dependency on electrical nodes and fuel runtimes for mobile pumps.",
+          "Time-series coupling of wind/tree debris generation to inlet/trash-rack blockage rates.",
+          "Crew travel times through degrading traffic networks and setup labor hours per linear meter of temporary barrier."
+        ],
+        "realistic_lead_time": "30 minutes for gate closures and underpass barricades; 24\u201372 hours for temporary barrier installation, vehicle relocation, and mobile pump staging; capital timeline for seawall and drainage capacity expansion."
+      },
+      {
+        "hazard_chain": "Tree throw / windborne debris + coastal/rain flooding -> overhead line fault or pad-mounted/substation flooding -> localized power outage -> loss of building sump pumps, traffic signals, and elevator access -> compounded interior flooding and transport gridlock.",
+        "preventive_actions": [
+          "30-min (Exposure reduction): Traffic control officers or temporary stop-sign deployment at dark intersections; suspension of non-essential elevator use in vulnerable high-rises.",
+          "24-72h (Physical reduction): Utility and facility engineers stage and connect mobile backup generators at critical stormwater pumps and priority facilities; pre-storm waterproof wrapping/barriers around low-lying switchgear; proactive de-energization of flooded vaults.",
+          "Capital project (Physical reduction): Grid sectionalizing automation, substation floodwalls, and microgrid/battery installation."
+        ],
+        "measured_outcome": "Physical damage: unpumped water volume (m3) due to electric pump failure and count of damaged electrical assets. Exposure reduction: duration of unmitigated signal outages (intersection delay) and critical facility downtime.",
+        "essential_missing_inputs": [
+          "Dependency mapping between stormwater pumps/traffic signals/buildings and power supply zones (without inventing unobserved grid topology).",
+          "Inventory of mobile generators, fuel capacities, transfer-switch compatibility, and licensed electrician crews.",
+          "Safe operating cutoffs prohibiting electrical rigging during active high winds or standing water."
+        ],
+        "realistic_lead_time": "30 minutes for intersection traffic control and elevator advisories; 24\u201372 hours for generator transport, hookup, and switchgear sandbagging; capital timeline for grid hardening."
+      }
+    ],
+    "first_integrated_experiment": "Implement a bounded 24-hour vs. 30-minute multi-hazard allocation experiment on a single corridor neighborhood (auditing and porting the street-tree and action-cost schemas from `origin/main` `88cb619` into the current simulation framework without merging incompatible grids). Define a fixed resource budget of 4 municipal crews (2 General Public Works/Traffic crews with barricades and tow support; 2 Specialized Arborist/Sanitation crews with bucket trucks) and explicit travel, setup, and safe wind-cutoff times (e.g., aerial work halts when `gust_mps` > 18 m/s). Compare three competing plans under identical storm forcing (`rain_mm_h`=85, `mean_mps`=25, `gust_mps`=45, `coastal_rise_m`=0.5): Plan A (Legacy Baseline: 30-min drain clearing only), Plan B (Exposure Reduction Only: 30-min to 6-hr deployment of corridor road closures, sidewalk drop-zone cordons around known facade/tree hazards, and flood-zone vehicle relocation), and Plan C (Combined Physical + Exposure Prep: 24-hr pre-cutoff arborist pruning of highest-risk trees, loose commercial debris removal, temporary flood barrier placement at key low-lying entries, followed by targeted 30-min cordons after wind cutoff). Evaluate across a multi-objective vector: (1) human/vehicle exposure-minutes in active flood (>0.3m), tree-fall, and glazing drop zones; (2) physical counts of blocked corridor links, breached low-rise openings/inlets, and interior water ingress (m3); and (3) network displacement cost (vehicle-hours of detour delay and closed parking/sidewalk capacity-hours).",
+    "falsification_tests": [
+      "Gust sensitivity test: Increasing `gust_mps` from 28.0 to 50.0 while holding `mean_mps` constant must produce a strictly non-zero change in tree failure state, loose-debris transport distance, or envelope breach indicators (falsifies the current `gust_only_50` invariant hash `953e7cd8...`).",
+      "Wind-without-drain-debris test: With drain `loose_debris` set to false, increasing wind speed from 0 to 35 m/s must still alter tree-fall blockage and facade drop-zone hazard metrics (falsifies the current `no_loose_debris_calm` == `no_loose_debris_strong` identity).",
+      "Cutoff and lead-time feasibility test: Any plan scheduling aerial arborist work, rooftop loose-object removal, or exterior glazing protection after `gust_mps` exceeds the safe operating cutoff, or without sufficient travel + setup time before storm onset, must fail validation or be aborted in-simulation with zero physical mitigation credit.",
+      "Authority and skill constraint test: Assigning general drain-clearing crews to perform certified arborist pruning, electrical generator hookups, or private high-rise curtain-wall modifications must be rejected by the action validator.",
+      "Exposure vs. physical damage separation test: Executing a road/sidewalk cordon action alone must reduce person/vehicle exposure-minutes and increase network detour delay, while leaving physical tree-fall counts, facade breaches, and flood volumes unchanged.",
+      "Equal-resource tradeoff test: Under a fixed crew-hour budget, shifting crews from pre-storm debris/tree mitigation to flood-barrier deployment must decrease interior water ingress at protected nodes while increasing tree/debris corridor blockages or drop-zone hazards."
+    ],
+    "claims_we_cannot_make": [
+      "We cannot predict exact casualty, injury, or fatality counts from tree falls, glass breakage, or flooding.",
+      "We cannot claim empirical failure probabilities or fragility curves for specific San Francisco high-rise curtain walls or individual trees without structural and arboricultural inspection data.",
+      "We cannot claim that residential window shuttering or 30-minute emergency crew actions can prevent high-rise glazing failures like those investigated by the SF Building Inspection Commission and WJE in March 2023.",
+      "We cannot infer actual electrical distribution grid topology, transformer loading, or cascading power outage footprints without utility network data.",
+      "We cannot claim dollar savings, avoided business interruption totals, or arbitrary percent-damage reductions without validated asset valuation and empirical mitigation effectiveness tables.",
+      "We cannot claim that drain clearing alone materially reduces peak flood depth or total inundated area in this coastal- and rain-dominated scenario, nor that code in `origin/main` (`88cb619`) currently powers the Embarcadero simulator or includes `sim/wind.py` and `sim/trees.py`."
+    ]
+  },
+  "argon_receipt": {
+    "model": "gemini-4-argon",
+    "result_sha256": "3ce77ff6c29aa0d11747330a0e3dda70e3d49e63b11ceec2b0a91adcfe9db024",
+    "generated_at": "2026-10-25T21:12:14.969180+00:00"
+  },
+  "review_corrections": [
+    "900902 m3 net coastal exchange includes fixed ocean-cell storage. It is not land inflow or proof of coastal dominance. Prior source-isolation tests were rain-dominated.",
+    "The no-loose-debris cases jointly change wind AND loose material relative to the original. Do not claim a separately tested zero-wind-with-debris effect.",
+    "Do not compare a 24-hour four-crew intervention to a 30-minute two-crew baseline and call the difference action effectiveness. Equal budgets AND equal preparation horizons within each comparison.",
+    "18 m/s is not an established safe cutoff here. Equipment-specific rated limits, competent work method and local operating rules are missing inputs.",
+    "A closure need not reduce exposure or increase delays in every world. A stronger gust need not break a sound component. Do not hard-code desirable treatment effects or force a tradeoff that has not occurred.",
+    "Temporary film is not a generic valid facade repair. The WJE source describes its failures. Inspection alone changes information; only completed, appropriate remedial action changes physical condition.",
+    "The main people implementation uses storm-only population randomness despite a stale docstring. Audit actual dependencies rather than reporting the comment as a bug."
+  ],
+  "argon_refined_design": {
+    "historical_lesson": "Per the September 20, 2023 SF Building Inspection Commission presentation (pages 4-8), forensic investigation of 31 broken panes across seven buildings found that 30 had likely pre-existing causes identifiable and mitigable before the storms (including thermal stress, debris impact, window hardware issues, and glass contamination), while pure wind-load failure was very low probability, and temporary exterior film is not a valid generic repair. For advance preparedness on the Embarcadero, this means facade risk is governed by currently unknown latent defects and loose projectile sources rather than a guaranteed 30/31 (97%) intervention benefit: inspection is a costly information-gathering action that may yield no actionable finding, and physical vulnerability changes only when an inspection detects a specific defect and qualified personnel complete the appropriate remedial repair or debris securement before hazardous conditions arrive.",
+    "corrected_priorities": [
+      "Correct baseline physical and code interpretations: treat the 900,902 m3 net coastal exchange as including fixed ocean-cell storage inside a rain-dominated prior test (not land inflow or proof of coastal dominance), recognize that prior no-loose-debris runs jointly varied wind and loose material, and audit actual storm-only population randomness in the code rather than reporting stale docstrings as bugs.",
+      "Separate historical observations (March 2023 forensic findings of pre-existing glazing defects, debris impacts, and tree throws), current unknown conditions (uninspected Embarcadero building envelopes, uninventoried rooftop/street projectiles, unassessed tree root/crown health), and explicitly conditional scenario realizations.",
+      "Model inspection as an explicit information action with crew/time cost and uncertain discovery: an inspection updates the known state of a facade or tree (potentially finding no actionable defect) and competes directly for lead time and specialist budget against known preventive work such as loose-debris removal, pre-installed flood-barrier deployment, or corridor cordoning.",
+      "Enforce strict resource- and horizon-matched portfolio comparisons (identical preparation window, crew headcount, skill/authority rules, and equipment budget across all compared options, including a valid no-action baseline) rather than comparing a 24-hour 4-crew plan to a 30-minute 2-crew baseline.",
+      "Remove universal wind cutoffs (such as a hardcoded 18 m/s rule), guaranteed failure counts, and forced treatment effects: parameterize work suspension by equipment-specific rated limits, competent work methods, and local operating rules, and allow closures or gusts to result in zero exposure change, zero delay, or zero component failure when conditions are benign or assets are sound."
+    ],
+    "first_slice": "Implement a single Embarcadero corridor cross-hazard slice coupling three interacting mechanisms over a shared spatial graph and storm timeline: (1) overland/entry ponding from rain and coastal boundary water, (2) windborne loose-debris transport and latent facade/tree failure generating sidewalk/lane drop-zone and blockage hazards, and (3) pedestrian/vehicle routing across open vs. cordoned corridor links. Separate asset state into true (unobserved) condition and inspected (known) condition so that pre-storm actions can choose between inspecting uncertain facades/trees (followed by targeted hardware repair, hazard removal, or pruning only if an actionable defect is found and time/authority permit, excluding invalid temporary window film) versus directly executing known preventive work (securing known loose street/rooftop debris, deploying portable flood barriers at known low-lying entries, or establishing drop-zone/flood cordons).",
+    "matched_experiment": "Evaluate four resource- and horizon-matched portfolios over an identical 24-hour pre-storm preparation window along the Embarcadero corridor slice using the exact same budget (2 general public-works/traffic crews and 2 qualified specialist/inspector crews, bound by identical asset-owner authority and equipment-specific operating rules) across an ensemble of explicitly conditional storm and latent-defect scenarios: Portfolio 0 (No-Action Baseline: crews remain on standby, preserving optional zero-expenditure outcomes); Portfolio 1 (Known Preventive Physical Work Only: general crews remove known loose street/rooftop debris and deploy portable entry flood barriers; specialist crews perform preventive pruning/securement on previously flagged assets without new inspections); Portfolio 2 (Inspection-First + Conditional Remediation: specialist crews inspect priority facades and canopy trees\u2014incurring inspection time with the possibility of finding zero actionable defects\u2014and execute appropriate hardware/glazing remediation or tree work only where actionable defects are confirmed, while general crews secure adjacent debris/entries); and Portfolio 3 (Exposure Management + Drain/Barrier Prep: crews pre-stage and execute corridor/sidewalk cordons and flood-entry closures without facade/tree inspections). Compare portfolios across multi-objective scenario distributions: (a) completed physical remediations vs. unmitigated hazard realizations, (b) person- and vehicle-minutes in active flood or drop-zone polygons, (c) network travel-time change (which may be zero under low traffic or redundant routing), and (d) expended crew hours and inspection false-negative/no-finding rates.",
+    "rejection_tests": [
+      "Horizon and budget parity test: Reject any experiment configuration where competing portfolios differ in preparation lead time, crew count, specialist qualifications, or budget, or where the no-action baseline is omitted.",
+      "Inspection vs. physical remediation separation test: Verify that executing an inspection action alone alters only the planner's information state (discovering or not discovering a latent defect) and leaves physical failure probability unchanged unless a valid, defect-appropriate remedial action is subsequently completed within the preparation window.",
+      "Invalid intervention rejection test: Verify that generic temporary window film is rejected as a physical mitigation for high-rise curtain-wall/glazing defects, and that general public-works crews are blocked from performing private facade hardware repairs or specialist arborist work.",
+      "Non-forced outcome and conditional sensitivity test: Verify that increasing `gust_mps` on a sound, defect-free asset with zero loose debris produces zero forced failures, and that closing a corridor link during zero-demand periods or with zero-cost parallel capacity produces zero forced exposure reduction and zero forced delay.",
+      "Decoupled wind vs. loose-debris test: Independently vary wind speed (`mean_mps` and `gust_mps` at zero loose debris) and loose-debris inventory (at fixed positive wind) to verify that wind loading and projectile availability are evaluated as separate, non-confounded factors rather than a single joint toggle.",
+      "Equipment-rule cutoff validation test: Verify that work stoppages are triggered only by explicitly supplied equipment-specific rated limits and local operating rules, rejecting any hardcoded universal 18 m/s threshold."
+    ],
+    "unresolved_inputs": [
+      "Georeferenced Embarcadero building envelope inventory distinguishing facade typologies, entry elevations, ownership/access authority, and baseline priors for uninspected latent hardware/thermal/contamination defects.",
+      "Spatial inventory of loose windborne debris sources (rooftop equipment, construction materials, commercial bins) separate from catch-basin `debris_kg`, plus ports of the street-tree inventory and action-cost schemas onto the Embarcadero domain.",
+      "Equipment-specific rated wind/weather operating limits, competent work-method durations (for inspection, glazing hardware remediation, arborist pruning, and barrier setup), and local regulatory/safety rules.",
+      "Embarcadero pedestrian and vehicle network graph with time-varying demand and parallel route capacities to evaluate conditional cordon displacement without assuming guaranteed delays.",
+      "Separate boundary-condition accounting that isolates landward coastal overtopping/inflow onto the Embarcadero from fixed ocean-cell storage."
+    ]
+  },
+  "argon_refinement_receipt": {
+    "model": "gemini-4-argon",
+    "result_sha256": "a73d58a63eced5f2f15c2748f2bd065635fb34eb70acf36ab2f2d92ac7613567",
+    "generated_at": "2026-10-25T21:13:11.857039+00:00"
+  }
+}

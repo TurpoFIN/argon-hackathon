@@ -1,5 +1,10 @@
 # Why the preparedness gain was small
 
+**Scope correction:** the 0.027% result measures a very narrow water/drain
+experiment. It is not evidence that storm preparedness has little value. The
+[broader assessment below](#scope-correction-wind-and-useful-preparedness)
+documents missing hazards, paired wind tests, and the revised experiment design.
+
 This audit replays the original manual-weather scenario and asks Argon to run
 mechanism tests, then stronger preventive-action experiments. It does not change
 the displayed scenario or the concurrently developed coastal forecasting pilot.
@@ -107,3 +112,218 @@ coupled core and does not depend on the uncommitted coastal integration.
 A 1% reduction was used as an explicit comparison yardstick, not a calibrated
 safety standard. These findings explain this hypothetical model and parameter
 set. They do not establish field effectiveness or globally optimal routing.
+
+## Scope correction: wind and useful preparedness
+
+The user-visible question should be: **with the time, people and equipment we
+actually have before this storm, which actions best protect people, access,
+critical services and property?** The current objective, reducing square-metres
+times minutes of shallow outdoor water, cannot answer that question. A plan can
+leave precisely the same water on the street and still protect a vulnerable
+entrance, remove a falling-object hazard, or keep a critical facility operating.
+
+This correction is a research/design result. The expanded damage and service
+models below are **not yet implemented in the local viewer**.
+
+### What the current engine actually does with wind
+
+`backend/simulation.py::potential_wind` computes an inviscid 2D diagnostic field.
+Its docstring explicitly excludes turbulence, wakes and failure loads.
+`backend/coupled.py::World.step` uses 3% of that local velocity, capped at 1 m/s,
+to move pre-existing loose material until it encounters an inlet. It creates no
+new material from failed trees or buildings. In the audited path the gust
+parameter has no numerical consequence.
+
+Five matched one-hour runs froze the original rain, tide, geometry and initial
+clogs. Only the named wind/debris inputs changed:
+
+| Case | Mean / gust, m/s | Wind from | Flood exposure, m²·min | End blocked inlets |
+|---|---:|---:|---:|---:|
+| Original | 20 / 28 | 168° | 24,389,061.6 | 51 |
+| Gust-only change | 20 / 50 | 168° | 24,389,061.6 | 51 |
+| Stronger mean and reversed direction | 35 / 50 | 348° | 24,416,956.8 | 65 |
+| No loose material; calm | 0 / 0 | 168° | 24,315,652.8 | 0 |
+| No loose material; strong wind | 35 / 50 | 348° | 24,315,652.8 | 0 |
+
+The original and gust-only cases have **identical hashes of the full peak-depth,
+flood-duration and final-depth arrays**. So do the two no-loose-material cases.
+The stronger/reversed case changes the water metric by only +0.1144%, through
+clogging. Changing both speed and direction in that row does not isolate either
+variable's individual effect. The 50 m/s gust is a diagnostic input, not a forecast.
+
+Missing outcomes—glass or roof failures, tree falls, injuries, power loss, route
+disconnection, interior damage and business interruption—must be reported as
+**unmodeled**, never as zero. The results and actual Argon review are archived in
+`evidence/wind-scope-audit.json`; reproduce with
+`.venv/bin/python scripts/audit_wind_scope.py`. The script intentionally fails
+its scope assertions if future code changes these numerical dependencies; it
+does not prescribe keeping the limitations.
+
+The archive retains Argon's initial proposal, explicit review corrections and
+a second, evidence-informed review. Use `--refine` to repeat that second review
+without repeating the physical trials. The first proposal incorrectly treated
+the coastal storage budget as land inflow, proposed unequal preparation horizons,
+invented an 18 m/s work cutoff, and demanded effects that need not occur in every
+world. None of those assertions is an accepted model requirement. The corrected
+design below governs this assessment; raw model output is evidence of the
+review process, not a validated engineering model.
+
+### The strongest local evidence is about preventable defects
+
+San Francisco's [20 September 2023 Building Inspection Commission presentation](https://media.api.sf.gov/documents/BIC_Meeting_092023_-_Item_9.pdf)
+reports 31 broken panes investigated across seven buildings. Investigators
+concluded that **30 had likely causes that could have been identified and
+mitigated before the storms**. Its listed causes include thermal stress, debris
+impact, window hardware and contamination; wind-load breakage was assessed as
+very unlikely. This is historical forensic evidence, not a prediction of 97%
+effectiveness for a new plan or proof that every repair fits a short warning.
+
+The investigating engineers' [full WJE account](https://www.wje.com/knowledge/webinars/detail/wind-events-and-glass-breakage-lessons-learned-in-san-francisco)
+describes pre-broken panes, an operable-window hardware failure, and secondary
+debris damage. Building condition and maintenance can dominate a generic
+wind-speed threshold. The useful model is therefore **wind loading × asset
+condition × exposed people/property × feasible action**, including uncertainty
+in those inputs.
+
+[NWS preparedness guidance](https://www.weather.gov/mob/wind_mitigation) supports
+removing/anchoring loose objects, maintaining trees and roofs, and protecting
+openings. It does not supply numerical effectiveness for these particular
+buildings. [USDA's urban-tree guidance](https://www.climatehubs.usda.gov/approach/maintain-trees-and-remove-hazards-reduce-severity-or-extent-wind-and-ice-damage)
+connects tree failures to property damage, electric-service disruption and
+blocked emergency access, and stresses individual-tree condition and the costs
+of losing healthy trees. Blanket tree removal is not an acceptable optimizer
+shortcut.
+
+The live [DataSF street-tree schema](https://data.sfgov.org/api/views/tkzw-k3nq.json)
+was checked during this audit. It exposes species, position, diameter fields and
+responsibility/status information, but no explicit current structural-condition,
+root-defect or anchorage-strength field. A point on the map cannot establish that
+a tree is hazardous or quantify the benefit of pruning it.
+
+### A connected model, not an expanded list of independent toggles
+
+| Hazard and consequence chain | Before-storm choices worth testing | Outcome and essential evidence |
+|---|---|---|
+| Gusts and direction → loose objects, failed glazing/roof components → impacts and further debris | Secure/remove identified loose objects; close operable windows; repair/remove documented defective components; restrict exposure where repair cannot finish | Exposed person-minutes and struck assets; mapped objects, facade orientation/height, condition, repair procedure, wind uncertainty and people/route data |
+| Rain/antecedent wetness + wind → tree/branch failure → strikes and blocked access | Qualified targeted tree work; move parked vehicles; alter a walking route or pre-storm staging site | Conditional strikes, route availability and detour time; tree inventory, condition/root defects, soil state, potential fall geometry and accessible street graph |
+| Wind-damaged opening + driving rain → interior wetting → contents loss and downtime | Secure vulnerable openings; relocate exposed contents; protect critical rooms | Interior water and asset/site downtime; opening condition/area, first-floor level, rain direction, actual contents and vulnerability data |
+| Rain + tide + inlet/sewer limits → flooding at entrances/roads | Targeted clearing; correctly specified barriers, storage or pumping; move vulnerable assets | Entrances affected, access, damage and neighboring water rise; thresholds, outfall/head/capacity, sewer boundary and barrier geometry |
+| Wind/tree/flood failures → loss of power → pumps, signals, lifts or facility functions unavailable | Test and connect existing backup; stage compatible equipment and fuel; protect vulnerable electrical equipment | Critical function-hours lost; verified supply topology, loads, backup connection/capacity, runtime and access. Do not assume every downtown tree threatens an overhead line |
+| Any of the above → people displaced or routes severed | Timed warnings; selective pre-storm relocation or closures; preserve safe alternative routes and staging | Exposure, isolation, shelter capacity and essential-trip delay; time-varying occupancy, mobility needs, compliance, safe destination and route capacity |
+
+These mechanisms interact. Closing a sidewalk can move pedestrians into a flood
+zone; barriers can divert water to another entrance; a flood-safe staging site
+can be below defective glazing. A generator has no benefit for a pump without a
+compatible connection and reachable fuel. Securing an object can prevent both a
+direct strike and downstream drain obstruction. The model must propagate those
+links and avoid counting the same avoided loss twice.
+
+Wind requires time-varying gust/direction, exposure and height, not a cosmetic
+uniform multiplier. The current 2D arrows must not be converted directly into
+facade pressures. Use validated wind/load methods or clearly labeled sensitivity
+ranges appropriate to the asset class; do not extrapolate a generic residential
+fragility to downtown curtain walls. Some uncertainty can only be reduced with
+condition evidence, not a more expensive fluid solver.
+
+### Make the action budget physically credible
+
+Keep three decision horizons distinct:
+
+- **Short warning, such as 30 minutes:** small tasks on already identified,
+  accessible assets; securing loose objects, closing windows, moving exposed
+  vehicles/people and placing limited closures. Count dispatch, travel, access,
+  setup, work and return to a safe position. No citywide inspection or structural
+  repair is assumed possible.
+- **One to three days:** owner-coordinated inspections and feasible repairs,
+  qualified tree work, tested backup-power connections, specified temporary
+  protection and relocation plans. Include equipment availability, trades and
+  site dependencies. Inspection improves information; repair changes risk.
+- **Longer-term investment:** facade/roof retrofits, permanent power redundancy,
+  sewer/storage upgrades and tree replacement. Report investment tradeoffs
+  separately from emergency preparations; do not let construction materialize
+  during a short warning.
+
+Each action needs a real target ID, owner/operator, skill, equipment/material
+inventory, duration, travel/access, prerequisites, safe weather cutoff, physical
+state change and cost basis. A task unfinished at onset yields only the work
+actually completed. A generated phrase like "reinforce buildings" is not an
+executable action. No arbitrary `damage *= 0.5` is accepted as its effect.
+
+### The next experiment that can answer a useful question
+
+Keep the Embarcadero extent and shared scenario clock. Start with one connected
+district containing buildings, their entrances, real street links, mapped
+trees and a small set of critical destinations. Add verified condition records
+where available; otherwise label the affected assets and failure states as
+**conditional test scenarios**, not observations.
+
+Compare no preparation, the existing drain policy, a transparent simple policy,
+and Argon portfolios that can spend the **same resources** on securing objects,
+identified facade defects, specific tree hazards, asset relocation, closures,
+entrance protection and compatible backup. Only include an action family after
+its physical effect, target inventory and completion rule can be tested. Do not
+reward a planner merely for asking for more crews or unavailable equipment.
+
+Freeze the exogenous world across alternatives: the same weather trajectories,
+initial defects, latent component strengths, occupants and destinations.
+Sample uncertain input once per world, not again per plan. Re-run paired worlds
+for changed wind direction, storm timing relative to occupancy, wetness and
+condition assumptions. Use physically coherent weather sequences; do not label
+the independent combination of extreme marginal values a joint return period.
+
+Keep the simulator's latent condition separate from what Argon is allowed to
+know. The planner receives observations and their uncertainty, never the hidden
+defect/failure sample or future outcome. An inspection costs time, can find
+nothing, can miss a defect, and updates information only. Appropriate completed
+remediation changes the physical state. Measure the value of inspection by
+whether the resulting allocation improves outcomes after paying that cost.
+
+Report a vector of outcomes: hazard-exposed person-minutes, disconnected
+destinations/essential-trip delay, critical function-hours unavailable,
+building/contents/vehicle losses where defensible, work completed, preparation
+cost and residual flood consequences. Show individual high-consequence failures
+as well as averages. Casualty predictions require a defensible vulnerability
+model; exposure is not automatically an injury estimate. Safety limits and
+unacceptable service losses are constraints, not tiny weights in a dollar sum.
+
+Acceptance tests must catch at least these failures:
+
+1. Stronger gusts affect a susceptible wind asset even with zero loose debris.
+   A sound asset may remain unaffected; do not force damage monotonically onto
+   every building.
+2. Changing direction changes the exposed facade/fall or debris path.
+3. Removing a real source prevents its downstream debris; closing a route
+   changes exposure/access, not physical damage or the number of people.
+4. An unconnected, flooded, overloaded or fuel-exhausted backup cannot supply
+   a critical function. A functioning backup has no benefit in a no-outage case.
+5. A closure or barrier can make another route/entrance worse, and that cost
+   appears in the result. Relocated people and cars need valid destinations.
+6. Identical plans in identical sampled worlds reproduce; infeasible schedules
+   and tasks finishing after the safe cutoff are rejected.
+7. Argon's chosen benefit survives paired uncertainty tests and is compared with
+   a simple policy under the same budget. A gain must come from completed
+   physical/exposure changes, not plan-dependent random draws or prose.
+
+### Reuse the other work without conflating it with this app
+
+At inspected `origin/main` commit `88cb619`, existing work includes a 4 m
+SoMa/Mission Bay/downtown grid, 23,564 mapped street-tree records, 6,000
+**synthetic** parked cars, flood damage tables, a broader city action/cost API,
+and people/response modules. These are useful starting points, not proof of an
+integrated wind-preparedness system. `sim/wind.py` and `sim/trees.py` referenced
+by that commit are absent from its tree. The checked-in glazing fragility has
+explicitly assumed capacity parameters; the local forensic findings above show
+why those cannot establish preventability from condition-specific repair.
+
+The other grid has different bounds and row orientation, and its Git history
+does not share a base with this isolated branch. Port audited modules and data
+through explicit coordinate/unit contracts; preserve collaborators' work.
+Audit reproducibility at the call boundary: `sim.people` already uses a
+storm-only population stream, while exposing a separate plan-seeded stream.
+Do not mistake its earlier docstring for evidence that the whole population
+changes with each plan. Verify which randomness actually affects comparisons.
+
+The parallel coastal forecast pilot is complementary forcing work. It cannot
+supply the missing asset conditions, causal damage models, or service network.
+Neither that pilot nor this scope audit changes the fact that the broader
+consequences remain unimplemented in the current viewer.
