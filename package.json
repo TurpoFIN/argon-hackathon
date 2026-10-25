@@ -1,10 +1,20 @@
 {
-  "name": "san-francisco-3d",
-  "version": "1.0.0",
+  "name": "embarcadero-storm",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
-    "start": "node server.mjs"
+    "build": "tsc --noEmit && node scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "prepare:data": ".venv/bin/python -m backend.prepare",
+    "test:physics": ".venv/bin/python -m unittest discover -s tests -v",
+    "start": ".venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 5174"
+  },
+  "devDependencies": {
+    "esbuild": "~0.25.12",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.4"
   }
 }
