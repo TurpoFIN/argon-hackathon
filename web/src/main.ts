@@ -446,6 +446,8 @@ async function main() {
   addEventListener('keyup', (e) => { const k = camKey(e); if (k) held.delete(k); }, true);
   addEventListener('blur', () => held.clear());
   addEventListener('mousemove', (e) => { if (e.shiftKey && !e.buttons) { lookDX += e.movementX; lookDY += e.movementY; orbit = null; } });
+  // ArcGIS has its own keyboard navigation (arrows/WASD pan & zoom); swallow those keys so only ours apply.
+  if (arc) arc.view.on('key-down', (e: any) => { const k = String(e.key || '').toLowerCase(); if (['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(k)) e.stopPropagation(); });
   let hintShown = false;
   let fcLast = performance.now();
   const freeCam = (_dt: number) => {
@@ -456,7 +458,7 @@ async function main() {
     const dyaw = lookDX * 0.15, dpitch = lookDY * 0.12; lookDX = lookDY = 0;
     if (arc) {
       const c = arc.view.camera; const p = c.position; const [x, y] = tile.lonLatToLocal(p.longitude, p.latitude);
-      const g = arc.groundAt(p.longitude, p.latitude) ?? city.zAt(x, y) + tile.zOffset; const alt = Math.max(3, p.z - g); const sp = Math.max(6, alt * 0.9);
+      const g = arc.groundAt(p.longitude, p.latitude) ?? city.zAt(x, y) + tile.zOffset; const alt = Math.max(3, p.z - g); const sp = Math.min(220, Math.max(8, alt * 0.35));
       const h = c.heading * Math.PI / 180; const nx = x + (Math.sin(h) * mf + Math.cos(h) * mr) * sp * dt, ny = y + (Math.cos(h) * mf - Math.sin(h) * mr) * sp * dt;
       const [lon, lat] = tile.localToLonLat(nx, ny);
       arc.setCamera({ lon, lat, z: Math.max(g + 1.7, p.z + mu * sp * dt), heading: c.heading + dyaw, tilt: Math.max(1, Math.min(179, c.tilt - dpitch)) });
