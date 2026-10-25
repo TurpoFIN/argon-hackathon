@@ -148,9 +148,9 @@ def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int 
         # Keep a named, cross-hazard slice for the time-boxed live demo.  The
         # default menu still contains all families; this is a transparent
         # measurement cap, not a score-dependent filter.
-        priority = ["Storage vault at lowest basin", "Pump station at lowest basin",
-                    "Permeable pavement upstream", "Dry floodproof exposed buildings",
+        priority = ["Storage vault at lowest basin", "Dry floodproof exposed buildings",
                     "Brace wind-exposed trees", "Early alert and evacuation",
+                    "Pump station at lowest basin", "Permeable pavement upstream",
                     "Upgrade basin inlets", "Clear basin drains", "Deployable bay barrier"]
         by_name = {c["name"]: c for c in candidates}
         candidates = [by_name[n] for n in priority if n in by_name][:candidate_limit]
@@ -250,7 +250,7 @@ def _save_evidence(storm: str, budget: float, started: str, base_dir: Path,
 
 def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: int = 3,
                    generations: int = 1, population: int = 3, max_minutes: float = 12,
-                   sim_workers: int = 2, candidate_limit: int | None = 6,
+                   sim_workers: int = 2, candidate_limit: int | None = 4,
                    no_llm: bool = False) -> dict:
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     # The headline evidence needs ledgers and hashes, not replay media.  Avoid
@@ -259,7 +259,7 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
     runner.ensure_video = lambda run_dir, log=None: None
     # Share the 80-core box with other agents: two candidates at eight Numba
     # workers each avoid oversubscription while preserving deterministic output.
-    threads = os.environ.get("TOURNAMENT_NUMBA_THREADS", "8")
+    threads = os.environ.get("TOURNAMENT_NUMBA_THREADS", "32")
     os.environ["NUMBA_NUM_THREADS"] = threads
     os.environ["STORMSIM_WATER_THREADS"] = threads
     started = _utc()
@@ -304,7 +304,7 @@ def main():
     ap.add_argument("--population", type=int, default=3)
     ap.add_argument("--max-minutes", type=float, default=12)
     ap.add_argument("--sim-workers", type=int, default=2)
-    ap.add_argument("--candidate-limit", type=int, default=6)
+    ap.add_argument("--candidate-limit", type=int, default=4)
     ap.add_argument("--no-llm", action="store_true")
     a = ap.parse_args()
     result = run_tournament(**vars(a))
