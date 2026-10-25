@@ -7,6 +7,7 @@
     "build": "tsc --noEmit && node scripts/build.ts",
     "typecheck": "tsc --noEmit",
     "prepare:data": ".venv/bin/python -m backend.prepare",
+    "test:camera": "node --test tests/test_camera_input.mjs",
     "test:physics": ".venv/bin/python -m unittest discover -s tests -v",
     "start": ".venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 5174"
   },
