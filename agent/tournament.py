@@ -132,8 +132,20 @@ def _run_candidate(c: dict, storm: str, budget: float, base: dict) -> tuple[dict
     return c, rec
 
 
-def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int = 3) -> tuple[dict, str | None, list[dict]]:
+def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int = 3,
+            candidate_limit: int | None = None) -> tuple[dict, str | None, list[dict]]:
     candidates = _candidate_pack()
+    if candidate_limit and candidate_limit < len(candidates):
+        # Keep a named, cross-hazard slice for the time-boxed live demo.  The
+        # default menu still contains all families; this is a transparent
+        # measurement cap, not a score-dependent filter.
+        priority = ["Storage vault at lowest basin", "Pump station at lowest basin",
+                    "Upgrade basin inlets", "Permeable pavement upstream",
+                    "Dry floodproof exposed buildings", "Clear basin drains",
+                    "Brace wind-exposed trees", "Early alert and evacuation",
+                    "Deployable bay barrier"]
+        by_name = {c["name"]: c for c in candidates}
+        candidates = [by_name[n] for n in priority if n in by_name][:candidate_limit]
     # One-at-a-time measurements are independent and safe to run in worker threads;
     # the simulator itself controls its numerical determinism.
     with cf.ThreadPoolExecutor(max_workers=max(1, min(workers, len(candidates)))) as pool:
@@ -217,7 +229,8 @@ def _write_report(evidence: dict):
 
 def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: int = 3,
                    generations: int = 1, population: int = 3, max_minutes: float = 12,
-                   sim_workers: int = 2, no_llm: bool = False) -> dict:
+                   sim_workers: int = 2, candidate_limit: int | None = 8,
+                   no_llm: bool = False) -> dict:
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     # The headline evidence needs ledgers and hashes, not replay media.  Avoid
     # rendering a video for every one-at-a-time greedy measurement; the normal
@@ -226,7 +239,7 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
     started = _utc()
     base_dir, base = runner.baseline(storm)
     entries = [_no_plan(base_dir, base, budget)]
-    greedy, _, _ = _greedy(storm, budget, base_dir, base, greedy_workers)
+    greedy, _, _ = _greedy(storm, budget, base_dir, base, greedy_workers, candidate_limit)
     entries.append(greedy)
     if not no_llm:
         # Same Evolve settings/call budget for both model conditions.  The Flash
@@ -261,6 +274,7 @@ def main():
     ap.add_argument("--population", type=int, default=3)
     ap.add_argument("--max-minutes", type=float, default=12)
     ap.add_argument("--sim-workers", type=int, default=2)
+    ap.add_argument("--candidate-limit", type=int, default=8)
     ap.add_argument("--no-llm", action="store_true")
     a = ap.parse_args()
     result = run_tournament(**vars(a))
