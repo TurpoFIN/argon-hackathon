@@ -200,7 +200,9 @@ def review_plan(state, parameters, options):
 
 
 def public(state, parameters, assets, catalog):
+    from . import action_plan
     rows, reviewed = schedule(state, catalog, parameters)
     return dict(**state, rows=rows, review_current=reviewed, evidence=catalog,
                 sites=sites(assets, catalog), weather=parameters,
+                action_planning=action_plan.public(state, parameters, sites(assets, catalog), catalog, action_plan.load_drains()),
                 coverage=assets['coverage'], power_sources=[s for s in assets['sources'] if 'PG&E' in s['name'] or 'CEC' in s['name']])

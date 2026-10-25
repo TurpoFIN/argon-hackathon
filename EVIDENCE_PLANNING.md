@@ -1,6 +1,6 @@
 # Pre-storm planning: evidence and limits
 
-The default app now follows one chain: select a real site, inspect current conditions, choose the corresponding work, assign qualified teams and total time estimates, then review the schedule. All six hazards remain visible. The numerical damage comparisons have been removed from the planning surface. Hydrology and wind layers are explicitly research tools.
+The default app asks Argon to choose and rank concrete site actions, allocate the first general-crew stops, and explain each priority. Owner/agency requests can proceed alongside field work. Subsequent stops queue until a crew reports back; physical repairs stay behind current inspection and qualified-resource prerequisites. All six hazards receive an explicit decision or deferral. The numerical damage comparisons have been removed from the planning surface. Hydrology and wind layers are explicitly research tools.
 
 ## What the storm evidence establishes
 
@@ -19,9 +19,12 @@ The catalog links every claim to primary sources and locators. It includes 69 pu
 
 ## What Argon does
 
-`gemini-4-argon` reviews the chosen scenario, current operator observations, known historical evidence and dependencies. Its constrained output is a permutation of the six tasks plus enumerated reasons. It cannot write benefits, invent field observations or return new asset IDs. Python validates those reasons and computes a schedule from operator-entered team availability and total task durations. Blank capacity is missing; zero is unavailable. Current concern requires a dated/source note. Mitigation additionally requires the listed site prerequisites to be confirmed. Inspection and completed physical mitigation are never conflated.
+`gemini-4-argon` receives location-specific candidates built from the local incident cut, DBI addresses, current operator selections and nearest mapped inlet identifiers. It returns 3–8 selected candidate IDs with explicit crew assignments, free-text priority reasoning and a disposition for all six hazards. The application rejects unknown or repeated actions, nonexistent crews and general-crew assignments to coordinator work. It allocates at most one initial stop per general crew and queues later stops without inventing travel or work durations. An initial stop is a proposed dispatch, not proof that a crew was released or that mitigation was completed.
 
-Changing a site clears its previous condition record. Changes to weather, observations, estimates or evidence invalidate the previous review. The shared versioned plan rejects stale writes, retains drafts on failed saves, and survives reloads. The local map and 3D view use the same saved plan.
+The existing scenario supplies two general crews and a 30-minute window when operator overrides are blank. That is displayed as a provisional scenario profile, not a municipal roster. Zero overrides it as unavailable. `evidence/planning-resources.json` identifies actual public resource programs and request owners: SFPUC surface-clearing guidance and limited tools, Public Works sandbag pickup, tree service, qualified building/electrical work, traffic control and drainage/pumping support. It supplies neither invented specialist counts nor guaranteed response times. Sandbag pickup is subject to hours, eligibility, transport and stock; pumps, barriers, generators and specialist equipment are requested against a site need, not assumed in inventory.
+
+Inspection findings remain editable below the plan. Current concern requires a dated/source note; a clear inspection removes that hazard/site candidate. Physical follow-ups list the inspection, ownership, equipment and qualification needed before work. The earlier six-item review endpoint is retained for compatibility, but no longer drives the primary action plan.
+Changing a site clears its previous condition record. Changes to effective weather, resources, observations or evidence invalidate the generated action plan. A changed input while generation is running rejects that result. The shared versioned plan rejects stale writes, retains drafts on failed saves, and survives reloads. The local map and 3D view use the same saved plan.
 
 ## Power provenance
 
@@ -29,4 +32,4 @@ PG&E's GRIP distribution feeder/substation sources and the California Energy Com
 
 ## Verification
 
-Source findings were checked against the DBI PDF table, the UF/IFAS publication, FEMA's report text and rendered pages 119 and 121, the Public Works account and the original DataSF query. The exact checks and local software/browser observations are in `evidence/planning-validation.json`. Resource examples used during UI testing were restored; the app does not seed invented operational availability.
+Source findings were checked against the DBI PDF table, the UF/IFAS publication, FEMA's report text and rendered pages 119 and 121, the Public Works account and the original DataSF query. The exact checks and local software/browser observations are in `evidence/planning-validation.json`. Resource examples used during UI testing were restored. The action planner displays the existing scenario capacity explicitly and keeps public services distinct from committed operational availability. Live plan generation, user-surface checks and resource-boundary tests are recorded separately in `evidence/action-plan-validation.json`.
