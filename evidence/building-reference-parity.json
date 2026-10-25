@@ -1,0 +1,38 @@
+{
+  "matched_buildings": 1463,
+  "fields": [
+    "height_m",
+    "height_max_m",
+    "height_source",
+    "floors",
+    "floor_area_m2",
+    "occupancy",
+    "use_code",
+    "year_built",
+    "value_structure",
+    "value_contents",
+    "first_floor_m",
+    "assessed_improvement_usd",
+    "n_parcels",
+    "ground_retail",
+    "ground_z"
+  ],
+  "differences": [],
+  "reference_sha256": "bd3a848e47489114b25282a17b1bec3109b52c16c8835201fdfd936593125668",
+  "coverage": {
+    "buildings_enriched": 1463,
+    "buildings_assessor_joined": 1242,
+    "buildings_inventory_fallback": 105,
+    "buildings": 1568,
+    "trees": 4098,
+    "trees_without_usable_dbh": 262,
+    "roads": 607,
+    "distribution_feeders": 77,
+    "transmission_lines": 3,
+    "substations": 6,
+    "overhead_power_lines": 2,
+    "trolley_wire_ways": 249,
+    "overhead_lines": 251,
+    "unknown_installation": 77
+  }
+}
