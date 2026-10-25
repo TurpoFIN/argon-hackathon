@@ -1,4 +1,4 @@
-import type {Manifest, ScenarioState, Playback} from './types';
+import type {Manifest, ScenarioState, Playback, WorldData} from './types';
 
 export async function request<T>(url:string, body?:unknown):Promise<T> {
   const r=await fetch(url,body===undefined?{cache:'no-store'}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -8,7 +8,7 @@ export async function request<T>(url:string, body?:unknown):Promise<T> {
   }
   return r.json() as Promise<T>;
 }
-export async function loadResult(id:string):Promise<{manifest:Manifest;grid:Float32Array;flood:Float32Array}> {
+export async function loadResult(id:string):Promise<{manifest:Manifest;grid:Float32Array;flood:Float32Array;world?:WorldData}> {
   const root=`/api/results/${id}/`;
   async function binary(name:string):Promise<Float32Array> {
     const r=await fetch(root+name,{cache:'no-store'});
@@ -16,7 +16,8 @@ export async function loadResult(id:string):Promise<{manifest:Manifest;grid:Floa
     return new Float32Array(await r.arrayBuffer());
   }
   const [manifest,grid,flood]=await Promise.all([request<Manifest>(root+'manifest.json'),binary('grid.bin'),binary('flood.bin')]);
-  return {manifest,grid,flood};
+  const world=manifest.world_file?await request<WorldData>(root+manifest.world_file):undefined;
+  return {manifest,grid,flood,world};
 }
 export function timeAt(p:Playback,now=Date.now()):number {
   const time=p.time_seconds+(p.playing?(now-p.anchor_ms)/1000*p.speed:0);

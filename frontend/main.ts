@@ -1,6 +1,7 @@
 import type {Constructor, Layer, Reactive, RenderNodeConstructor, SceneView, WebGLCoordinates, ScenarioState} from './types';
 import {installStormRenderer} from './renderer';
 import {followState, loadResult, request, timeAt} from './session';
+import {worldLayer} from './world';
 
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
 function fail(error: unknown): void {
@@ -10,7 +11,7 @@ function fail(error: unknown): void {
 }
 async function main(): Promise<void> {
   let sharedState=await request<ScenarioState>('/api/state');
-  const {manifest,grid,flood}=await loadResult(sharedState.scenario_id);
+  const {manifest,grid,flood,world}=await loadResult(sharedState.scenario_id);
   let loadedId=sharedState.scenario_id;
   const modules = await new Promise<unknown[]>((resolve, reject) => window.require([
     'esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/SceneLayer',
@@ -28,6 +29,8 @@ async function main(): Promise<void> {
     ground: {layers: [new ElevationLayer({url: 'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer'})]},
     layers: [buildings]
   });
+  const assets=await worldLayer(map as {add(layer:unknown):void},true);
+  assets.set(world);
   const view = new View({
     container: 'scene', map, qualityProfile: 'high', ui: {components: ['attribution']}, popupEnabled: false,
     camera: {position: {longitude: -122.3818, latitude: 37.8005, z: 690}, heading: 245, tilt: 64},
@@ -52,12 +55,15 @@ async function main(): Promise<void> {
   status.hidden = true;
   document.documentElement.dataset.stormReady = 'true';
   document.documentElement.dataset.scenarioId=loadedId;
+  function drawAssets():void {assets.draw(timeAt(sharedState.playback));requestAnimationFrame(drawAssets);}
+  drawAssets();
   followState(async next=>{
     sharedState=next;
     renderer.node.requestRender();
     if(next.scenario_id!==loadedId) {
       const result=await loadResult(next.scenario_id);
       renderer.update(result.manifest,result.grid,result.flood);
+      assets.set(result.world);
       loadedId=next.scenario_id;
       document.documentElement.dataset.scenarioId=loadedId;
     }

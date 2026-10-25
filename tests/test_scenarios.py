@@ -106,8 +106,9 @@ class LiveQueueTests(unittest.TestCase):
                 calls+=1
                 return advance(*args,**kwargs)
             folder=Path(temp,'cancelled')
-            with patch.object(scenarios,'advance_water',step),self.assertRaises(scenarios.SupersededCalculation):
-                scenarios.calculate(Parameters(),folder,lambda:calls>0)
+            with patch.object(scenarios,'World') as world,patch.object(scenarios,'advance_water',step),self.assertRaises(scenarios.SupersededCalculation):
+                world.return_value.rates.return_value=zeros
+                scenarios.calculate(Parameters(response_mode='baseline'),folder,lambda:calls>0)
             self.assertEqual(calls,60)
             self.assertFalse(folder.exists())
 

@@ -3,9 +3,21 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from .scenarios import Parameters, PlaybackUpdate, store
+from . import argon
 
 ROOT = Path(__file__).resolve().parents[1]
 app = FastAPI(title="Embarcadero storm prototype", docs_url=None, redoc_url=None)
+
+
+@app.get("/api/engine")
+def engine():
+    return {"model": argon.MODEL, "configured": bool(argon.api_key())}
+
+
+@app.post("/api/engine/rebuild", status_code=202)
+def rebuild():
+    with store.lock:
+        return store.submit(Parameters(**store.snapshot()['requested_parameters']), force=True)
 
 
 @app.get("/api/state")
@@ -30,7 +42,7 @@ def playback(update: PlaybackUpdate):
 
 @app.get("/api/results/{scenario_id}/{filename}")
 def result(scenario_id: str, filename: str):
-    if filename not in {"manifest.json", "grid.bin", "flood.bin"}:
+    if filename not in {"manifest.json", "grid.bin", "flood.bin", "world.json"}:
         raise HTTPException(404)
     if scenario_id != "baseline" and (len(scenario_id) != 12 or any(c not in "0123456789abcdef" for c in scenario_id)):
         raise HTTPException(404)

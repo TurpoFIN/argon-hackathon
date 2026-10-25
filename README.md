@@ -147,3 +147,52 @@ The Python API adds `GET /api/state`, `POST /api/scenarios`,
 worker. The frontend includes `analysis.ts` for the 2D map and parameter editor
 and `session.ts` for shared scenario/playback access. Design tokens in
 `frontend/tokens.css` are copied from the owner's UI/UX archive.
+
+## Coupled debris and response model
+
+The Python solver now retains each of the 1,003 modeled DataSF drain IDs.
+A finite, seeded loose-debris inventory is released over 40 simulation minutes,
+transported at an assumed 3% of local wind speed (capped at 1 m/s), and intercepted
+within an assumed 8.4 m inlet radius. Interception increases each inlet's clog
+mass; effective capacity is `capacity * exp(-clog_kg / 3)`. Initial clog mass
+reproduces the selected initial blockage percentage. These are transparent
+scenario assumptions, not calibrated debris mechanics or observed failures.
+
+Up to four hypothetical clearing crews move at 1.4 m/s on the 12 m open-land
+grid. A* excludes buildings, open water, and cells deeper than 0.3 m. This is
+not a surveyed street network. Crews must arrive before removing clog mass at
+0.025 kg/s. Flooded routes stop crews and cause later replanning. Debris,
+remaining inlet clog, removed material and exported material have an explicit
+mass-balance check, independently of the solver's water balance.
+
+`backend/argon.py` uses `gemini-4-argon` through Google's Interactions SDK.
+Perception downloads one bounded real Esri World Imagery image, uses the
+service's returned georeferenced extent, and asks Argon for candidate vegetation
+or exposed-ground boxes. The cached interpretation retains its image SHA,
+source URL, extent, limitations and validated-result digest (plus a provider
+interaction ID when one is issued). Boxes guide placement of
+the assumed debris inventory; they do not assert current debris, flooding,
+inlet blockage, tree failure or measured mass. Source boxes appear as dashed
+outlines in both maps. A baseline response run reuses the same cached perception
+so switching the planner does not also change the source inventory.
+
+At 10 and 30 simulation minutes, Argon ranks up to 16 actual candidate drain
+IDs from local blockage, nearby water depth and crew-distance metrics. Python
+rejects unknown/duplicate IDs and checks route accessibility and travel/work
+time. Decisions, dispatches, blockage and clearing events are saved alongside
+30-second asset snapshots in each scenario's `world.json`. Both views consume
+that same immutable result and the shared playback clock. A run makes at most
+two planning calls; changed parameters cancel obsolete numerical work.
+
+Configure the backend using a local, ignored `.env` file. Either provide
+`GEMINI_API_KEY`, or use `GEMINI_HSEC_SECRET=argon-hack-api-key` to read the
+selected local hsec vault entry. Vault values are kept in process memory and
+never sent to the browser or written into results. The SDK uses `store=False`.
+After configuring, restart the server and change a parameter, or POST an empty
+object to `/api/engine/rebuild` to recompute the current parameters. Each Argon
+request is bounded to 35 seconds and 3,000 output tokens.
+
+If no key is available or a call fails, the interface explicitly reports the
+baseline response policy. This is a working fallback, not evidence that Argon
+ran. The planner selector and zero-crew/zero-debris sliders support controlled
+comparisons. No improvement over the baseline policy is assumed.

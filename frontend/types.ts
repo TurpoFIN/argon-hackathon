@@ -9,12 +9,17 @@ export interface Manifest {
   sources: Record<string, string>;
   parameters?: Parameters;
   frame_metrics?: Array<{time_seconds: number; max_depth_m: number; flooded_area_m2: number; water_volume_m3: number}>;
+  world_file?: string;
 }
 export interface Parameters {
   rain_mm_h:number; wind_mps:number; gust_mps:number; wind_from_deg:number;
   coastal_rise_m:number; drain_capacity_lps:number; blockage_pct:number;
   runoff_coefficient:number; roughness:number;
+  debris_kg:number; clearing_crews:number; response_mode:'argon'|'baseline';
 }
+export interface WorldCrew {id:string;position:number[];state:string;planner:string;target:string|null;route:number[][];}
+export interface WorldFrame {time_seconds:number;blockage:number[];debris:Array<{id:number;position:number[]}>;crews:WorldCrew[];metrics:{blocked_drains:number;cleared_kg:number;deposited_kg:number;escaped_kg:number};}
+export interface WorldData {drains:Array<{id:string;lon:number;lat:number;type:string}>;frames:WorldFrame[];events:Array<{time_seconds:number;kind:string;drain_id?:string;crew?:string;reason?:string;planner?:string}>;planner_status:string;source_mode:string;perception:{status:string;reason?:string;limitation?:string;bbox?:number[];zones?:Array<{box:number[];surface:string;evidence:string}>};plans:unknown[];assumptions:string[];}
 export interface Playback {time_seconds:number; playing:boolean; speed:number; anchor_ms:number;}
 export interface ScenarioState {
   scenario_id:string; revision:number; parameters:Parameters; pending_parameters?:Parameters;

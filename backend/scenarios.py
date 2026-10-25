@@ -11,6 +11,9 @@ import uuid
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .simulation import Budget, advance_water, potential_wind
+from .coupled import World
+from . import argon
+from typing import Literal
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 
@@ -26,6 +29,9 @@ class Parameters(BaseModel):
     blockage_pct: float = Field(default=65, ge=0, le=100)
     runoff_coefficient: float = Field(default=0.9, ge=0, le=1)
     roughness: float = Field(default=0.035, ge=0.01, le=0.2)
+    debris_kg: float = Field(default=600, ge=0, le=2000)
+    clearing_crews: int = Field(default=2, ge=0, le=4)
+    response_mode: Literal['argon', 'baseline'] = 'argon'
 
     @model_validator(mode="after")
     def valid_gust(self):
@@ -62,6 +68,14 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
     # Matrices retain the same grid as the static public data in both views.
     u, v = potential_wind(walls, p.wind_mps, p.wind_from_deg, dx)
     check_cancelled()
+    perception = {"status": "disabled", "zones": []}
+    if p.response_mode == 'argon' or (DATA / 'argon-perception.json').exists():
+        try:
+            perception = argon.perceive()
+        except Exception as error:
+            perception = {"status": "failed", "reason": f"Perception failed ({type(error).__name__})", "zones": []}
+    check_cancelled()
+    world = World(DATA,p,z,walls,ocean,lon,lat,u,v,perception)
     tide_base = source["tide_base_navd88_m"]
     h = np.zeros_like(z)
     h[ocean] = np.maximum(tide_base-z[ocean], 0)
@@ -70,6 +84,8 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
     for step in range(3601):
         if step % 60 == 0:
             check_cancelled()
+        if step % 30 == 0:
+            world.snapshot(step)
         if step % 120 == 0:
             frames.append(h.astype("float32").copy())
             land_depth = h[~ocean & ~walls]
@@ -78,6 +94,9 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
                 "water_volume_m3": float(land_depth.sum()*dx**2)})
         if step == 3600:
             break
+        if step % 5 == 0:
+            world.step(step,h)
+            drains = world.rates()
         tide = tide_base + min(step/1800, 1)*p.coastal_rise_m
         advance_water(h, z, walls, ocean, rain, drains, tide, dx, 1, budget, p.roughness)
     residual = float(h.sum()*dx**2) - budget.initial_m3 - budget.rain_m3 + budget.drained_m3 - budget.coastal_exchange_m3
@@ -86,8 +105,9 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
     destination.mkdir(parents=True, exist_ok=False)
     np.stack([lon, lat, z, height, u, v, ocean.astype(float)]).astype("float32").tofile(destination / "grid.bin")
     np.stack(frames).tofile(destination / "flood.bin")
+    (destination / "world.json").write_text(json.dumps(world.export(), separators=(',', ':')))
     source.update({"parameters": p.model_dump(), "generated_at": datetime.now(timezone.utc).isoformat(),
-        "rainfall_mm_per_hour": p.rain_mm_h, "frame_metrics": metrics,
+        "rainfall_mm_per_hour": p.rain_mm_h, "frame_metrics": metrics, "world_file": "world.json",
         "wind": {**source["wind"], "mean_mps": p.wind_mps, "gust_mps": p.gust_mps, "from_deg": p.wind_from_deg},
         "metrics": {**source["metrics"], "wet_land_cells": int(((h > .05) & ~ocean & ~walls).sum()),
             "max_land_depth_m": float(h[~ocean & ~walls].max()), "water_budget": vars(budget),
@@ -96,7 +116,7 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
             "User-configured compound scenario, not a forecast or historical replay.",
             f"Uniform {p.rain_mm_h:g} mm/h rain; runoff coefficient {p.runoff_coefficient:g}; Manning roughness {p.roughness:g}.",
             f"Added coastal rise {p.coastal_rise_m:g} m ramps over 30 minutes above observed 2.368 m NAVD88 baseline.",
-            f"Assumed drain capacity {p.drain_capacity_lps:g} L/s with {p.blockage_pct:g}% blockage; no connected sewer network.",
+            f"Assumed drain capacity {p.drain_capacity_lps:g} L/s; initial {p.blockage_pct:g}% blockage evolves with debris and clearing; no connected sewer network.",
             "Wind is diagnostic 2-D potential flow. Gust envelope and rooftop blend are illustrative; no structural damage prediction.",
             *source["assumptions"][-3:]]})
     (destination / "manifest.json").write_text(json.dumps(source, indent=2))
@@ -130,17 +150,17 @@ class ScenarioStore:
         with self.lock:
             return json.loads(json.dumps(self.state))
 
-    def submit(self, parameters: Parameters):
+    def submit(self, parameters: Parameters, force=False):
         with self.lock:
             if not (DATA / "model-inputs.npz").exists():
                 raise FileNotFoundError("Run data preparation before changing parameters")
             values = parameters.model_dump()
-            if values == self.state["requested_parameters"] and self.state["status"] != "failed":
+            if not force and values == self.state["requested_parameters"] and self.state["status"] != "failed":
                 return self.snapshot()
             self._request_version += 1
             self.state["request_version"] = self._request_version
             self.state["requested_parameters"] = values
-            if values == self.state["parameters"]:
+            if not force and values == self.state["parameters"]:
                 # Returning to the displayed scenario cancels any obsolete work.
                 self._pending = None
                 self.state.update(status="ready", error=None)
