@@ -1,5 +1,39 @@
 # Storm prep loop
 
+## Results so far (simulated, 2026-10-25)
+
+All runs use the same storm, crews, candidate drains and 25,000-bag stock.
+
+| Run | No preparation | Greedy rule, no AI | Flash, best round | Argon, best round |
+| --- | --- | --- | --- | --- |
+| TimesFM January 2023 storm (`demo6`), with the full building table and the greedy plan as round 0 | $1,067.9M | $582.3M | $582.3M | **$580.6M** |
+| Same storm, brief showing only the 60 costliest buildings (`live-143427`) | $1,067.9M | not run | $738.1M | $639.3M |
+
+Showing the models only the top 60 buildings made both lose to a simple rule. With the full table
+in context, Flash reproduced the greedy plan, and Argon matched it and improved it by about 0.3%.
+The simulation, damage curves and sandbag rules decide most of the outcome. The loop's value is
+that every plan is checked against them, rendered and critiqued; this run does not show a large
+gap over a good heuristic.
+
+## What was merged here, and what was not
+
+Merged, because the loop needs it:
+- The Codex app branch (`origin/codex/embarcadero-storm`).
+- A labeled snapshot of eight Codex backend files the loop imports. On any later merge, prefer
+  Codex's own versions.
+
+Not merged:
+- **Codex's single-round planner and the pre-storm text review.** The loop replaces them with
+  rendered critique and revision.
+- **The analysis dashboard.** It's a dashboard-style view.
+- **The lead's `sim/` and `evolve`.** `evolve` has an incomplete set of dependencies, and `sim/`
+  uses a different damage schema.
+- **The viewer layers and cinema mode in the main checkout.** That's a separate front end, and
+  cinema mode is uncommitted work from another session.
+
+Local data: `data/` is gitignored. Copy or regenerate the Codex inputs (`model-inputs.npz`,
+`manifest.json`, `raw/`, `footage/`, `argon-perception.json`) with the Codex prepare step.
+
 Gemini 4 Argon writes a pre-storm preparation plan for the Embarcadero. The Codex storm
 simulator runs it, the result is scored in dollars and rendered, and Argon watches the
 render and video, says what failed, and revises. Gemini 3.8 Flash runs the same loop as
