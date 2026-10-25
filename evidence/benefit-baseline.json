@@ -1,0 +1,441 @@
+{
+  "version": 1,
+  "source_scenario": "fb0a8c631b29",
+  "parameters": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon"
+  },
+  "reported_plan": {
+    "drain_ids": [
+      "286806",
+      "291395",
+      "163328",
+      "163326",
+      "175514",
+      "175177",
+      "155694",
+      "155699",
+      "295172"
+    ],
+    "stage_ids": [
+      "175514",
+      "155694"
+    ],
+    "outcome": {
+      "name": "Expanded Inland & Dry Staging",
+      "drain_ids": [
+        "286806",
+        "291395",
+        "163328",
+        "163326",
+        "175514",
+        "175177",
+        "155694",
+        "155699",
+        "295172"
+      ],
+      "stage_ids": [
+        "175514",
+        "155694"
+      ],
+      "horizon_seconds": 3600,
+      "flood_exposure_m2_min": 24382560.0,
+      "peak_flooded_area_m2": 643680.0,
+      "max_depth_m": 4.265527,
+      "water_volume_m3": 209292.995854,
+      "cleared_kg": 6.018127,
+      "crew_exposure_minutes": 0.0,
+      "reachable_drains": 862,
+      "blocked_drains": 51,
+      "completed_clearings": 9,
+      "preparation": {
+        "budget_seconds_per_crew": 1800,
+        "crew_seconds": [
+          1721.52,
+          1784.92
+        ],
+        "actions": [
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "286806",
+            "reached": true,
+            "time_seconds": -1088.57
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "286806",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -1061.82
+          },
+          {
+            "crew": "Crew 2",
+            "kind": "travel",
+            "drain_id": "291395",
+            "reached": true,
+            "time_seconds": -1191.43
+          },
+          {
+            "crew": "Crew 2",
+            "kind": "preventive_clearing",
+            "drain_id": "291395",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -1164.68
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "163328",
+            "reached": true,
+            "time_seconds": -1010.4
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "163328",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -983.65
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "163326",
+            "reached": true,
+            "time_seconds": -923.65
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "163326",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -896.9
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "175514",
+            "reached": true,
+            "time_seconds": -819.76
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "175514",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -793.01
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "175177",
+            "reached": true,
+            "time_seconds": -604.44
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "175177",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -577.69
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "155694",
+            "reached": true,
+            "time_seconds": -509.12
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "155694",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -482.37
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "travel",
+            "drain_id": "155699",
+            "reached": true,
+            "time_seconds": -413.8
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "preventive_clearing",
+            "drain_id": "155699",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -387.06
+          },
+          {
+            "crew": "Crew 2",
+            "kind": "travel",
+            "drain_id": "295172",
+            "reached": true,
+            "time_seconds": -170.4
+          },
+          {
+            "crew": "Crew 2",
+            "kind": "preventive_clearing",
+            "drain_id": "295172",
+            "cleared_kg": 0.668681,
+            "completed": true,
+            "time_seconds": -143.65
+          },
+          {
+            "crew": "Crew 1",
+            "kind": "stage",
+            "drain_id": "175514",
+            "reached": true,
+            "time_seconds": -78.48
+          },
+          {
+            "crew": "Crew 2",
+            "kind": "stage",
+            "drain_id": "155694",
+            "reached": true,
+            "time_seconds": -15.08
+          }
+        ],
+        "cleared_kg": 6.018127,
+        "stage_positions": [
+          {
+            "id": "Crew 1",
+            "position": [
+              -122.3915743,
+              37.7918595
+            ]
+          },
+          {
+            "id": "Crew 2",
+            "position": [
+              -122.3896787,
+              37.7903355
+            ]
+          }
+        ],
+        "requested_stage_ids": [
+          "175514",
+          "155694"
+        ],
+        "reached_staging": 2
+      },
+      "mass_balance_error_m3": -5.044275894761086e-07,
+      "time_seconds": 3600
+    }
+  },
+  "control": {
+    "name": "No preparation",
+    "drain_ids": [],
+    "stage_ids": [],
+    "horizon_seconds": 3600,
+    "flood_exposure_m2_min": 24389061.6,
+    "peak_flooded_area_m2": 643536.0,
+    "max_depth_m": 4.265527,
+    "water_volume_m3": 209443.171485,
+    "cleared_kg": 0.0,
+    "crew_exposure_minutes": 0.0,
+    "reachable_drains": 863,
+    "blocked_drains": 51,
+    "completed_clearings": 0,
+    "mass_balance_error_m3": -4.938337951898575e-07
+  },
+  "perception": {
+    "status": "ready",
+    "model": "gemini-4-argon",
+    "sha256": "841df79ca2b6641f7dafa3769216ce9d4957e3f63dfe4056dacb85070a599408",
+    "bbox": [
+      -122.40700000000004,
+      37.786,
+      -122.38500000000003,
+      37.808
+    ],
+    "georef_version": 2,
+    "zones": [
+      {
+        "box": [
+          182,
+          8,
+          286,
+          152
+        ],
+        "surface": "vegetation",
+        "evidence": "Dense dark-green tree canopy surrounding Pioneer Park and Telegraph Hill slopes."
+      },
+      {
+        "box": [
+          224,
+          212,
+          267,
+          272
+        ],
+        "surface": "vegetation",
+        "evidence": "Triangular green lawn and peripheral trees at Levi's Plaza park area near the Embarcadero."
+      },
+      {
+        "box": [
+          278,
+          152,
+          381,
+          198
+        ],
+        "surface": "vegetation",
+        "evidence": "North-south strip of dense dark-green hillside tree canopy along the eastern edge of Telegraph Hill."
+      },
+      {
+        "box": [
+          453,
+          336,
+          496,
+          391
+        ],
+        "surface": "vegetation",
+        "evidence": "Rectangular bright-green grass field and bordering trees at Sydney G. Walton Square."
+      },
+      {
+        "box": [
+          512,
+          393,
+          567,
+          522
+        ],
+        "surface": "vegetation",
+        "evidence": "Cluster of lawns and tree canopies at Sue Bierman Park west of the Ferry Building."
+      },
+      {
+        "box": [
+          731,
+          756,
+          767,
+          795
+        ],
+        "surface": "vegetation",
+        "evidence": "Curved green vegetated median/park strip along the Embarcadero roadway near Rincon Park."
+      },
+      {
+        "box": [
+          812,
+          383,
+          916,
+          514
+        ],
+        "surface": "vegetation",
+        "evidence": "Elevated linear green roof and tree canopy trace along Salesforce Park."
+      }
+    ],
+    "limitation": "This high-altitude overview image has limited spatial resolution and unknown acquisition date; it cannot show loose ground litter, soil stability, tree health, or small street-level planters, and shadows from high-rise buildings obscure much of the ground surface in the southern half of the scene."
+  },
+  "evidence": [
+    {
+      "id": "1196721",
+      "title": "Massive waves batter the Embarcadero",
+      "source_url": "https://www.ktvu.com/video/1196721",
+      "center": [
+        -122.3936,
+        37.7953
+      ],
+      "radius_m": 90,
+      "expected_hazards": [
+        "overtopping",
+        "standing_water"
+      ],
+      "included": true,
+      "interpretation": {
+        "summary": "The news clip opens with a nighttime live shot of a reporter on a wet street, then cuts to daytime footage along the San Francisco Embarcadero waterfront showing large waves crashing over the seawall and leaving shallow puddles on the walkway, followed by interviews near the ferry terminal.",
+        "hazards": [
+          {
+            "kind": "overtopping",
+            "start_seconds": 2.0,
+            "end_seconds": 12.0,
+            "confidence": 0.95,
+            "evidence": "Daytime cutaway shots show large waves crashing against the seawall and splashing water over the railing onto the Embarcadero promenade with the Bay Bridge in the background.",
+            "basis": "visible"
+          },
+          {
+            "kind": "standing_water",
+            "start_seconds": 2.0,
+            "end_seconds": 7.0,
+            "confidence": 0.75,
+            "evidence": "Shallow water and puddles accumulate on the waterfront walkway where waves splash over the seawall railing.",
+            "basis": "visible"
+          }
+        ],
+        "limitations": "The clip combines a nighttime live standup (00:00-00:01) with daytime cutaways and interviews along the waterfront and ferry terminal; exact water depth, drainage condition, and precise coordinates for each cutaway shot cannot be verified from the video."
+      },
+      "status": "ready"
+    },
+    {
+      "id": "1196457",
+      "title": "Wind blasts SF Financial District, glass falls from high rise",
+      "source_url": "https://www.ktvu.com/video/1196457",
+      "center": [
+        -122.3977,
+        37.7948
+      ],
+      "radius_m": 45,
+      "expected_hazards": [
+        "falling_glass",
+        "fallen_tree"
+      ],
+      "included": true,
+      "interpretation": {
+        "summary": "News report from Sacramento and Davis streets near Embarcadero Center in San Francisco showing damaged high-rise windows and police tape blocking off the street due to falling glass during high winds.",
+        "hazards": [
+          {
+            "kind": "falling_glass",
+            "start_seconds": 0.0,
+            "end_seconds": 14.0,
+            "confidence": 0.9,
+            "evidence": "Footage shows broken windows on a high-rise building with material blowing in the wind and caution tape blocking the street below, while the anchor states broken glass could be seen on the street.",
+            "basis": "visible"
+          },
+          {
+            "kind": "falling_glass",
+            "start_seconds": 28.0,
+            "end_seconds": 40.0,
+            "confidence": 0.9,
+            "evidence": "The reporter on scene states that a window on the 20th story has fallen at the intersection of Sacramento and Davis, prompting the closure of the intersection.",
+            "basis": "reported"
+          },
+          {
+            "kind": "falling_glass",
+            "start_seconds": 12.0,
+            "end_seconds": 90.0,
+            "confidence": 0.85,
+            "evidence": "Police caution tape is visibly blocking off the sidewalk and street area, and at 01:21 the reporter points out a police officer keeping people away from the area where broken glass fell.",
+            "basis": "reported"
+          }
+        ],
+        "limitations": "Glass actively falling is not directly captured in the live shot; the hazard is evidenced by visible broken high-rise windows, caution tape, and reporter statements. Pavements are wet from rain, but there is no significant standing water or fallen trees shown in this clip."
+      },
+      "status": "ready"
+    }
+  ],
+  "array_sha256": {
+    "ground": "5d088e0d8ea73e9c59eb3cc68357deb68aa3126de51ecaed74adeaa1d5734e7e",
+    "buildings": "7bbda3288e42a720e63ac3e001740d76e653210f144931af7e18cb99452bfa65",
+    "ocean": "29c2933c67b14f815d7a46018bbb3b1c2975e8275c84d71e65921ae17f4f5fe8",
+    "runoff_weights": "b4577681a8eeda345f2e00427515aa330f2aa3af684c755f0e92c5b52d612226",
+    "lon": "1ad038a6fae7004becf946c885908104b131d5119928aeb4d70fa6b8ba172158",
+    "lat": "a2112393c171e124ba5bfbd558a1ca362e9ccc9d031c851c25f50c2802b64407"
+  },
+  "provenance": "Recorded public-source numerical scenario and actual Argon selection; values captured without modification. Video bytes remain in ignored data/. This fixture fixes the original manual weather for causal comparisons."
+}

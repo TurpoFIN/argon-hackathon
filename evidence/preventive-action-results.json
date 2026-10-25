@@ -1,0 +1,212 @@
+{
+  "source_scenario": "fb0a8c631b29",
+  "parameters": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon"
+  },
+  "model": "gemini-4-argon",
+  "tool_call_id": "call_255424",
+  "control": {
+    "case": "control",
+    "flood_exposure_m2_min": 24389061.6,
+    "peak_flooded_area_m2": 643536,
+    "peak_depth_m": 4.265526507693336,
+    "final_land_water_m3": 209443.1714851397,
+    "gravity_and_pumped_m3": 31783.21644520352,
+    "rain_m3": 198420.1919999948,
+    "coastal_net_m3": 900902.1959308425,
+    "final_blocked_drains": 51,
+    "balance_error_m3": -4.938337951898575e-07,
+    "seconds": 6.58,
+    "gravity_audit": {
+      "potential_sink_m3": 31863.31604443116,
+      "actual_sink_m3": 31783.216445202266,
+      "prevented_by_tide_gate_m3": 80.09959922889772,
+      "fully_tide_locked_drains": 0,
+      "drains_locked_over_half_storm": 1
+    }
+  },
+  "results": [
+    {
+      "case": "prepared",
+      "flood_exposure_m2_min": 24362126.4,
+      "peak_flooded_area_m2": 643392,
+      "peak_depth_m": 4.265526507693336,
+      "final_land_water_m3": 209202.09878960374,
+      "gravity_and_pumped_m3": 32094.675057655335,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 900972.5818477166,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.5262277126312256e-07,
+      "seconds": 7.41,
+      "name": "orig_resources_shallow_targeting",
+      "resources": {
+        "name": "orig_resources_shallow_targeting",
+        "strategy": "shallow_drain_clearing",
+        "crews": 2,
+        "lead_minutes": 30,
+        "pump_count": 0,
+        "pump_lps": 100
+      },
+      "exposure_reduction_pct": 0.11043967349692041,
+      "final_water_reduction_m3": 241.07269553595688
+    },
+    {
+      "case": "prepared",
+      "flood_exposure_m2_min": 23948968.8,
+      "peak_flooded_area_m2": 634896,
+      "peak_depth_m": 4.395621656825982,
+      "final_land_water_m3": 206342.26187226048,
+      "gravity_and_pumped_m3": 35423.85676218926,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 901441.9266349033,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.4889748096466064e-07,
+      "seconds": 6.95,
+      "name": "scaleup_20crews_120m_shallow",
+      "resources": {
+        "name": "scaleup_20crews_120m_shallow",
+        "strategy": "shallow_drain_clearing",
+        "crews": 20,
+        "lead_minutes": 120,
+        "pump_count": 0,
+        "pump_lps": 100
+      },
+      "exposure_reduction_pct": 1.8044679505012207,
+      "final_water_reduction_m3": 3100.9096128792153
+    },
+    {
+      "case": "prepared",
+      "flood_exposure_m2_min": 23613969.6,
+      "peak_flooded_area_m2": 627696,
+      "peak_depth_m": 4.327439488341564,
+      "final_land_water_m3": 203629.67344995032,
+      "gravity_and_pumped_m3": 38513.176427270984,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 901818.6578777024,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.759058356285095e-07,
+      "seconds": 6.25,
+      "name": "scaleup_40crews_120m_throughput",
+      "resources": {
+        "name": "scaleup_40crews_120m_throughput",
+        "strategy": "throughput_drain_clearing",
+        "crews": 40,
+        "lead_minutes": 120,
+        "pump_count": 0,
+        "pump_lps": 100
+      },
+      "exposure_reduction_pct": 3.1780312531581756,
+      "final_water_reduction_m3": 5813.4980351893755
+    },
+    {
+      "case": "prepared",
+      "flood_exposure_m2_min": 23778902.4,
+      "peak_flooded_area_m2": 631296,
+      "peak_depth_m": 4.395621656825982,
+      "final_land_water_m3": 204468.7084684529,
+      "gravity_and_pumped_m3": 37716.83945666998,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 901861.3559256115,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.832400009036064e-07,
+      "seconds": 6.48,
+      "name": "combined_20crews_120m_8pumps_100lps",
+      "resources": {
+        "name": "combined_20crews_120m_8pumps_100lps",
+        "strategy": "clearing_and_pumps",
+        "crews": 20,
+        "lead_minutes": 120,
+        "pump_count": 8,
+        "pump_lps": 100
+      },
+      "exposure_reduction_pct": 2.501773991993206,
+      "final_water_reduction_m3": 4974.463016686786
+    },
+    {
+      "case": "prepared",
+      "flood_exposure_m2_min": 23506034.4,
+      "peak_flooded_area_m2": 623808,
+      "peak_depth_m": 4.395621656825982,
+      "final_land_water_m3": 201637.77828622708,
+      "gravity_and_pumped_m3": 41357.530633459464,
+      "rain_m3": 198420.1919999948,
+      "coastal_net_m3": 902671.1169201845,
+      "final_blocked_drains": 51,
+      "balance_error_m3": -4.937173798680305e-07,
+      "seconds": 6.33,
+      "name": "combined_40crews_120m_8pumps_500lps",
+      "resources": {
+        "name": "combined_40crews_120m_8pumps_500lps",
+        "strategy": "clearing_and_pumps",
+        "crews": 40,
+        "lead_minutes": 120,
+        "pump_count": 8,
+        "pump_lps": 500
+      },
+      "exposure_reduction_pct": 3.620587025783739,
+      "final_water_reduction_m3": 7805.393198912614
+    }
+  ],
+  "conclusion": {
+    "conclusions": [
+      "Meaningful full-domain exposure reduction (>=1%) is NOT achievable under ORIGINAL resources (2 crews, 30 min lead time, 0 pumps). Even with improved `shallow_drain_clearing` targeting (`orig_resources_shallow_targeting`), the 2 crews clear 42 drains (28.08 kg of initial clogs, utilizing 1,789.5 s and 1,759.6 s of their 1,800 s budget), increasing total evacuated volume by 311.5 m3 (to 32,094.7 m3) and reducing final land water by 241.1 m3 (to 209,202.1 m3), which yields only a 0.110% exposure reduction (24,362,126.4 m2*min vs. 24,389,061.6 m2*min control).",
+      "Crossing the >=1% exposure reduction yardstick strictly requires scaling up lead time, crew counts, and/or equipment. Scaling pre-storm initial-clog clearing to 20 crews and 120 min lead time (`scaleup_20crews_120m_shallow`, crew time 2,450.8\u20133,887.1 s) clears 504 drains (337.02 kg), increases evacuated water to 35,423.9 m3 (+3,640.6 m3 vs. control), reduces final land water by 3,100.9 m3 (to 206,342.3 m3), and achieves a 1.804% exposure reduction (23,948,968.8 m2*min).",
+      "Further scaling pre-storm clearing to 40 crews and 120 min with `throughput_drain_clearing` (`scaleup_40crews_120m_throughput`, crew time 2,347.6\u20133,663.2 s) clears 965 of the 1,003 drains (645.28 kg), drains 38,513.2 m3 (+6,730.0 m3 vs. control), reduces final land water by 5,813.5 m3 (to 203,629.7 m3), and achieves a 3.178% exposure reduction (23,613,969.6 m2*min), approaching the idealized all-initial-clogs-cleared benchmark (3.249%).",
+      "Adding 8 temporary pumps at 100 L/s (600 s setup + walking per unit) to the 20-crew, 120-min plan (`combined_20crews_120m_8pumps_100lps`, crew time 2,774.8\u20134,383.9 s) still completes 504 drain clearings (337.02 kg) plus 8 pump installations, increasing total evacuated volume to 37,716.8 m3, reducing final land water by 4,974.5 m3 (to 204,468.7 m3), and improving exposure reduction from 1.804% to 2.502% (23,778,902.4 m2*min).",
+      "Under the high-capacity sensitivity of 8 pumps at 500 L/s with 40 crews and 120 min (`combined_40crews_120m_8pumps_500lps`, crew time 1,474.7\u20132,187.8 s), the policy caps shallow clearings at 504 drains (337.02 kg) alongside 8 pump setups, evacuating 41,357.5 m3, reducing final land water by 7,805.4 m3 (to 201,637.8 m3), and achieving a 3.621% exposure reduction (23,506,034.4 m2*min). Because redistribution makes local and threshold outcomes nonmonotonic, this slightly exceeds the idealized all-clean gravity benchmark (3.601%) while peak depth rises slightly from 4.266 m (control) to 4.396 m."
+    ],
+    "meaningful_plans": [
+      "scaleup_20crews_120m_shallow",
+      "scaleup_40crews_120m_throughput",
+      "combined_20crews_120m_8pumps_100lps",
+      "combined_40crews_120m_8pumps_500lps"
+    ],
+    "limits": [
+      "Unverified pump deployability and idealized hydraulics: The 100 L/s and 500 L/s pump capacities (especially the 500 L/s high-capacity sensitivity) and 600 s setup times are unverified scenario assumptions, not proven portable-device specifications. The model assumes discharge to an external sink independent of gravity tide lock, with no hose friction, head curve, fuel, or offsite receiving-capacity constraints; practical deployability cannot be claimed without engineering evidence.",
+      "Physical inlet capacity bottleneck: Even with 965 of 1,003 drains cleared (`scaleup_40crews_120m_throughput`), the 12 L/s gravity inlets evacuate only 38,513.2 m3 compared to 198,420.2 m3 of rain and 65,954.7 m3 of isolated coastal land inflow, capping pure maintenance reductions near ~3.2\u20133.6%.",
+      "Persistent storm-debris blockages: Because all tested strategies targeted pre-storm initial clogs (`initial_clog_clearing`) rather than loose street debris (which has an idealized ceiling of only 0.301% exposure reduction), `final_blocked_drains` remained at 51 across all 5 experiments.",
+      "Nonmonotonic redistribution and depot-origin constraints: All extra crews originate from the original two depots under deterministic geodesic routing (no claim of global optimality), and surface flow redistribution causes localized peak depth increases (from 4.266 m in control to 4.327\u20134.396 m in scaled plans) even as domain-wide flood exposure and final land water volume decrease."
+    ]
+  },
+  "result_sha256": "17146f6db0182be1969eb62330b8a5e7d05de8ad6231914f4811ac3519d665e9",
+  "additional_review": {
+    "conclusion": {
+      "conclusions": [
+        "Using a 1% flood exposure reduction as the stated yardstick for a meaningful gain, the original baseline resource level (2 crews with 30 minutes of lead time using shallow drain targeting) is insufficient, achieving only a 0.11% reduction in flood exposure (42 drains cleared, 241.07 m\u00b3 final land water reduction).",
+        "Expanding resources to 20 or 40 crews with 120 minutes of lead time crosses the 1% yardstick across all tested configurations, producing flood exposure reductions ranging from 1.80% to 3.62%.",
+        "Comparing the 20-crew, 120-minute shallow drain clearing case (1.80% exposure reduction, 3,100.91 m\u00b3 final water reduction) directly against the matched 20-crew, 120-minute shallow clearing plus 8 pumps at 100 L/s case (2.50% exposure reduction, 4,974.46 m\u00b3 final water reduction) shows that adding the 8 idealized 100 L/s pumps provides an incremental 0.70 percentage point reduction in flood exposure and removes an additional 1,873.55 m\u00b3 of final land water while completing the exact same 504 drain clearings.",
+        "Scaling to 40 crews with 120 minutes of lead time under a throughput drain clearing policy (965 clearings) achieves a 3.18% exposure reduction (5,813.50 m\u00b3 final water reduction), while 40 crews completing 504 clearings plus 8 pumps at 500 L/s achieves a 3.62% exposure reduction (7,805.39 m\u00b3 final water reduction).",
+        "Even under the largest tested resource expansion, overall flood exposure reductions remain modest (under 4%) because total water volumes are dominated by 198,420.19 m\u00b3 of rainfall and over 900,972 m\u00b3 of net coastal inflow."
+      ],
+      "meaningful_plans": [
+        "scaleup_20crews_120m_shallow",
+        "scaleup_40crews_120m_throughput",
+        "combined_20crews_120m_8pumps_100lps",
+        "combined_40crews_120m_8pumps_500lps"
+      ],
+      "limits": [
+        "All numerical figures come from a single fixed, hypothetical 85 mm/h storm and coastal surge scenario.",
+        "Pump performance (100 L/s and 500 L/s capacities, 600-second setup time) is an idealized simulation assumption discharging to an external sink independent of gravity tide lock, with no modeling of head curves, hose friction, discharge receiving capacity, fuel, or real-world deployment logistics.",
+        "A pure pump effect cannot be isolated by comparing the 40-crew throughput clearing case (965 drains cleared) against the 40-crew clearing plus 500 L/s pumps case (504 drains cleared) because the underlying drain-clearing policies and completed clearings differ.",
+        "Crew routing uses deterministic geodesic heuristics from the original two depots (1.4 m/s walk speed, 0.025 kg/s clearing rate) and does not claim globally optimal routing.",
+        "Ideal all-clean reference cases are not treated as formal upper bounds, and no treatment benefits or source-isolation percentages are inferred from control cell observations."
+      ]
+    },
+    "receipt": {
+      "result_sha256": "64d92ba10b596197f8d9be7cef23fc31e12a0fe454837b42d908735fe239760c",
+      "generated_at": "2026-10-25T21:04:41.801766+00:00"
+    },
+    "note": "Compact follow-up reviewed the same five completed trials. No simulations were repeated."
+  }
+}
