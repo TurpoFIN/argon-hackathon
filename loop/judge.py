@@ -48,6 +48,22 @@ DOOR = COSTS["doorway_protection"]
 BAGS_PER_STRUCTURE = round(DOOR["doorways_per_structure"] * DOOR["doorway_width_m"] * BAGS_PER_M_1FT * (DOOR["height_m"] / 0.3048) ** 2)
 
 
+PUMP_M3S = 0.25   # assumption: roughly one 12-inch portable dewatering pump
+PUMP_LIMIT = 8    # assumption: pumps available before the storm
+
+
+class PumpedWorld(World):
+    """Codex World plus portable pumps: extra sinks (m/s of depth per cell) on top of the drains."""
+    def rates(self):
+        return super().rates() + self.pump_rates
+
+
+class Pump(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    lon: float
+    lat: float
+
+
 class Barrier(BaseModel):
     model_config = ConfigDict(extra="forbid")
     points: list[list[float]] = Field(min_length=2, max_length=8, description="[longitude, latitude] vertices")
@@ -60,6 +76,7 @@ class Plan(BaseModel):
     drain_ids: list[str] = Field(max_length=16)
     stage_ids: list[str] = Field(max_length=4)
     barriers: list[Barrier] = Field(default_factory=list, max_length=8)
+    pumps: list[Pump] = Field(default_factory=list, max_length=PUMP_LIMIT, description="portable pumps, discharging to the bay")
     doorway_fd_ids: list[int] = Field(default_factory=list, max_length=120)
     rationale: str = Field(min_length=1, max_length=4000)
 
@@ -131,6 +148,13 @@ def validate(plan: Plan, context, judge):
         return "Duplicate drain in drain_ids."
     if plan.drain_ids and len(plan.stage_ids) != len(context["crews"]):
         return f"stage_ids needs exactly one staging drain per crew ({len(context['crews'])}) when clearing drains."
+    if judge.mode == "coupled" and plan.doorway_fd_ids:
+        return "Doorway sandbags are not available in this exercise; use walls, pumps and drain crews."
+    if judge.mode != "coupled" and plan.pumps:
+        return "Pumps are not available in this exercise."
+    for pump in plan.pumps:
+        if not (argon.BBOX[0] <= pump.lon <= argon.BBOX[2] and argon.BBOX[1] <= pump.lat <= argon.BBOX[3]):
+            return f"Pump at {pump.lon}, {pump.lat} is outside the map {argon.BBOX}."
     known = {r["fd_id"] for r in judge.exposure.rows}
     if set(plan.doorway_fd_ids) - known:
         return f"Unknown fd_ids {sorted(set(plan.doorway_fd_ids) - known)[:5]}; use fd_ids from the structure list."
@@ -151,8 +175,9 @@ def validate(plan: Plan, context, judge):
 
 
 class Judge:
-    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None):
+    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways"):
         self.run_dir = run_dir
+        self.mode = mode
         run_dir.mkdir(parents=True, exist_ok=True)
         self.forcing = json.loads(Path(forcing).read_text()) if forcing else None
         if self.forcing:
@@ -172,6 +197,15 @@ class Judge:
         lat0 = float(self.base.lat.mean())
         self._metric = lambda lon, lat: np.column_stack([np.asarray(lon) * 111320 * np.cos(np.radians(lat0)), np.asarray(lat) * 111320])
         self._cells = cKDTree(self._metric(self.base.lon.ravel(), self.base.lat.ravel()))
+
+    def pump_cell(self, pump):
+        """Nearest open land cell to the pump's coordinates."""
+        if not hasattr(self, "_open_tree"):
+            open_cells = np.argwhere(~self.base.walls & ~self.base.ocean)
+            self._open_cells = open_cells
+            self._open_tree = cKDTree(self._metric(self.base.lon[tuple(open_cells.T)], self.base.lat[tuple(open_cells.T)]))
+        _, i = self._open_tree.query(self._metric([pump["lon"]], [pump["lat"]]))
+        return tuple(int(v) for v in self._open_cells[i[0]])
 
     def barrier_cells(self, barrier):
         """Grid cells under a sandbag wall: vertices snapped to the grid, joined cell by cell,
@@ -201,16 +235,22 @@ class Judge:
         """Run the plan in every scenario; the score is the scenario-weighted expected damage."""
         started = time.time()
         drawn = {"barriers": [self.barrier_cells(b) for b in plan.get("barriers", [])],
-                 "doorways": set(plan.get("doorway_fd_ids", []))}
+                 "doorways": set(plan.get("doorway_fd_ids", [])),
+                 "pumps": [self.pump_cell(pump) for pump in plan.get("pumps", [])]}
         runs = []
         for scenario in self.scenarios:
             base = scenario["base"]
-            if plan.get("barriers"):
+            if plan.get("barriers") or plan.get("pumps"):
                 base = copy.copy(scenario["base"])
                 base.z = scenario["base"].z.copy()
-                for cells, barrier in zip(drawn["barriers"], plan["barriers"]):
+                for cells, barrier in zip(drawn["barriers"], plan.get("barriers", [])):
                     for cell in cells:
                         base.z[cell] += barrier["height_ft"] * 0.3048
+                if plan.get("pumps"):
+                    base.__class__ = PumpedWorld
+                    base.pump_rates = np.zeros_like(base.z)
+                    for pump in plan["pumps"]:
+                        base.pump_rates[self.pump_cell(pump)] += PUMP_M3S / base.cell ** 2
             sim = preparedness.simulate(base, plan)
             ledger = self.exposure.score(sim["peak"], plan.get("doorway_fd_ids", []), DOOR["height_m"])
             suffix = "" if len(self.scenarios) == 1 else f"_{scenario['name']}"
@@ -247,6 +287,25 @@ class Judge:
                          "reached_staging": sim["result"]["preparation"]["reached_staging"]},
             "ledger": {k: v for k, v in ledger.items() if not k.startswith("_")},
         }
+
+    def greedy_pumps(self, usd):
+        """Strong rule baseline: each pump on the open cell with the most no-preparation building damage
+        within 36 m, pumps at least 60 m apart."""
+        from scipy.ndimage import uniform_filter
+        damage_grid = np.zeros_like(self.base.z)
+        for (r, c), value in zip(self.exposure.cell, usd):
+            damage_grid[r, c] += value
+        nearby = uniform_filter(damage_grid, size=7, mode="constant") * 49
+        score = np.where(~self.base.walls & ~self.base.ocean, nearby, 0.0)
+        picks = []
+        for index in np.argsort(score, axis=None)[::-1]:
+            r, c = divmod(int(index), score.shape[1])
+            if score[r, c] <= 0 or len(picks) == PUMP_LIMIT:
+                break
+            if all(np.hypot(r - pr, c - pc) >= 5 for pr, pc in picks):
+                picks.append((r, c))
+        return dict(name="Rule: pumps at the damage hotspots", drain_ids=[], stage_ids=[],
+                    pumps=[{"lon": round(float(self.base.lon[r, c]), 6), "lat": round(float(self.base.lat[r, c]), 6)} for r, c in picks])
 
     def summary_for_model(self, entry):
         ledger = entry["ledger"]
@@ -303,14 +362,29 @@ class Judge:
             f"2. Sandbag walls: up to 8 polylines of [longitude, latitude] vertices, height 1, 2 or 3 ft. They raise the "
             f"simulated ground under the line (buildings and open water are skipped), so water must overtop them. Cost: "
             f"{BAGS_PER_M_1FT:.1f} bags per metre at 1 ft, times height in ft squared.\n"
-            f"3. Doorway sandbags: up to 120 fd_ids. A protected building takes no damage while the water against it stays "
-            f"below {DOOR['height_m']} m; above that the full damage applies. Cost: {BAGS_PER_STRUCTURE} bags per building.\n"
-            f"Total sandbag stock: {STOCK} bags for walls plus doorways. Python rejects plans over the stock.\n"
+            + (f"3. Portable pumps: up to {PUMP_LIMIT}, each removing {PUMP_M3S} m³/s from the cell it stands in and discharging to "
+               "the bay. Water only reaches a pump by flowing over the terrain, so place them where water collects and "
+               "drains toward damage, not just where it is deepest. Give [lon, lat] for each.\n"
+               f"Doorway sandbags are NOT available. Sandbag stock for walls: {STOCK} bags.\n"
+               if self.mode == "coupled" else
+               f"3. Doorway sandbags: up to 120 fd_ids. A protected building takes no damage while the water against it stays "
+               f"below {DOOR['height_m']} m; above that the full damage applies. Cost: {BAGS_PER_STRUCTURE} bags per building.\n"
+               f"Total sandbag stock: {STOCK} bags for walls plus doorways. Python rejects plans over the stock.\n") +
             "Score (lower is better): dollar flood damage = NSI 2022 structure and contents value x USACE depth-damage curves "
             "on water depth above each building's first floor. Secondary: flood exposure, crew exposure.\n"
-            "Baseline to beat: the greedy rule (no AI) sandbags the costliest buildings whose no-preparation water stays below "
-            f"{DOOR['height_m']} m until the stock runs out. Its plan and result are in the run history and are the latest run "
-            "you are watching. You may start from its plan; find what it misses.\n"
+            + ("Baseline to beat: a rule (no AI) puts each pump on the open cell with the most no-preparation building damage "
+               "within 36 m, at least 60 m apart. "
+               if self.mode == "coupled" else
+               "Baseline to beat: the greedy rule (no AI) sandbags the costliest buildings whose no-preparation water stays below "
+               f"{DOOR['height_m']} m until the stock runs out. It already protects every building that doorway bags alone can save, "
+               "so you can only beat it two ways: (a) local walls or drain clearing that pull a high-value building's water from "
+               f"just above {DOOR['height_m']} m to below it in every scenario, so its doorway bags start working (the table lists "
+               "each building's depth per scenario; buildings at 0.6-0.9 m are the opportunity), and (b) dropping buildings whose "
+               "protection fails in P90. The baseline uses almost the whole stock, so funding a wall means dropping the "
+               f"lowest-value doorways (a 1 ft wall costs {BAGS_PER_M_1FT:.1f} bags per metre; a doorway costs {BAGS_PER_STRUCTURE}). "
+               "Check each change against the rendered result: if a wall did not lower the water where you meant it to, move it. ") +
+            "Its plan and result are in the run history and are the latest run you are watching. You may start from its plan; "
+            "find what it misses.\n"
             + attached +
             "First critique the latest run: what the render and ledger show went wrong and where (coordinates, candidate "
             "numbers, fd_ids), and why. Then write the improved plan; keep what worked.\n"
@@ -360,13 +434,17 @@ class Judge:
         heuristic = self.evaluate(heuristic_plan, "codex_heuristic", f"Codex heuristic: {heuristic_plan['name']}")
         # Fair non-AI baseline with the models' main lever: sandbag the costliest doorways whose control
         # water stays below the protection height, until the stock runs out.
-        protectable = sorted(((u, r["fd_id"]) for r, u, d in zip(self.exposure.rows, control_raw["_per_structure_usd"],
-                                                                  control_raw["_per_structure_depth_m"]) if u > 0 and d < DOOR["height_m"]),
-                             reverse=True)
-        greedy_plan = dict(name="Greedy doorway sandbags", drain_ids=[], stage_ids=[],
-                           doorway_fd_ids=[fd for _, fd in protectable[:STOCK // BAGS_PER_STRUCTURE]])
-        greedy = self.evaluate(greedy_plan, "greedy", "Greedy rule: sandbag the costliest protectable doorways")
-        log = {"model": model_id, "started": datetime.now(timezone.utc).isoformat(), "parameters": self.p.model_dump(),
+        if self.mode == "coupled":
+            greedy_plan = self.greedy_pumps(control_raw["_per_structure_usd"])
+            greedy = self.evaluate(greedy_plan, "greedy", "Rule: pumps where the most building damage is within 36 m")
+        else:
+            protectable = sorted(((u, r["fd_id"]) for r, u, d in zip(self.exposure.rows, control_raw["_per_structure_usd"],
+                                                                      control_raw["_per_structure_depth_m"]) if u > 0 and d < DOOR["height_m"]),
+                                 reverse=True)
+            greedy_plan = dict(name="Greedy doorway sandbags", drain_ids=[], stage_ids=[],
+                               doorway_fd_ids=[fd for _, fd in protectable[:STOCK // BAGS_PER_STRUCTURE]])
+            greedy = self.evaluate(greedy_plan, "greedy", "Greedy rule: sandbag the costliest protectable doorways")
+        log = {"model": model_id, "mode": self.mode, "started": datetime.now(timezone.utc).isoformat(), "parameters": self.p.model_dump(),
                "codex_root": str(CODEX_ROOT), "nsi_source": self.exposure.source, "nsi_retrieved": self.exposure.retrieved,
                "curves_source": damage.CURVES["source"], "costs": COSTS, "unmatched_occtypes": self.exposure.unmatched,
                "candidates": self.candidates, "control": control, "codex_heuristic": heuristic, "greedy_heuristic": greedy, "rounds": [],
@@ -416,7 +494,7 @@ class Judge:
                 log["rounds"].append({"round": number, "error": f"{type(error).__name__}: {error}"[:500]})
                 break
             plan = revision.plan.model_dump()
-            entry = self.evaluate({k: plan[k] for k in ("name", "drain_ids", "stage_ids", "barriers", "doorway_fd_ids")},
+            entry = self.evaluate({k: plan[k] for k in ("name", "drain_ids", "stage_ids", "barriers", "doorway_fd_ids", "pumps")},
                                   f"{key}_round{number}", f"{key.title()} round {number}: {plan['name']}")
             entry.update(round=number, critique=revision.critique, rationale=plan["rationale"], model_call=meta)
             log["rounds"].append(entry)
@@ -449,8 +527,10 @@ def main():
     parser.add_argument("--shared-scenario", action="store_true", help="use the UI's current sliders instead of Codex defaults")
     parser.add_argument("--forcing", help="TimesFM forcing JSON from loop.forecast; plans are scored on P10/P50/P90")
     parser.add_argument("--rain-mm-h", type=float, help="rain rate for every scenario (default: Atlas 14 100-yr 1-h, 32 mm/h)")
+    parser.add_argument("--mode", choices=["doorways", "coupled"], default="doorways",
+                        help="doorways: sandbag doorways + walls + drains; coupled: pumps + walls + drains, no doorways")
     args = parser.parse_args()
-    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing, rain_mm_h=args.rain_mm_h)
+    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing, rain_mm_h=args.rain_mm_h, mode=args.mode)
     judge.run(args.model, args.rounds)
 
 

@@ -42,7 +42,7 @@ TIMESFM_PYTHON = ROOT / ".venv" / "bin" / "python"  # the isolated TimesFM venv 
 FORCING = OUT / "forcing-2023-01-04.json"  # TimesFM 3 backtest of the January 2023 storm (loop.forecast)
 
 
-def start(rounds, source="2023", rain_mm_h=None, models=("argon", "flash")):
+def start(rounds, source="2023", rain_mm_h=None, models=("argon", "flash"), mode="coupled"):
     """source: "2023" (TimesFM backtest of the January 2023 storm), "today" (fresh TimesFM forecast from the
     gauge's last 30 days, run first) or "design" (fixed design storm, no forecast)."""
     if running():
@@ -50,7 +50,7 @@ def start(rounds, source="2023", rain_mm_h=None, models=("argon", "flash")):
     run = "live-" + datetime.now().strftime("%H%M%S")
     folder = OUT / run
     folder.mkdir(parents=True, exist_ok=True)
-    extra = ["--rain-mm-h", str(rain_mm_h)] if rain_mm_h is not None else []
+    extra = (["--rain-mm-h", str(rain_mm_h)] if rain_mm_h is not None else []) + ["--mode", mode]
 
     def launch(forcing):
         with LOCK:
@@ -123,7 +123,8 @@ class Handler(SimpleHTTPRequestHandler):
         rain = body.get("rain_mm_h")
         rain = None if rain in (None, "") else max(0.0, min(150.0, float(rain)))
         models = ("argon", "flash") if body.get("flash", True) else ("argon",)
-        run = start(rounds, source, rain, models)
+        mode = body.get("mode") if body.get("mode") in ("doorways", "coupled") else "coupled"
+        run = start(rounds, source, rain, models, mode)
         if run is None:
             return self.send_json({"error": "a run is already in progress", "running": running()}, 409)
         self.send_json({"run": run, "page": f"/runs/{run}/index.html"}, 202)

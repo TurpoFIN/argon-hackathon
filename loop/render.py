@@ -73,6 +73,10 @@ def plan_map(world, result, peak, ledger, exposure, candidates, title, drawn=Non
         for cell in cells:
             x, y = _xy(cell)
             draw.rectangle([x - SCALE / 2 - 1, y - SCALE / 2 - 1, x + SCALE / 2 + 1, y + SCALE / 2 + 1], fill=(255, 122, 0))
+    for number, cell in enumerate(drawn.get("pumps", []), start=1):
+        x, y = _xy(cell)
+        draw.ellipse([x - 7, y - 7, x + 7, y + 7], fill=(246, 68, 185), outline=(255, 255, 255), width=2)
+        draw.text((x - 3, y - 7), "P", fill=(255, 255, 255), font=SMALL)
     usd = ledger["_per_structure_usd"]
     for row, (r, c), value in zip(exposure.rows, exposure.cell, usd):
         x, y = _xy((r, c))
@@ -105,7 +109,7 @@ def plan_map(world, result, peak, ledger, exposure, candidates, title, drawn=Non
     hd.text((10, 6), title, fill=(240, 240, 240), font=TITLE)
     hd.text((10, 28), f"Damage ${ledger['total_usd']:,.0f} · {ledger['structures_flooded']} flooded buildings",
             fill=(200, 200, 200), font=FONT)
-    hd.text((10, 48), "blue peak depth · orange sandbag wall · cyan doorway sandbags", fill=(150, 150, 150), font=SMALL)
+    hd.text((10, 48), "blue peak depth · orange sandbag wall · cyan doorway sandbags · magenta P pump", fill=(150, 150, 150), font=SMALL)
     hd.text((10, 63), "green cleared drain · red X failed · triangle crew · yellow damaged", fill=(150, 150, 150), font=SMALL)
     hd.text((10, 78), "red tint: hazard no-go area · numbers: candidate drains", fill=(150, 150, 150), font=SMALL)
     framed = Image.new("RGB", (image.width, image.height + header.height))

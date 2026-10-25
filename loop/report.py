@@ -76,6 +76,8 @@ footer a { color:inherit; }
 LIVE = """<form id='live' hidden>
   <label>Storm <select name='source'><option value='2023'>January 2023, TimesFM backtest</option>
     <option value='today'>Today: TimesFM forecast from the gauge</option><option value='design'>Design storm, no forecast</option></select></label>
+  <label>Levers <select name='mode'><option value='coupled'>Pumps, walls, drain crews</option>
+    <option value='doorways'>Doorway sandbags, walls, drain crews</option></select></label>
   <label>Rain <input name='rain_mm_h' type='number' min='0' max='150' step='1' value='32' inputmode='numeric'> mm/h</label>
   <label>Rounds <select name='rounds'><option>2</option><option selected>3</option></select></label>
   <label><input name='flash' type='checkbox' checked> Flash baseline</label>
@@ -106,7 +108,7 @@ live.addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = new FormData(live), button = live.querySelector('button');
   button.disabled = true;
-  const payload = { source: form.get('source'), rain_mm_h: form.get('rain_mm_h'), rounds: Number(form.get('rounds')), flash: form.get('flash') === 'on' };
+  const payload = { source: form.get('source'), mode: form.get('mode'), rain_mm_h: form.get('rain_mm_h'), rounds: Number(form.get('rounds')), flash: form.get('flash') === 'on' };
   const response = await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const body = await response.json();
   if (body.page) location.href = body.page; else { button.disabled = false; live.querySelector('span').textContent = body.error || 'Could not start'; }
@@ -295,7 +297,8 @@ def build(run: Path):
             ("Codex heuristic (drains only)", heuristic["ledger"]["total_usd"], "var(--muted)")]
     greedy = reference.get("greedy_heuristic")
     if greedy:
-        rows.append(("Greedy rule, no AI (doorway sandbags)", greedy["ledger"]["total_usd"], "var(--fg)"))
+        rule = "Rule, no AI: pumps at damage hotspots" if reference.get("mode") == "coupled" else "Greedy rule, no AI (doorway sandbags)"
+        rows.append((rule, greedy["ledger"]["total_usd"], "var(--fg)"))
     for log, name, color in ((flash, f"Gemini 3.8 Flash, {kind}best round", "var(--c2)"), (argon, f"Gemini 4 Argon, {kind}best round", "var(--c1)")):
         b = best(log)
         if b:
@@ -321,8 +324,8 @@ def build(run: Path):
             headline += f"; Flash, with the same storm and stock, cut {usd(control['ledger']['total_usd'] - f_best['ledger']['total_usd'])}"
         if greedy:
             gap = greedy["ledger"]["total_usd"] - a_best["ledger"]["total_usd"]
-            headline += (f". That is {usd(gap)} better than the greedy no-AI rule" if gap > 0
-                         else f". The greedy no-AI rule still does {usd(-gap)} better")
+            headline += (f". That is {usd(gap)} better than the no-AI rule" if gap > 0
+                         else f". The no-AI rule still does {usd(-gap)} better")
     else:
         headline = "Prep-plan loop"
     bay = ("bay held at each TimesFM scenario's forecast peak" if reference.get("forcing")
