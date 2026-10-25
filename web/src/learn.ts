@@ -88,6 +88,30 @@ export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] 
     <td>${r.pending ? 'running…' : usd(r.damage)}</td><td>${r.lives != null && isFinite(+r.lives) ? Math.round(+r.lives).toLocaleString('en-US') : '–'}</td><td>${r.name === 'No plan' ? '—' : usd(r.cost)}</td>
     <td>${isFinite(r.budget) && isFinite(r.cost) ? (r.cost <= r.budget ? '<b class="ok">✓</b>' : '<b class="no">✗</b>') : '–'}</td><td>${isFinite(per(r)) ? '$' + per(r).toFixed(1) : '–'}</td></tr>
     ${r.note ? `<tr class="nt"><td colspan="6">${esc(r.note)}</td></tr>` : ''}`).join('');
+  // Cost vs damage quadrant: x = plan cost (log), y = damage left after the storm. Bottom-left = cheap and effective.
+  const quad = (() => {
+    const pts = rows.filter((r) => !r.pending && isFinite(r.damage) && isFinite(r.cost));
+    if (pts.length < 2) return '';
+    const W = 760, H = 380, L = 70, R = 20, T = 24, B = 46;
+    const budget = +(brief?.budget_usd ?? rows.find((r) => isFinite(r.budget))?.budget ?? 50e6);
+    const cmin = 5e6, cmax = Math.max(1e9, ...pts.map((r) => r.cost * 1.3));
+    const dmax = Math.max(...pts.map((r) => r.damage)) * 1.08;
+    const X = (c: number) => L + (Math.log10(Math.max(cmin, c || cmin)) - Math.log10(cmin)) / (Math.log10(cmax) - Math.log10(cmin)) * (W - L - R);
+    const Y = (d: number) => T + (1 - d / dmax) * (H - T - B);
+    const col = (n: string) => /argon/i.test(n) ? '#4fd1ff' : /flash/i.test(n) ? '#ffb347' : /no plan/i.test(n) ? '#ff5c5c' : '#9aa7b4';
+    const ticks = [5e6, 1e7, 5e7, 1e8, 5e8, 1e9].filter((t) => t <= cmax).map((t) => `<text x="${X(t)}" y="${H - B + 18}" class="qa">${t >= 1e9 ? '$' + t / 1e9 + 'B' : '$' + t / 1e6 + 'M'}</text>`).join('');
+    const yt = [0, 0.25, 0.5, 0.75, 1].map((f) => `<text x="${L - 8}" y="${Y(f * dmax) + 4}" class="qa" text-anchor="end">${usd(f * dmax)}</text>`).join('');
+    const dots = pts.map((r) => { const x = r.cost > 0 ? X(r.cost) : L; const y = Y(r.damage); const c = col(r.name); const lbl = r.name.replace(/^FINAL\s*/i, '').replace(/gemini[- ]?/i, '').replace(/\(.*?\)/g, '').trim();
+      return `<circle cx="${x}" cy="${y}" r="9" fill="${c}" stroke="#0b1016" stroke-width="2"/><text x="${x + 13}" y="${y + 5}" class="ql" fill="${c}">${esc(lbl)}</text>`; }).join('');
+    const bx = X(budget);
+    return `<svg class="quad" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+      <rect x="${L}" y="${T}" width="${bx - L}" height="${(H - B) - Y(dmax / 2)}" transform="translate(0 ${Y(dmax / 2) - T})" fill="rgba(79,209,255,0.08)"/>
+      <line x1="${bx}" y1="${T}" x2="${bx}" y2="${H - B}" class="qline"/><text x="${bx + 6}" y="${T + 12}" class="qa">budget ${usd(budget)}</text>
+      <line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" class="qax"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" class="qax"/>
+      <text x="${L + 10}" y="${H - B - 10}" class="qq">cheap & effective</text><text x="${W - R - 10}" y="${T + 14}" class="qq" text-anchor="end">expensive & ineffective</text>
+      ${ticks}${yt}<text x="${(L + W - R) / 2}" y="${H - 6}" class="qa" text-anchor="middle">plan cost (log scale)</text>
+      <text x="16" y="${(T + H - B) / 2}" class="qa" transform="rotate(-90 16 ${(T + H - B) / 2})" text-anchor="middle">damage after the storm</text>${dots}</svg>`;
+  })();
   el.innerHTML = `<div class="bs-h">BENCHMARK <span>same storm · same data · real simulation runs only</span></div>
-    ${rows.length > (base ? 1 : 0) ? `<table class="bs"><tr><th></th><th>Damage</th><th>Lives at risk</th><th>Plan cost</th><th>Within budget</th><th>Damage avoided per $1</th></tr>${body}</table>` : '<div class="lr-wait">Waiting for runs — no real model run has finished yet.</div>'}`;
+    ${quad}${rows.length > (base ? 1 : 0) ? `<table class="bs"><tr><th></th><th>Damage</th><th>Lives at risk</th><th>Plan cost</th><th>Within budget</th><th>Damage avoided per $1</th></tr>${body}</table>` : '<div class="lr-wait">Waiting for runs — no real model run has finished yet.</div>'}`;
 }
