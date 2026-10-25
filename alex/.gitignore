@@ -1,0 +1,10 @@
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+dist/
+data/
+evidence/*.png
+.env
+.env.*
+!.env.example

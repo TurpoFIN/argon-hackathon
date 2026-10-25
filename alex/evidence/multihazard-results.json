@@ -1,0 +1,2272 @@
+{
+  "version": 1,
+  "signature": "47ab200b26719a2b",
+  "generated_at": "2026-10-25T21:27:26.332259+00:00",
+  "scenario_id": "4bda5d18ded2",
+  "parameters": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon",
+    "coastal_case": "central"
+  },
+  "preparation_minutes": 120,
+  "crews": [
+    "general",
+    "general",
+    "arborist",
+    "structural",
+    "electrician"
+  ],
+  "stock": {
+    "secure_loose": 12,
+    "prune_tree": 6,
+    "brace_structure": 4,
+    "protect_entrance": 8,
+    "backup_power": 4,
+    "close_route": 8
+  },
+  "selected_id": "7",
+  "selection": {
+    "selected_plan": "Combined Damage Focus",
+    "reason": "In this conditional stress-test model, Combined Damage Focus deploys all five available crews across specialized and general tasks to achieve multi-metric gains without increasing building isolation. Compared to No Action Control across the three capacity sensitivity cases (low, central, high), it avoids a mean of 3.33 flooded entrances (range 2 to 4), 400.18 m3 of interior water (range 213.40 to 513.14 m3), 0.33 failed trees (range 0 to 1), 0.14 unserved load hours (range 0.0 to 0.37), and 42.67 route hazard minutes (range 8.0 to 60.0). Meanwhile, damaged envelope area (mean 44,256.84 m2), partial collapses (mean 250.67), and isolated building minutes (mean 55,013.33) remain unchanged.",
+    "tradeoffs": [
+      "Splitting the two general crews between entrance protection and securing loose roof objects reduces avoided flooded entrances from a mean of 5.33 (in Protect Entrances Only, which avoids 608.74 m3 of interior water) to 3.33 (avoiding 400.18 m3).",
+      "Omitting route closures avoids the access penalty seen in Close Routes Only, where closing 8 streets reduces route hazard exposure by a mean of 241.33 minutes (range 90.0 to 370.0) but harms access by increasing isolated building minutes by a mean of 177.33 (range 14.0 to 420.0).",
+      "Compared to Combined All Hazards, Combined Damage Focus sacrifices 81.33 mean avoided route hazard minutes (42.67 vs 124.0) in exchange for avoiding 1.00 more flooded entrance on average and 271.81 m3 more interior water, while avoiding the low-case interior water harm (-51.53 m3 avoided) triggered by tree pruning and flow interactions.",
+      "Arborist pruning on T249971 (with T13687 skipped due to the 120-minute travel and work window) avoids a mean of 0.33 failed trees, but in Prune Trees Only this alters local debris/flow interactions to increase mean interior water by 28.10 m3 (avoided -28.10 m3, range -87.65 to +3.35 m3).",
+      "Structural bracing on B201006.0164399 completes within the time limit but yields 0.0 avoided damaged envelope area and 0.0 avoided partial collapses across all three capacity sensitivity cases, as the target's failure state was not altered under this specific 20 m/s wind and 28 m/s gust scenario.",
+      "Scheduling 13 actions in Combined Damage Focus results in 11 completed and 2 skipped actions due to walking and return-to-staging time limits, leaving unfinished work uncredited."
+    ]
+  },
+  "hypothesis": "Single-family advance preparation plans isolate specific hazard mitigations within crew and time constraints, while combined multi-discipline portfolios utilize all five specialized and general crews simultaneously to reduce roof/wall damage, entrance flooding, power loss, and route exposure, at the cost of increased route isolation from closures.",
+  "rows": [
+    {
+      "id": "0",
+      "name": "No Action Control",
+      "actions": [],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8417.333333333334,
+          "low": 3534.0,
+          "high": 13906.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137928.25611983277,
+          "low": 136611.08261652774,
+          "high": 138867.6795308113
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13906.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138867.6795308113,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 0.0,
+          "completed_actions": 0,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7812.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 138306.00621215932,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 0.0,
+          "completed_actions": 0,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3534.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 0.0,
+          "completed_actions": 0,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [],
+        "skipped": [],
+        "crew_minutes": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 6,
+          "brace_structure": 4,
+          "protect_entrance": 8,
+          "backup_power": 4,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "1",
+      "name": "Secure Loose Objects",
+      "actions": [
+        {
+          "kind": "secure_loose",
+          "target": "O6"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O22"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O23"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O14"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O2"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O10"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O13"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O16"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O1"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O19"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8364.666666666666,
+          "low": 3464.0,
+          "high": 13888.0
+        },
+        "isolated_building_minutes": {
+          "mean": 54934.0,
+          "low": 2546.0,
+          "high": 90392.0
+        },
+        "interior_water_m3": {
+          "mean": 137928.25611983277,
+          "low": 136611.08261652774,
+          "high": 138867.6795308113
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 52.666666666666664,
+          "low": 18.0,
+          "high": 70.0
+        },
+        "isolated_building_minutes": {
+          "mean": 79.33333333333333,
+          "low": 14.0,
+          "high": 126.0
+        },
+        "interior_water_m3": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13888.0,
+          "isolated_building_minutes": 90392.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138867.6795308113,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 207.6398740921918,
+          "completed_actions": 9,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7742.0,
+          "isolated_building_minutes": 71864.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 138306.00621215932,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 207.6398740921918,
+          "completed_actions": 9,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3464.0,
+          "isolated_building_minutes": 2546.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 207.6398740921918,
+          "completed_actions": 9,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "secure_loose",
+            "target": "O6",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 2.87,
+            "finish_minutes_before_storm": 102.13,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O22",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 3.54,
+            "finish_minutes_before_storm": 101.46,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O23",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 0.62,
+            "finish_minutes_before_storm": 85.84,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O14",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 3.79,
+            "finish_minutes_before_storm": 83.35,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O2",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 4.88,
+            "finish_minutes_before_storm": 65.96,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O10",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 7.55,
+            "finish_minutes_before_storm": 60.8,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O13",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 3.73,
+            "finish_minutes_before_storm": 47.23,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O16",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 9.69,
+            "finish_minutes_before_storm": 36.11,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O1",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 9.5,
+            "finish_minutes_before_storm": 22.72,
+            "kit": "tie-down kit"
+          }
+        ],
+        "skipped": [
+          {
+            "kind": "secure_loose",
+            "target": "O19",
+            "reason": "Insufficient time, accessible route, qualified crew or equipment"
+          }
+        ],
+        "crew_minutes": [
+          96.60332146824688,
+          111.03655262394493,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 3,
+          "prune_tree": 6,
+          "brace_structure": 4,
+          "protect_entrance": 8,
+          "backup_power": 4,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Prune Trees Only",
+      "actions": [
+        {
+          "kind": "prune_tree",
+          "target": "T249971"
+        },
+        {
+          "kind": "prune_tree",
+          "target": "T13687"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1818.6666666666667,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8417.333333333334,
+          "low": 3534.0,
+          "high": 13906.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137956.35419991813,
+          "low": 136611.08261652774,
+          "high": 138955.32590007316
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.3333333333333333,
+          "low": 0,
+          "high": 1
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": -28.09808008533825,
+          "low": -87.64636926187086,
+          "high": 3.3521290058561135
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13906.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138955.32590007316,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 47.08707425900843,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 5.960464477539063e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7812.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 138302.65408315347,
+          "trees_failed": 1358,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 47.08707425900843,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 5.820766091346741e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3534.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 47.08707425900843,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "prune_tree",
+            "target": "T249971",
+            "crew": 3,
+            "role": "arborist",
+            "work_minutes": 40,
+            "travel_minutes": 3.54,
+            "finish_minutes_before_storm": 76.46,
+            "kit": "tree-work kit"
+          }
+        ],
+        "skipped": [
+          {
+            "kind": "prune_tree",
+            "target": "T13687",
+            "reason": "Insufficient time, accessible route, qualified crew or equipment"
+          }
+        ],
+        "crew_minutes": [
+          0.0,
+          0.0,
+          47.08707425900843,
+          0.0,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 5,
+          "brace_structure": 4,
+          "protect_entrance": 8,
+          "backup_power": 4,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Brace Structure Only",
+      "actions": [
+        {
+          "kind": "brace_structure",
+          "target": "B201006.0164399"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8417.333333333334,
+          "low": 3534.0,
+          "high": 13906.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137928.25611983277,
+          "low": 136611.08261652774,
+          "high": 138867.6795308113
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13906.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138867.6795308113,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 87.94498951327368,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7812.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 138306.00621215932,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 87.94498951327368,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3534.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 87.94498951327368,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "brace_structure",
+            "target": "B201006.0164399",
+            "crew": 4,
+            "role": "structural",
+            "work_minutes": 75,
+            "travel_minutes": 6.47,
+            "finish_minutes_before_storm": 38.53,
+            "kit": "four 5 kN anchors"
+          }
+        ],
+        "skipped": [],
+        "crew_minutes": [
+          0.0,
+          0.0,
+          0.0,
+          87.94498951327368,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 6,
+          "brace_structure": 3,
+          "protect_entrance": 8,
+          "backup_power": 4,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Protect Entrances Only",
+      "actions": [
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0147145"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0022640"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0021319"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0004915"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0010119"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0075804"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 506.6666666666667,
+          "low": 499,
+          "high": 517
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8417.333333333334,
+          "low": 3534.0,
+          "high": 13906.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137319.51355058703,
+          "low": 136002.39524010563,
+          "high": 138371.1653206695
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 5.333333333333333,
+          "low": 4,
+          "high": 6
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 608.7425692457764,
+          "low": 496.51421014178777,
+          "high": 721.0261211734323
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13906.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138371.1653206695,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 517,
+          "failed_substations": 1,
+          "crew_minutes": 210.9399869548396,
+          "completed_actions": 6,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7812.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 137584.9800909859,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 504,
+          "failed_substations": 0,
+          "crew_minutes": 210.9399869548396,
+          "completed_actions": 6,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3534.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136002.39524010563,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 499,
+          "failed_substations": 0,
+          "crew_minutes": 210.9399869548396,
+          "completed_actions": 6,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0147145",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 4.77,
+            "finish_minutes_before_storm": 90.23,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0022640",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 6.42,
+            "finish_minutes_before_storm": 88.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0021319",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 0.0,
+            "finish_minutes_before_storm": 63.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0004915",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 5.73,
+            "finish_minutes_before_storm": 59.5,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0010119",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 8.7,
+            "finish_minutes_before_storm": 29.88,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0075804",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 6.57,
+            "finish_minutes_before_storm": 27.92,
+            "kit": "0.6 m rated entrance barrier"
+          }
+        ],
+        "skipped": [],
+        "crew_minutes": [
+          106.44823784261457,
+          104.49174911222504,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 6,
+          "brace_structure": 4,
+          "protect_entrance": 2,
+          "backup_power": 4,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Backup Power Only",
+      "actions": [
+        {
+          "kind": "backup_power",
+          "target": "B201006.0074083"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.23333333333333,
+          "low": 35.36666666666666,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8417.333333333334,
+          "low": 3534.0,
+          "high": 13906.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137928.25611983277,
+          "low": 136611.08261652774,
+          "high": 138867.6795308113
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.1444444444444457,
+          "low": 0.0,
+          "high": 0.36666666666667425
+        },
+        "route_hazard_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13906.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138867.6795308113,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 90.4470487631043,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7812.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.03333333333333,
+          "interior_water_m3": 138306.00621215932,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 90.4470487631043,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3534.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.36666666666666,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 90.4470487631043,
+          "completed_actions": 1,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "backup_power",
+            "target": "B201006.0074083",
+            "crew": 5,
+            "role": "electrician",
+            "work_minutes": 75,
+            "travel_minutes": 7.72,
+            "finish_minutes_before_storm": 37.28,
+            "kit": "20 kW generator, 2 h fuel"
+          }
+        ],
+        "skipped": [],
+        "crew_minutes": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          90.4470487631043
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 6,
+          "brace_structure": 4,
+          "protect_entrance": 8,
+          "backup_power": 3,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "6",
+      "name": "Close Routes Only",
+      "actions": [
+        {
+          "kind": "close_route",
+          "target": "R12556102-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12556202-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12559101-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12559201-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R8986000-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R4314000-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12554201-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12554101-0"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1819.0,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 512.0,
+          "low": 505,
+          "high": 521
+        },
+        "unserved_load_hours": {
+          "mean": 84.37777777777778,
+          "low": 35.43333333333332,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8176.0,
+          "low": 3444.0,
+          "high": 13536.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55190.666666666664,
+          "low": 3092.0,
+          "high": 90420.0
+        },
+        "interior_water_m3": {
+          "mean": 137928.25611983277,
+          "low": 136611.08261652774,
+          "high": 138867.6795308113
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "unserved_load_hours": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "route_hazard_minutes": {
+          "mean": 241.33333333333334,
+          "low": 90.0,
+          "high": 370.0
+        },
+        "isolated_building_minutes": {
+          "mean": -177.33333333333334,
+          "low": -420.0,
+          "high": -14.0
+        },
+        "interior_water_m3": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13536.0,
+          "isolated_building_minutes": 90420.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138867.6795308113,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 521,
+          "failed_substations": 1,
+          "crew_minutes": 225.74789418160555,
+          "completed_actions": 8,
+          "mass_balance_error_m3": 4.44706529378891e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7548.0,
+          "isolated_building_minutes": 72060.0,
+          "unserved_load_hours": 71.4,
+          "interior_water_m3": 138306.00621215932,
+          "trees_failed": 1359,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 510,
+          "failed_substations": 0,
+          "crew_minutes": 225.74789418160555,
+          "completed_actions": 8,
+          "mass_balance_error_m3": 8.777715265750885e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3444.0,
+          "isolated_building_minutes": 3092.0,
+          "unserved_load_hours": 35.43333333333332,
+          "interior_water_m3": 136611.08261652774,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 505,
+          "failed_substations": 0,
+          "crew_minutes": 225.74789418160555,
+          "completed_actions": 8,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "close_route",
+            "target": "R12556102-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 10.21,
+            "finish_minutes_before_storm": 97.79,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12556202-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 10.21,
+            "finish_minutes_before_storm": 97.79,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12559101-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 10.27,
+            "finish_minutes_before_storm": 75.52,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12559201-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 10.27,
+            "finish_minutes_before_storm": 75.52,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R8986000-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 14.96,
+            "finish_minutes_before_storm": 48.56,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R4314000-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 16.1,
+            "finish_minutes_before_storm": 47.42,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12554201-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 9.07,
+            "finish_minutes_before_storm": 27.49,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12554101-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 10.13,
+            "finish_minutes_before_storm": 25.29,
+            "kit": "barrier and signage kit"
+          }
+        ],
+        "skipped": [],
+        "crew_minutes": [
+          111.77292627300291,
+          113.97496790860264,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "stock_remaining": {
+          "secure_loose": 12,
+          "prune_tree": 6,
+          "brace_structure": 4,
+          "protect_entrance": 8,
+          "backup_power": 4,
+          "close_route": 0
+        }
+      }
+    },
+    {
+      "id": "7",
+      "name": "Combined Damage Focus",
+      "actions": [
+        {
+          "kind": "brace_structure",
+          "target": "B201006.0164399"
+        },
+        {
+          "kind": "backup_power",
+          "target": "B201006.0074083"
+        },
+        {
+          "kind": "prune_tree",
+          "target": "T249971"
+        },
+        {
+          "kind": "prune_tree",
+          "target": "T13687"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0147145"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0022640"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0021319"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0004915"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O6"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O22"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O23"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O10"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O2"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1818.6666666666667,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 508.6666666666667,
+          "low": 501,
+          "high": 519
+        },
+        "unserved_load_hours": {
+          "mean": 84.23333333333333,
+          "low": 35.36666666666666,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8374.666666666666,
+          "low": 3474.0,
+          "high": 13898.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137528.0742525944,
+          "low": 136137.07831737155,
+          "high": 138654.28061557704
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.3333333333333333,
+          "low": 0,
+          "high": 1
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 3.3333333333333335,
+          "low": 2,
+          "high": 4
+        },
+        "unserved_load_hours": {
+          "mean": 0.1444444444444457,
+          "low": 0.0,
+          "high": 0.36666666666667425
+        },
+        "route_hazard_minutes": {
+          "mean": 42.666666666666664,
+          "low": 8.0,
+          "high": 60.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 400.18186723835726,
+          "low": 213.39891523425467,
+          "high": 513.142387324624
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13898.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138654.28061557704,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 519,
+          "failed_substations": 1,
+          "crew_minutes": 436.66716929132167,
+          "completed_actions": 11,
+          "mass_balance_error_m3": 5.960464477539063e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7752.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.03333333333333,
+          "interior_water_m3": 137792.8638248347,
+          "trees_failed": 1358,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 506,
+          "failed_substations": 0,
+          "crew_minutes": 436.66716929132167,
+          "completed_actions": 11,
+          "mass_balance_error_m3": 5.820766091346741e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3474.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.36666666666666,
+          "interior_water_m3": 136137.07831737155,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 501,
+          "failed_substations": 0,
+          "crew_minutes": 436.66716929132167,
+          "completed_actions": 11,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "brace_structure",
+            "target": "B201006.0164399",
+            "crew": 4,
+            "role": "structural",
+            "work_minutes": 75,
+            "travel_minutes": 6.47,
+            "finish_minutes_before_storm": 38.53,
+            "kit": "four 5 kN anchors"
+          },
+          {
+            "kind": "backup_power",
+            "target": "B201006.0074083",
+            "crew": 5,
+            "role": "electrician",
+            "work_minutes": 75,
+            "travel_minutes": 7.72,
+            "finish_minutes_before_storm": 37.28,
+            "kit": "20 kW generator, 2 h fuel"
+          },
+          {
+            "kind": "prune_tree",
+            "target": "T249971",
+            "crew": 3,
+            "role": "arborist",
+            "work_minutes": 40,
+            "travel_minutes": 3.54,
+            "finish_minutes_before_storm": 76.46,
+            "kit": "tree-work kit"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0147145",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 4.77,
+            "finish_minutes_before_storm": 90.23,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0022640",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 6.42,
+            "finish_minutes_before_storm": 88.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0021319",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 0.0,
+            "finish_minutes_before_storm": 63.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0004915",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 5.73,
+            "finish_minutes_before_storm": 59.5,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O6",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 3.55,
+            "finish_minutes_before_storm": 45.03,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O22",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 5.74,
+            "finish_minutes_before_storm": 38.75,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O23",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 1.29,
+            "finish_minutes_before_storm": 28.74,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O10",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 7.99,
+            "finish_minutes_before_storm": 15.76,
+            "kit": "tie-down kit"
+          }
+        ],
+        "skipped": [
+          {
+            "kind": "prune_tree",
+            "target": "T13687",
+            "reason": "Insufficient time, accessible route, qualified crew or equipment"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O2",
+            "reason": "Insufficient time, accessible route, qualified crew or equipment"
+          }
+        ],
+        "crew_minutes": [
+          115.76173103054707,
+          95.42632572538818,
+          47.08707425900843,
+          87.94498951327368,
+          90.4470487631043
+        ],
+        "stock_remaining": {
+          "secure_loose": 8,
+          "prune_tree": 5,
+          "brace_structure": 3,
+          "protect_entrance": 4,
+          "backup_power": 3,
+          "close_route": 8
+        }
+      }
+    },
+    {
+      "id": "8",
+      "name": "Combined All Hazards",
+      "actions": [
+        {
+          "kind": "brace_structure",
+          "target": "B201006.0164399"
+        },
+        {
+          "kind": "backup_power",
+          "target": "B201006.0074083"
+        },
+        {
+          "kind": "prune_tree",
+          "target": "T249971"
+        },
+        {
+          "kind": "prune_tree",
+          "target": "T13687"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0022640"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0021319"
+        },
+        {
+          "kind": "protect_entrance",
+          "target": "B201006.0147145"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O10"
+        },
+        {
+          "kind": "secure_loose",
+          "target": "O2"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12556102-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R12556202-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R8986000-0"
+        },
+        {
+          "kind": "close_route",
+          "target": "R4314000-0"
+        }
+      ],
+      "metrics": {
+        "damaged_envelope_m2": {
+          "mean": 44256.835255016194,
+          "low": 0.0,
+          "high": 108187.67803255025
+        },
+        "trees_failed": {
+          "mean": 1818.6666666666667,
+          "low": 0,
+          "high": 4098
+        },
+        "partial_collapses": {
+          "mean": 250.66666666666666,
+          "low": 0,
+          "high": 589
+        },
+        "flooded_entrances": {
+          "mean": 509.6666666666667,
+          "low": 502,
+          "high": 520
+        },
+        "unserved_load_hours": {
+          "mean": 84.23333333333333,
+          "low": 35.36666666666666,
+          "high": 146.29999999999998
+        },
+        "route_hazard_minutes": {
+          "mean": 8293.333333333334,
+          "low": 3444.0,
+          "high": 13758.0
+        },
+        "isolated_building_minutes": {
+          "mean": 55013.333333333336,
+          "low": 2672.0,
+          "high": 90406.0
+        },
+        "interior_water_m3": {
+          "mean": 137799.88468280752,
+          "low": 136400.2390944722,
+          "high": 138919.20960776755
+        }
+      },
+      "avoided": {
+        "damaged_envelope_m2": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "trees_failed": {
+          "mean": 0.3333333333333333,
+          "low": 0,
+          "high": 1
+        },
+        "partial_collapses": {
+          "mean": 0.0,
+          "low": 0,
+          "high": 0
+        },
+        "flooded_entrances": {
+          "mean": 2.3333333333333335,
+          "low": 1,
+          "high": 3
+        },
+        "unserved_load_hours": {
+          "mean": 0.1444444444444457,
+          "low": 0.0,
+          "high": 0.36666666666667425
+        },
+        "route_hazard_minutes": {
+          "mean": 124.0,
+          "low": 90.0,
+          "high": 148.0
+        },
+        "isolated_building_minutes": {
+          "mean": 0.0,
+          "low": 0.0,
+          "high": 0.0
+        },
+        "interior_water_m3": {
+          "mean": 128.37143702527587,
+          "low": -51.53007695626002,
+          "high": 225.80086597654736
+        }
+      },
+      "cases": [
+        {
+          "capacity_factor": 0.65,
+          "route_hazard_minutes": 13758.0,
+          "isolated_building_minutes": 90406.0,
+          "unserved_load_hours": 146.29999999999998,
+          "interior_water_m3": 138919.20960776755,
+          "trees_failed": 4098,
+          "partial_collapses": 589,
+          "damaged_envelope_m2": 108187.67803255025,
+          "flooded_entrances": 520,
+          "failed_substations": 1,
+          "crew_minutes": 443.93320459636493,
+          "completed_actions": 12,
+          "mass_balance_error_m3": 5.960464477539063e-08
+        },
+        {
+          "capacity_factor": 1.0,
+          "route_hazard_minutes": 7678.0,
+          "isolated_building_minutes": 71962.0,
+          "unserved_load_hours": 71.03333333333333,
+          "interior_water_m3": 138080.20534618277,
+          "trees_failed": 1358,
+          "partial_collapses": 163,
+          "damaged_envelope_m2": 24582.827732498325,
+          "flooded_entrances": 507,
+          "failed_substations": 0,
+          "crew_minutes": 443.93320459636493,
+          "completed_actions": 12,
+          "mass_balance_error_m3": 5.820766091346741e-08
+        },
+        {
+          "capacity_factor": 1.35,
+          "route_hazard_minutes": 3444.0,
+          "isolated_building_minutes": 2672.0,
+          "unserved_load_hours": 35.36666666666666,
+          "interior_water_m3": 136400.2390944722,
+          "trees_failed": 0,
+          "partial_collapses": 0,
+          "damaged_envelope_m2": 0.0,
+          "flooded_entrances": 502,
+          "failed_substations": 0,
+          "crew_minutes": 443.93320459636493,
+          "completed_actions": 12,
+          "mass_balance_error_m3": 8.12578946352005e-08
+        }
+      ],
+      "receipt": {
+        "completed": [
+          {
+            "kind": "brace_structure",
+            "target": "B201006.0164399",
+            "crew": 4,
+            "role": "structural",
+            "work_minutes": 75,
+            "travel_minutes": 6.47,
+            "finish_minutes_before_storm": 38.53,
+            "kit": "four 5 kN anchors"
+          },
+          {
+            "kind": "backup_power",
+            "target": "B201006.0074083",
+            "crew": 5,
+            "role": "electrician",
+            "work_minutes": 75,
+            "travel_minutes": 7.72,
+            "finish_minutes_before_storm": 37.28,
+            "kit": "20 kW generator, 2 h fuel"
+          },
+          {
+            "kind": "prune_tree",
+            "target": "T249971",
+            "crew": 3,
+            "role": "arborist",
+            "work_minutes": 40,
+            "travel_minutes": 3.54,
+            "finish_minutes_before_storm": 76.46,
+            "kit": "tree-work kit"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0022640",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 6.42,
+            "finish_minutes_before_storm": 88.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0021319",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 6.42,
+            "finish_minutes_before_storm": 88.58,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "protect_entrance",
+            "target": "B201006.0147145",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 25,
+            "travel_minutes": 2.87,
+            "finish_minutes_before_storm": 60.71,
+            "kit": "0.6 m rated entrance barrier"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O10",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 5.86,
+            "finish_minutes_before_storm": 67.73,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "secure_loose",
+            "target": "O2",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 15,
+            "travel_minutes": 5.96,
+            "finish_minutes_before_storm": 46.77,
+            "kit": "tie-down kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12556102-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 7.96,
+            "finish_minutes_before_storm": 40.75,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R12556202-0",
+            "crew": 1,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 0.0,
+            "finish_minutes_before_storm": 28.75,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R8986000-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 5.96,
+            "finish_minutes_before_storm": 28.81,
+            "kit": "barrier and signage kit"
+          },
+          {
+            "kind": "close_route",
+            "target": "R4314000-0",
+            "crew": 2,
+            "role": "general",
+            "work_minutes": 12,
+            "travel_minutes": 1.14,
+            "finish_minutes_before_storm": 15.67,
+            "kit": "barrier and signage kit"
+          }
+        ],
+        "skipped": [
+          {
+            "kind": "prune_tree",
+            "target": "T13687",
+            "reason": "Insufficient time, accessible route, qualified crew or equipment"
+          }
+        ],
+        "crew_minutes": [
+          101.46117434181532,
+          116.99291771916316,
+          47.08707425900843,
+          87.94498951327368,
+          90.4470487631043
+        ],
+        "stock_remaining": {
+          "secure_loose": 10,
+          "prune_tree": 5,
+          "brace_structure": 3,
+          "protect_entrance": 5,
+          "backup_power": 3,
+          "close_route": 4
+        }
+      }
+    }
+  ],
+  "coverage": {
+    "buildings": 1568,
+    "trees": 4098,
+    "trees_without_usable_dbh": 262,
+    "roads": 607,
+    "distribution_feeders": 77,
+    "transmission_lines": 3,
+    "substations": 6,
+    "overhead_lines": 0,
+    "unknown_installation": 77
+  },
+  "sources": [
+    {
+      "name": "DataSF building footprints",
+      "url": "https://data.sf.gov/resource/ynuv-fyni.json?%24select=sf16_bldgid%2Chgt_median_m%2Cgnd_min_m%2Cshape&%24where=intersects%28shape%2C%27POLYGON%28%28-122.406+37.786%2C-122.386+37.786%2C-122.386+37.808%2C-122.406+37.808%2C-122.406+37.786%29%29%27%29&%24limit=15000",
+      "basis": "Mapped geometry and older measured height; structural condition is not recorded."
+    },
+    {
+      "url": "https://data.sfgov.org/resource/tkzw-k3nq.json?%24where=latitude+between+37.786+and+37.808+and+longitude+between+-122.406+and+-122.386&%24select=treeid%2Cspecies%2Cmapdbh%2Clatitude%2Clongitude%2Clegalstatus%2Cdata_as_of&%24limit=10000",
+      "file": "trees.json",
+      "sha256": "2e8fd1934b7dee9e339d223df884864b76c725f21c4c0831a1c2ee2dd0c12b02",
+      "name": "DataSF street trees"
+    },
+    {
+      "url": "https://data.sfgov.org/resource/3psu-pn9h.json?%24where=active+%3D+true+AND+intersects%28line%2C%27POLYGON%28%28-122.406+37.786%2C-122.386+37.786%2C-122.386+37.808%2C-122.406+37.808%2C-122.406+37.786%29%29%27%29&%24select=cnn%2Cstreetname%2Cline%2Cf_node_cnn%2Ct_node_cnn&%24limit=10000",
+      "file": "streets.json",
+      "sha256": "8e160aeb072d4d55c93a9ae21dbf24e8882f500327b0f48eeec81d0a08252e7d",
+      "name": "DataSF active street centerlines"
+    },
+    {
+      "url": "https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer/2/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CSubstation%2CFeederID%2CFeeder_Name%2CNominal_Voltage%2CLast_Update_On_Map&resultRecordCount=2000",
+      "file": "pge-feeders.geojson",
+      "sha256": "b402481579016866bd972c3a232d5adf598e6cd43e74c72b495ae06cbd25b1ff",
+      "name": "PG&E GRIP distribution feeders"
+    },
+    {
+      "url": "https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CName%2CType%2CkV%2COwner%2CStatus&resultRecordCount=2000",
+      "file": "cec-lines.geojson",
+      "sha256": "bb570395b9a2b1b53ca26f5b2bcfde549a7eaf398ad58fb94cb490d7363c1243",
+      "name": "CEC transmission lines"
+    },
+    {
+      "url": "https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer/0/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CSubstationName%2CSubstationID%2CVoltage_kV&resultRecordCount=2000",
+      "file": "pge-substations.geojson",
+      "sha256": "92a22135d561a5bc9239356decd6fe1d59f590dd238ae438091fc318bf1dd991",
+      "name": "PG&E GRIP substations"
+    }
+  ],
+  "assumptions": [
+    "Conditional stress test: mapped geometry is real; structural condition, load capacities, roof objects, entrance ratings and work durations are scenario inputs, not surveyed findings.",
+    "Three matched capacity cases (0.65, 1.0, 1.35) are sensitivity cases, not event probabilities. Same latent strengths and weather are reused for every plan.",
+    "Roof/wall assembly failure is modeled for buildings below 20 m. Whole high-rise stability, dynamic response, waves and foundation scour remain outside this model.",
+    "Wind loads use q=0.613 V\u00b2 with directional coefficients. This is a simplified load model, not CFD validation. Tree dimensions use DBH-based allometry; tree condition is unobserved.",
+    "Tree overturning capacity is an explicit 35\u201355 m/s dry-anchorage sensitivity, with crown streamlining and wet-soil reduction. It is not a universal failure threshold or a calibration to SF trees; stem fracture is not resolved.",
+    "Only source-classified overhead lines can be struck by trees. PG&E feeder installation type is unknown. Building-to-feeder association is a nearest-route assumption, not a verified customer connection.",
+    "Substation equipment height and damage threshold are conditional inputs; no actual outage is asserted. Local islanded backup powers one modeled 10 kW load, not the public network.",
+    "Backup candidates assume a compatible pre-installed transfer connection. Bracing assumes an engineered four-anchor kit and access method. These prerequisites are scenario conditions, not facts in GIS.",
+    "Route exposure counts hazardous open street-link minutes, not people or injuries. Closures affect access and can worsen isolation. No casualty predictions or dollar-loss claims.",
+    "Five crews (two general, one arborist, one structural, one electrician); walking at 1.4 m/s on the street graph. Skills, finite kits, travel, work and return time are enforced before storm onset.",
+    "The preparation window is assumed accessible and calm; work requires owner access and approved methods before storm onset. It is not authorization or a real work order.",
+    "Up to 24 hypothetical 3 kg roof objects are allocated from the loose-debris slider inventory; the remainder is surface litter. Their locations are scenario placements, not observations."
+  ],
+  "source_types": {
+    "geometry": "Public GIS",
+    "condition": "Conditional scenarios; not surveyed",
+    "demand": "One modeled 10 kW load per building; not utility customer data"
+  },
+  "argon_receipt": {
+    "model": "gemini-4-argon",
+    "tool_call_id": "call_512472",
+    "prompt_sha256": "4afd0ff9ac603b2155df21b8309daed3a97002afcf4bdfc03ef5389bd4dc574b",
+    "result_sha256": "9529005d4c24b01383ee3a5019113fa9717fb76e43c24af65b492465eaf54eaf"
+  }
+}

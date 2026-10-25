@@ -1,0 +1,103 @@
+{
+  "analysis": {
+    "clock": "15:00",
+    "data": {
+      "analysisFrame": "7",
+      "analysisReady": "true",
+      "coastalCase": "central",
+      "coastalModel": "google/timesfm-2.5-200m-pytorch",
+      "decisionTime": "-1800",
+      "evidenceCount": "2",
+      "fieldWidthPixels": "461",
+      "rainMmH": "85",
+      "riskFrame": "7",
+      "riskPlan": "7",
+      "riskPowerLines": "80",
+      "riskSignature": "47ab200b26719a2b",
+      "riskStructures": "7",
+      "riskTrees": "189",
+      "scenarioId": "4bda5d18ded2",
+      "testedPlans": "3",
+      "theme": "dark",
+      "worldCrews": "2",
+      "worldDebris": "35",
+      "worldDrains": "32",
+      "worldFrame": "30"
+    },
+    "pageWidth": 1261,
+    "rows": 10,
+    "url": "http://localhost:5174/analysis",
+    "viewport": [
+      1261,
+      1194
+    ]
+  },
+  "scene": {
+    "data": {
+      "coastalCase": "central",
+      "coastalModel": "google/timesfm-2.5-200m-pytorch",
+      "decisionTime": "-1800",
+      "evidenceCount": "2",
+      "riskFrame": "7",
+      "riskPlan": "7",
+      "riskPowerLines": "80",
+      "riskSignature": "47ab200b26719a2b",
+      "riskStructures": "7",
+      "riskTrees": "189",
+      "scenarioId": "4bda5d18ded2",
+      "stormFrame": "7",
+      "stormReady": "true",
+      "stormRenderedFrames": "42",
+      "stormWetVertices": "3120",
+      "stormWindSegments": "1800",
+      "testedPlans": "3",
+      "theme": "dark",
+      "worldCrews": "2",
+      "worldDebris": "35",
+      "worldDrains": "32",
+      "worldFrame": "30"
+    },
+    "url": "http://localhost:5174/",
+    "viewport": [
+      1280,
+      720
+    ]
+  },
+  "verified": {
+    "controlAndSelectedBothSynced": true,
+    "endFrameBoth30": true,
+    "endTreeEventsBoth1358": true,
+    "powerToggleOff0AndOn80": true,
+    "mobileWidth390PageWidth390": true
+  },
+  "verified_at": "2026-10-25T21:30:27.306406+00:00",
+  "source_hashes": {
+    "backend/multihazard.py": "139905cef36ec51db56fac204048dc47b6ea85e0cc1f7635a92fcbc8ee401c78",
+    "backend/risk_experiments.py": "db2213ebee02cc621972ff1156dd5746d76c4e3d997a3e05f25d56b5f3c2f8a0",
+    "backend/risk_api.py": "8f1e05eceaf8ed52b57f93e8a6badb58b3f2eb2914f17ba0717b0579e70450b7",
+    "frontend/risk.ts": "40e53e308d430bdbe2df98e7fd0c87a351fbfbd4ba87f17248ed6db2504a45f7",
+    "dist/analysis.js": "8cf005f888e70d6032d30eff047308ab64cc29f16606306cd7d15be0abcbdb57",
+    "dist/main.js": "11023b2191a34e2ab615d500433ed05ab3c93fbae882bebfa21867c8f03edb51"
+  },
+  "screenshots": [
+    "multihazard-analysis.png",
+    "multihazard-3d.png",
+    "multihazard-mobile.png"
+  ],
+  "responsive_widths_observed": [
+    1440,
+    1024,
+    768,
+    390
+  ],
+  "notes": [
+    "Current dark theme tested.",
+    "Mobile results use a fixed sheet with internal table scrolling.",
+    "Existing coastal/drainage edits were preserved separately."
+  ],
+  "runtime": {
+    "status": "ready",
+    "source_stale": false,
+    "viewed_id": "7"
+  }
+}

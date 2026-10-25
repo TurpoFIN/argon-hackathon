@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Embarcadero · analysis</title><link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/light/main.css">
+  <link rel="stylesheet" href="/analysis.css">
+  <script src="https://js.arcgis.com/4.33/"></script><script type="module" src="/analysis.js"></script>
+</head>
+<body>
+  <header class="app-header"><div><strong>Embarcadero</strong><span class="muted">Storm analysis</span></div><nav aria-label="View"><a href="/">3D view</a><a href="/analysis" aria-current="page">Analysis</a></nav></header>
+  <main class="workspace">
+    <aside class="controls">
+      <form id="parameters">
+        <div class="section-heading"><h1>Scenario parameters</h1><span id="draft-state" class="muted"></span></div>
+        <p class="intro">Drag to update the simulation. Both views stay in sync.</p>
+        <fieldset id="parameter-fields" disabled>
+          <section><h2>Rainfall</h2><label for="rain_mm_h">Intensity <span aria-hidden="true"><output id="rain_mm_h-value" for="rain_mm_h">32</output> mm/h</span></label><input id="rain_mm_h" name="rain_mm_h" type="range" min="0" max="150" step="1" value="32" data-unit="mm/h"><p class="hint">Reference: 32 mm/h · NOAA 100-year, one-hour rainfall.</p></section>
+          <section><h2>Wind</h2><div class="pair"><div><label for="wind_mps">Mean <span aria-hidden="true"><output id="wind_mps-value" for="wind_mps">11.3</output> m/s</span></label><input id="wind_mps" name="wind_mps" type="range" min="0" max="50" step="0.1" value="11.3" data-unit="m/s"></div><div><label for="gust_mps">Gust <span aria-hidden="true"><output id="gust_mps-value" for="gust_mps">19.3</output> m/s</span></label><input id="gust_mps" name="gust_mps" type="range" min="0" max="80" step="0.1" value="19.3" data-unit="m/s"></div></div><label for="wind_from_deg">From direction <span aria-hidden="true"><output id="wind_from_deg-value" for="wind_from_deg">138</output>°</span></label><input id="wind_from_deg" name="wind_from_deg" type="range" min="0" max="360" step="1" value="138" data-unit="degrees"><p class="hint">0° north · 90° east · recorded reference from 138°.</p></section>
+          <section><h2>Coastal water</h2><label for="coastal_rise_m">Added rise <span aria-hidden="true"><output id="coastal_rise_m-value" for="coastal_rise_m">1.0</output> m</span></label><input id="coastal_rise_m" name="coastal_rise_m" type="range" min="0" max="3" step="0.1" value="1" data-unit="m"><p class="hint">Scenario addition above the observed 2.368 m NAVD88 water level.</p></section>
+          <section><h2>Drainage</h2><div class="pair"><div><label for="drain_capacity_lps">Inlet capacity <span aria-hidden="true"><output id="drain_capacity_lps-value" for="drain_capacity_lps">6</output> L/s</span></label><input id="drain_capacity_lps" name="drain_capacity_lps" type="range" min="0" max="50" step="1" value="6" data-unit="L/s"></div><div><label for="blockage_pct">Blocked <span aria-hidden="true"><output id="blockage_pct-value" for="blockage_pct">65</output>%</span></label><input id="blockage_pct" name="blockage_pct" type="range" min="0" max="100" step="1" value="65" data-unit="percent"></div></div><p class="hint">Assumed capacities at real drain locations. No pipe network is modeled.</p></section>
+          <details><summary>Surface assumptions</summary><label for="runoff_coefficient">Runoff fraction <span aria-hidden="true"><output id="runoff_coefficient-value" for="runoff_coefficient">0.90</output></span></label><input id="runoff_coefficient" name="runoff_coefficient" type="range" min="0" max="1" step="0.05" value="0.9"><label for="roughness">Manning roughness <span aria-hidden="true"><output id="roughness-value" for="roughness">0.035</output></span></label><input id="roughness" name="roughness" type="range" min="0.01" max="0.2" step="0.005" value="0.035"></details>
+          <section><h2>Debris and response</h2><label for="debris_kg">Loose debris <span aria-hidden="true"><output id="debris_kg-value" for="debris_kg">600</output> kg</span></label><input id="debris_kg" type="range" min="0" max="2000" step="50" value="600" data-unit="kg"><label for="clearing_crews">Clearing crews <span aria-hidden="true"><output id="clearing_crews-value" for="clearing_crews">2</output></span></label><input id="clearing_crews" type="range" min="0" max="4" step="1" value="2"><label for="response_mode">Response planner</label><select id="response_mode"><option value="argon">Argon</option><option value="baseline">Baseline policy</option></select><p id="engine-status" class="hint">Loading response engine…</p><details><summary>Perception and model assumptions</summary><p id="perception-status" class="hint"></p><p id="world-details" class="hint"></p></details></section>
+        </fieldset>
+        <div class="apply"><p id="run-status" role="status">Loading shared scenario…</p><button id="restore" type="button" class="quiet">Restore reference values</button></div>
+      </form>
+      <details class="source-details"><summary>Data and limitations</summary><p id="source-counts"></p><p>Real USGS terrain and DataSF structures/drains. Rain and wind reference NOAA data. Scenario choices are editable above; results are not a forecast.</p><a href="/api/manifest" target="_blank" rel="noreferrer">Original source manifest ↗</a></details>
+    </aside>
+    <section class="analysis-view" aria-label="Two-dimensional analysis">
+      <div class="map-toolbar"><div class="field-tabs" role="group" aria-label="Map field"><button data-field="flood" aria-pressed="true">Flood depth</button><button data-field="wind" aria-pressed="false">Wind speed</button><button data-field="rain" aria-pressed="false">Rainfall</button></div><label class="vector-toggle"><input id="vectors" type="checkbox" checked> Wind arrows</label></div>
+      <div id="map-wrap"><div id="map" aria-label="Embarcadero analytical map"></div><canvas id="field" aria-label="Simulation field overlay"></canvas><p id="map-status" role="status">Loading analytical map…</p><div class="legend"><strong id="legend-title">Flood depth · m</strong><div id="legend-gradient"></div><div class="legend-labels"><span>0</span><span id="legend-max">≥2 m</span></div><p id="probe">Loading selected cell…</p></div></div>
+      <div class="results-row"><span id="flood-area">Calculating flooded area…</span><span id="max-depth">Calculating maximum depth…</span><span class="muted">12 m grid · depth &gt; 5 cm</span></div>
+      <div class="world-row"><span id="world-metrics">Debris · inlets · clearing crews</span><span id="world-event">Awaiting coupled scenario</span><span class="world-key">■ blocked inlet · ◆ crew · • debris · outline: candidate source</span></div>
+      <footer class="timeline"><button id="play" class="quiet" disabled>Pause</button><output id="clock">35:00</output><input id="time" type="range" min="0" max="3599" step="1" value="2100" aria-label="Simulation time in seconds"><label for="speed" class="sr-only">Playback speed</label><select id="speed"><option value="1">1×</option><option value="5">5×</option><option value="15" selected>15×</option><option value="30">30×</option><option value="60">60×</option></select></footer>
+    </section>
+  </main>
+</body>
+</html>

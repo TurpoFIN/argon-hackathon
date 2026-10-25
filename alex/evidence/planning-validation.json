@@ -1,0 +1,63 @@
+{
+  "validation_scope": "Evidence relevance and failure limits; not local causal-effect or predictive-model validation",
+  "quantified_local_benefits_validated": 0,
+  "source_checks": [
+    {
+      "hazard": "wind",
+      "source": "sf-glass",
+      "locator": "PDF pages 5\u20138; rendered table on page 6",
+      "observed": "31 panes, seven buildings; 30 likely pre-identifiable/mitigable causes",
+      "conclusion": "Inspect current defects; not a 97% prevention estimate."
+    },
+    {
+      "hazard": "trees",
+      "source": "uf-trees",
+      "locator": "Lessons about trees, lesson 9",
+      "observed": "73% versus 47% survival in selected broad-leaved species after Andrew",
+      "conclusion": "Observational maintenance evidence; cannot transfer as local or immediate-pruning benefit."
+    },
+    {
+      "hazard": "structure",
+      "source": "sandy",
+      "locator": "PDF page 70, \u00a73.1.3; pages111\u2013112, \u00a74.2.2",
+      "observed": "Foundation-dependent scour performance; garage slab damaged by flood loading",
+      "conclusion": "Generic bracing effect unvalidated; engineering mechanism must be established."
+    },
+    {
+      "hazard": "flood",
+      "source": "sandy",
+      "locator": "PDF pages119\u2013121, \u00a74.2.3",
+      "observed": "Protected pumping/fuel equipment worked at one building; another building\u2019s 42-inch gates overtopped",
+      "conclusion": "Performance depends on system and event; no local volume reduction established."
+    },
+    {
+      "hazard": "power",
+      "source": "sandy",
+      "locator": "PDF page119; pages137\u2013138, \u00a75.3.4\u20135.3.5",
+      "observed": "Pre-storm pump connections and protected fuel supported continued generation; submerged components defeated some elevated generators",
+      "conclusion": "Require whole-chain test; do not assume an isolated generator guarantees service."
+    },
+    {
+      "hazard": "routes",
+      "source": "sf-works",
+      "locator": "January2023 Storm Response",
+      "observed": "Operator describes tree-related closures and combined road/power/drainage incidents",
+      "conclusion": "Plan access checks; no quantified closure benefit validated."
+    }
+  ],
+  "catalog_sha256": "c984b710a3ddb8da1b0bdfbf6aeb5626a8c9e805e5e1babfa559bd99bffa43d5",
+  "software_tests": {
+    "passed": 66,
+    "duration_seconds": 16.262
+  },
+  "browser_checks": {
+    "limited_team": "One building team: 40-minute wind inspection scheduled; second 40-minute structure task rejected in 60-minute window.",
+    "restoration": "QA availability/time estimates restored to missing after test.",
+    "live_url": "http://127.0.0.1:5174/analysis",
+    "six_hazards": "Every action, location, benefit limit and evidence disclosure read in the actual app.",
+    "condition_guard": "Current concern without inspection note rejected; corrected input saved.",
+    "power": "80 line features toggled; 77 installations explicitly unknown; sources linked.",
+    "responsive": "390, 768, 1024, 1440 CSS px, no page horizontal overflow.",
+    "views": "2D and 3D share saved plan version8 and current Argon review."
+  }
+}
