@@ -105,7 +105,6 @@ uniform vec3 flashV;     // view-space direction to the strike
 uniform vec3 bolt[40];   // uv.x, uv.y, distance (m); distance < 0 breaks the line
 uniform int boltN;
 uniform float boltA;
-uniform vec2 shake;
 uniform float night;     // 0 = storm daylight, 1 = night
 uniform float waterLevel; // bay surface above the elevation model's zero, m
 
@@ -155,7 +154,10 @@ vec3 normalAt(vec2 st, vec3 P, vec2 px) {
 }
 // The scene is rendered under a soft midday sky and used as albedo. By day it is darkened to storm
 // light; by night it is relit by street lamps, light-polluted cloud and lit windows.
-vec3 shade(vec3 albedo, vec3 P, vec3 N, float flashGlow) {
+float lumAt(vec2 st) {
+  return dot(pow(texture(colorTex, st).rgb, vec3(2.2)), LUMA);
+}
+vec3 shade(vec2 st, vec3 albedo, vec3 P, vec3 N, float flashGlow) {
   float h = eyeAlt + dot(P, upV);
   vec2 en = eyeEN + vec2(dot(P, eastV), dot(P, northV));
   float up = dot(N, upV);
@@ -169,30 +171,32 @@ vec3 shade(vec3 albedo, vec3 P, vec3 N, float flashGlow) {
     vec2 lampId = floor(lampCell);
     vec2 lampAt = vec2(hash(lampId + 1.3), hash(lampId + 8.1)) * 0.5 + 0.25;
     float pool = (1.0 - smoothstep(0.0, 0.3 + 0.2 * hash(lampId + 4.4), length(fract(lampCell) - lampAt))) * step(0.45, hash(lampId));
-    vec3 lampCol = mix(vec3(1.0, 0.52, 0.2), vec3(0.85, 0.88, 1.0), step(0.6, hash(lampId + 2.2)));
+    vec3 lampCol = mix(vec3(1.0, 0.76, 0.52), vec3(0.9, 0.92, 1.0), step(0.5, hash(lampId + 2.2)));
     float ground = smoothstep(0.6, 0.9, up) * exp(-max(h - 12.0, 0.0) / 6.0);
-    vec3 lamp = street * mix(vec3(0.05, 0.035, 0.022), lampCol * (0.012 + 0.16 * pool), ground);
+    vec3 lamp = street * mix(vec3(0.035, 0.028, 0.02), lampCol * (0.012 + 0.06 * pool), ground);
     vec3 nightC = albedo * (vec3(0.0012, 0.0013, 0.0018) + lamp);
-    // Windows on facades: a 3.1 m × 3.6 m grid in world units, some whole floors left on.
+    // Lit windows: window-sized cells whose bay width and storey height vary per building side, a
+    // minority switched on in runs along a floor. Near the camera the facade texture gates the glow,
+    // since glass reads darker than the wall around it.
     float facade = 1.0 - smoothstep(0.25, 0.45, abs(up));
-    if (facade > 0.0) {
+    if (facade > 0.0 && h > waterLevel + 3.0) {
       vec3 t = normalize(cross(upV, N));
       float s = dot(en, vec2(dot(t, eastV), dot(t, northV)));
-      vec2 g = vec2(s / 3.1, h / 3.6);
-      vec2 id = floor(g), f = fract(g);
-      // Each facade plane (orientation + offset) behaves like one building side: some dark, some busy.
       vec2 nEN = normalize(vec2(dot(N, eastV), dot(N, northV)) + 1e-5);
       vec2 plane = vec2(floor(atan(nEN.y, nEN.x) * 4.0), floor(dot(en, nEN) / 5.0));
       float busy = hash(plane + 3.3);
-      float section = floor(s / 24.0);
-      float rowLit = step(hash(vec2(id.y, section) + plane.y) , 0.08 + 0.3 * busy);
-      float on = step(hash(id + 0.37), (0.04 + 0.35 * busy * busy) + 0.7 * rowLit) * step(0.12, busy);
-      float pane = smoothstep(0.08, 0.16, f.x) * (1.0 - smoothstep(0.84, 0.92, f.x)) * smoothstep(0.18, 0.26, f.y) * (1.0 - smoothstep(0.8, 0.88, f.y));
-      // A soft halo inside each cell stands in for bloom; from afar the halos merge into glowing floors.
-      vec2 c = (f - vec2(0.5, 0.53)) * vec2(1.0, 1.4);
-      float halo = exp(-dot(c, c) * 9.0) * 0.22;
-      vec3 wc = mix(vec3(1.0, 0.62, 0.32), vec3(0.78, 0.88, 1.0), step(0.5 - 0.3 * busy, hash(id + 5.1)));
-      nightC += wc * (pane + halo) * on * facade * (0.2 + 1.4 * hash(id + 2.9) * hash(id + 7.7)) * 1.6;
+      vec2 cell = vec2(1.4 + hash(plane + 1.1), 3.3 + 0.9 * hash(plane + 2.2));
+      vec2 g = vec2(s, h) / cell + hash(plane + 4.4) * 7.0;
+      vec2 id = floor(g), f = fract(g);
+      float run = hash(vec2(floor(id.x / 6.0), id.y) + plane * 0.37);
+      if (run < 0.08 + 0.3 * busy && hash(id + 0.37) < 0.75) {
+        vec2 o = 2.0 / vec2(textureSize(colorTex, 0));
+        float around = (lumAt(st + vec2(o.x, 0.0)) + lumAt(st - vec2(o.x, 0.0)) + lumAt(st + vec2(0.0, o.y)) + lumAt(st - vec2(0.0, o.y))) * 0.25;
+        float glass = mix(1.0, smoothstep(-0.01, 0.04, around - dot(albedo, LUMA)), smoothstep(150.0, 40.0, length(P)));
+        float pane = smoothstep(0.1, 0.2, f.x) * (1.0 - smoothstep(0.8, 0.9, f.x)) * smoothstep(0.25, 0.32, f.y) * (1.0 - smoothstep(0.78, 0.85, f.y));
+        vec3 wc = mix(vec3(1.0, 0.78, 0.55), vec3(0.88, 0.92, 1.0), step(0.6, hash(id + 5.1)));
+        nightC += wc * pane * glass * facade * (0.15 + 0.5 * hash(id + 2.9));
+      }
     }
     lit = mix(day, nightC, night);
   }
@@ -201,10 +205,8 @@ vec3 shade(vec3 albedo, vec3 P, vec3 N, float flashGlow) {
 
 void main() {
   vec2 res = vec2(textureSize(colorTex, 0));
-  vec2 st = clamp(uv + shake, vec2(0.0005), vec2(0.9995));
-  vec2 fromC = st - 0.5;
-  float ca = dot(fromC, fromC) * 0.008;
-  vec3 col = pow(vec3(texture(colorTex, st + fromC * ca).r, texture(colorTex, st).g, texture(colorTex, st - fromC * ca).b), vec3(2.2));
+  vec2 st = uv;
+  vec3 col = pow(texture(colorTex, st).rgb, vec3(2.2));
 
   float d = depthAt(st);
   bool sky = d >= 0.999999;
@@ -226,7 +228,7 @@ void main() {
   } else {
     vec3 N = normalAt(st, P, px);
     vec3 albedo = col;
-    col = shade(albedo, P, N, flashGlow);
+    col = shade(st, albedo, P, N, flashGlow);
 
     // Soaked ground: upward-facing surfaces mirror the city with rain-ripple jitter (screen-space reflection).
     float wet = smoothstep(0.02, 0.25, rain) * smoothstep(0.82, 0.97, dot(N, upV)) * (1.0 - smoothstep(700.0, 2600.0, dist));
@@ -274,7 +276,7 @@ void main() {
             float dk = depthAt(sk);
             if (dk >= 0.999999) { refl += skyRefl; continue; }
             vec3 hk = viewPos(sk, dk);
-            refl += shade(pow(texture(colorTex, sk).rgb, vec3(2.2)), hk, normalAt(sk, hk, px), flashGlow);
+            refl += shade(sk, pow(texture(colorTex, sk).rgb, vec3(2.2)), hk, normalAt(sk, hk, px), flashGlow);
           }
           refl *= 0.25;
           break;
@@ -295,7 +297,7 @@ void main() {
   float odSpray = expDepth(0.0035 * rain * mix(1.0, 0.6, night), 18.0, eyeAlt, k, min(L, 3000.0));
   float tHaze = exp(-(odHaze + odSpray));
   // At night the rain haze glows with city light, warmest near the street.
-  vec3 hazeCol = mix(vec3(0.050, 0.058, 0.066), vec3(0.0085, 0.006, 0.0042) * (0.6 + 0.8 * exp(-max(eyeAlt, 0.0) / 300.0)), night)
+  vec3 hazeCol = mix(vec3(0.050, 0.058, 0.066), vec3(0.0055, 0.0048, 0.0042) * (0.6 + 0.8 * exp(-max(eyeAlt, 0.0) / 300.0)), night)
     + FLASH * flashGlow * 0.06;
 
   // ... and a ragged cloud deck that the tall towers disappear into.
@@ -323,7 +325,7 @@ void main() {
       if (dens <= 0.0) continue;
       float hb = clamp((h - cloudBase) / (top - cloudBase), 0.0, 1.0);
       // By night the underside of the deck is lit orange-grey by the city below.
-      vec3 c = mix(mix(vec3(0.016, 0.019, 0.024), vec3(0.10, 0.11, 0.125), hb), mix(vec3(0.06, 0.036, 0.02), vec3(0.003, 0.0024, 0.002), hb), night)
+      vec3 c = mix(mix(vec3(0.016, 0.019, 0.024), vec3(0.10, 0.11, 0.125), hb), mix(vec3(0.03, 0.024, 0.019), vec3(0.0025, 0.0023, 0.0022), hb), night)
         + FLASH * flashGlow * mix(0.32, 0.1, hb);
       float a = 1.0 - exp(-dens * dt);
       sCloud += tCloud * a * c;
@@ -359,7 +361,7 @@ void main() {
     float elevT = k / hl;
     float steep = 1.0 - smoothstep(0.8, 0.96, abs(k));
     // Rain shows where something lights it: the background brightness stands in for nearby lights.
-    vec3 rainCol = mix(vec3(0.05, 0.056, 0.064) + col * 0.5, vec3(0.03, 0.026, 0.022) + col * 1.5, night) + FLASH * flash * 0.35;
+    vec3 rainCol = mix(vec3(0.05, 0.056, 0.064) + col * 0.4, vec3(0.02, 0.018, 0.016) + col * 0.8, night) + FLASH * flash * 0.25;
     for (int i = 0; i < 5; i++) {
       float D = 2.2 * pow(2.15, float(i));
       float occ = smoothstep(D * 0.8, D * 1.2, dist);
@@ -370,28 +372,28 @@ void main() {
       vec2 cell = vec2(0.085, 1.15);
       vec2 g = c / cell + vec2(float(i) * 7.31, float(i) * 3.7);
       vec2 id = floor(g), f = fract(g);
-      if (hash(id + float(i) * 13.1) > rain * 0.8 + 0.04) continue;
+      if (hash(id + float(i) * 13.1) > min(rain, 1.0) * 0.5 + 0.02) continue;
       float x0 = 0.15 + 0.7 * hash(id + 4.7);
       float aa = D * radPerPx / cell.x + 0.02;
-      float line = 1.0 - smoothstep(0.025, 0.025 + aa, abs(f.x - x0));
+      float line = 1.0 - smoothstep(0.012, 0.012 + aa, abs(f.x - x0));
       float yy = f.y - hash(id + 9.2) * 0.45;
       float len = 0.3 + 0.35 * hash(id + 2.3);
       float seg = smoothstep(0.0, 0.1, yy) * (1.0 - smoothstep(len - 0.15, len, yy));
-      col += rainCol * line * seg * occ * steep * (0.22 - 0.035 * float(i)) * (0.4 + 0.6 * rain);
+      col += rainCol * line * seg * occ * steep * (0.09 - 0.014 * float(i)) * (0.4 + 0.6 * min(rain, 1.0));
     }
   }
 
   // Grade: filmic curve, cold steel shadows, a little warmth kept in the highlights.
   col = aces(col * 2.5);
   float l = dot(col, LUMA);
-  col = mix(vec3(l), col, 0.8);
-  col *= mix(vec3(0.82, 0.96, 1.12), vec3(1.05, 1.0, 0.94), smoothstep(0.04, 0.55, l));
+  col = mix(vec3(l), col, 0.9);
+  col *= mix(vec3(0.94, 0.99, 1.04), vec3(1.02, 1.0, 0.98), smoothstep(0.04, 0.55, l));
   col = pow(col, vec3(1.0 / 2.2));
-  col = (col - 0.5) * 1.1 + 0.5;
+  col = (col - 0.5) * 1.03 + 0.5;
   vec2 v = uv - 0.5;
   v.x *= res.x / res.y;
-  col *= 1.0 - smoothstep(0.38, 1.1, length(v)) * 0.7;
-  col += (hash(gl_FragCoord.xy + fract(time * 24.0) * 97.0) - 0.5) * 0.04;
+  col *= 1.0 - smoothstep(0.55, 1.2, length(v)) * 0.25;
+  col += (hash(gl_FragCoord.xy + fract(time * 24.0) * 97.0) - 0.5) * 0.012;
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
 
@@ -549,7 +551,6 @@ void main() {
       strikes: [],
       nextStrike: 0,
       bolt: null,
-      shake: 0,
       headingUnwrapped: 0,
       lastHeading: null
     };
@@ -674,19 +675,17 @@ void main() {
       const sec = now / 1000;
       const w = state.weather;
       if (sec > state.nextStrike) {
-        if (state.nextStrike && w.rain > 0.12) strike(sec);
-        const rate = 0.25 + Math.min(1, w.rain) * 0.9 + Math.min(1, w.gustMs / 25) * 0.3;
-        state.nextStrike = sec + (5 + Math.random() * 10) / rate;
+        // Lightning is rare in Bay Area atmospheric rivers: only in the heaviest rain, a minute or so apart.
+        if (state.nextStrike && w.rainMmH >= 20) strike(sec);
+        state.nextStrike = sec + 35 + Math.random() * 55;
       }
       for (const s of state.strikes) {
         if (!s.heard && sec >= s.thunderAt) {
           s.heard = true;
           audio.thunder(s.distance, s.pan);
-          if (s.distance < 3200 && !reducedMotion.matches) state.shake = Math.max(state.shake, 1 - s.distance / 3200);
         }
       }
       state.strikes = state.strikes.filter((s) => !s.heard || sec - s.t0 < 3);
-      state.shake *= Math.exp(-dt * 2.2);
       audio.update(Math.min(1, w.rain), w.meanMs + (w.gustMs - w.meanMs) * state.gustiness, state.gustiness);
       applyWeather();
     }
@@ -855,8 +854,6 @@ void main() {
         gl.uniform3fv(u.bolt, this.boltData);
         gl.uniform1i(u.boltN, boltN);
         gl.uniform1f(u.boltA, boltN ? boltA : 0);
-        const s = state.shake * 0.006;
-        gl.uniform2f(u.shake, s * Math.sin(sec * 53), s * Math.cos(sec * 47));
         gl.uniform1f(u.night, state.nightNow);
         gl.uniform1f(u.waterLevel, appliedTide ?? 0.6);
 
