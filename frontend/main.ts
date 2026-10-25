@@ -52,6 +52,13 @@ async function main(): Promise<void> {
   if (sampled.geometry.points.some(p => !Number.isFinite(p[2]) || p[2] === -99999)) throw new Error('Display terrain has missing elevations');
   const renderer=installStormRenderer(view, RenderNode, coordinates, manifest, grid, flood, sampled.geometry.points,()=>timeAt(sharedState.playback),()=>sharedState.playback.playing);
   let riskBase={manifest,grid,flood};
+  // Cinema mode (cinema.js) runs inside this view: it shows the storm the sliders set, at the playback moment.
+  Object.assign(window,{sfScene:{view,map,buildings},sfCinemaHost:{conditions:()=>{
+    const shown=riskBase.manifest as typeof manifest&{tide_base_navd88_m?:number},p=shown.parameters??sharedState.parameters,t=timeAt(sharedState.playback);
+    return {rainMmH:p.rain_mm_h,meanMs:p.wind_mps,gustMs:p.gust_mps,fromDeg:p.wind_from_deg,
+      // Added coastal rise ramps over 30 minutes above the observed baseline (backend/scenarios.py).
+      tideM:(shown.tide_base_navd88_m??2.368)+p.coastal_rise_m*Math.min(1,t/1800),localHour:null,flash:0};
+  }}});
   const risk=await riskView(document.body,map as {add(layer:unknown):void},value=>renderer.update(riskBase.manifest,riskBase.grid,value??riskBase.flood));
   risk.setView(view as unknown as {goTo(target:unknown,options?:unknown):Promise<unknown>});
   risk.status(sharedState);
