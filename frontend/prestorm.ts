@@ -42,7 +42,7 @@ body.planning-mode{--plan-width:480px}.planning-mode .controls,.planning-mode .d
 .plan-pin strong{font-size:12px;flex:none;min-width:19px;font-weight:500}.plan-pin span{display:block}.plan-pin small{display:block;color:var(--muted-foreground);font-size:10px;margin-top:3px}.plan-pin[aria-pressed=true]{border:2px solid #215f89;padding:6px 8px}.plan-pin[data-pending=true]{border-style:dashed}
 .plan-pin[hidden],.plan-pin-line[hidden]{display:none}.plan-pin-line{position:absolute;height:1px;background:#215f89;transform-origin:0 0;pointer-events:none}
 .planning-mode .plan-map-note{display:block;top:auto;right:auto;left:16px;bottom:24px;max-width:none;width:360px;max-height:calc(100vh - 150px);overflow:auto;pointer-events:auto;padding:14px;border-radius:8px;box-shadow:0 6px 24px #0003;z-index:9;font:12px/1.4 system-ui}
-.plan-map-note h2{font-size:16px;font-weight:400;margin:4px 0}.plan-map-note p{margin:6px 0}.plan-map-note .work-evidence-inline{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 10px;margin:12px 0;font-size:12px;line-height:1.4}.plan-map-note dt{color:var(--muted-foreground)}.plan-map-note dd{margin:0}.plan-map-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}.plan-map-note strong{display:inline;font-weight:500}.plan-card-controls{display:flex;gap:6px;justify-content:space-between;margin-top:12px}.plan-card-kicker,.plan-card-meta{font-size:11px;color:var(--muted-foreground)}.plan-card-site{font-size:13px}.plan-map-note details{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}.plan-map-note summary{font-size:12px;cursor:pointer}
+.plan-map-note[hidden]{display:none!important}.plan-map-note .plan-card-close{position:absolute;right:8px;top:8px;padding:0;min-height:28px;width:28px;height:28px;font-size:20px;line-height:1;border:0;background:transparent}.plan-map-note h2{padding-right:22px;font-size:16px;font-weight:400;margin:4px 0}.plan-map-note p{margin:6px 0}.plan-map-note .work-evidence-inline{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 10px;margin:12px 0;font-size:12px;line-height:1.4}.plan-map-note dt{color:var(--muted-foreground)}.plan-map-note dd{margin:0}.plan-map-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}.plan-map-note strong{display:inline;font-weight:500}.plan-card-controls{display:flex;gap:6px;justify-content:space-between;margin-top:12px}.plan-card-kicker,.plan-card-meta{font-size:11px;color:var(--muted-foreground)}.plan-card-site{font-size:13px}.plan-map-note details{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}.plan-map-note summary{font-size:12px;cursor:pointer}
 .planning-mode.plan-open .plan-map-note{display:none}
 @media(max-width:767px){.planning-mode .workspace{height:calc(100vh - 56px);margin-left:0}.planning-mode #scene{height:calc(100% - 56px)}.plan-tools{left:8px;top:64px}.plan-tools small{display:none}.planning-mode .plan-panel{left:8px;top:106px;bottom:12px;max-width:calc(100vw - 16px)}.planning-mode .plan-map-note{left:8px!important;right:8px!important;top:auto!important;bottom:20px!important;width:auto;max-height:58vh;padding:12px}.plan-pin{max-width:158px;font-size:11px}.plan-pin small{font-size:10px}.plan-pin>span>span{display:none}.plan-pin>span>span:first-child{display:block;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plan-pin>span>small{display:none}}
 
@@ -70,6 +70,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
   let state:State|undefined,selected:Hazard='wind',draft:Plan|undefined,dirty=false,busy=false,polling=false,view:MapView|undefined,showPower=false,showHistory=false,app:ScenarioState|undefined,lastStamp='';
   type Focus=WorkCandidate&Partial<SelectedWork>;
   let focusedAction:Focus|undefined;
+  let cardClosed=false;
   let mapMode:'before'|'after'='after';
   let pinLayoutKey='',lastPinFrame=0;
   let pins:Array<{element:HTMLButtonElement;line:HTMLElement;point:unknown;ids:string[]}>=[];
@@ -92,7 +93,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     }
     return jobs;
   }
-  function chooseWork(work:Focus){focusedAction=work;draw();document.body.classList.remove('plan-open');updateTools();}
+  function chooseWork(work:Focus){cardClosed=false;focusedAction=work;draw();document.body.classList.remove('plan-open');updateTools();}
   function updateTools(){
     const open=document.body.classList.contains('plan-open');
     const comparison=text('div','','plan-comparison-tabs');comparison.setAttribute('role','group');comparison.setAttribute('aria-label','Map comparison');
@@ -102,7 +103,9 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
   }
   function renderMapCard(){
     if(!state||!draft)return;
+    mapNote.hidden=cardClosed;if(cardClosed)return;
     const work=focusedAction,mapItems=mapWork();mapNote.replaceChildren();
+    const close=button('×',()=>{cardClosed=true;mapNote.hidden=true;pinLayoutKey='';positionPins();document.querySelector<HTMLButtonElement>('.plan-pin[aria-pressed=true]')?.focus();});close.className='plan-card-close';close.setAttribute('aria-label','Close action details');mapNote.append(close);
     if(!work){mapNote.append(text('h2','Choose work for this storm'),text('p','Set resources and generate a plan.'),button('Resources & plan',()=>{document.body.classList.add('plan-open');updateTools();}));return;}
     const planned=work.priority!==undefined;
     mapNote.dataset.workId=work.id;
@@ -120,7 +123,7 @@ export async function planningView(_host:HTMLElement,map:{add(layer:unknown):voi
     if(key===pinLayoutKey)return;pinLayoutKey=key;
     const rect=view.container?.getBoundingClientRect()??document.querySelector('#scene,#map')!.getBoundingClientRect();
     const boxes:Array<{x:number;y:number;w:number;h:number}>=[{x:8,y:56,w:innerWidth>767?730:innerWidth-16,h:innerWidth>767?48:90}];
-    if(focusedAction&&innerWidth>767){
+    if(!cardClosed&&focusedAction&&innerWidth>767){
       const screen=view.toScreen(new Point({longitude:focusedAction.site.position[0],latitude:focusedAction.site.position[1],spatialReference:{wkid:4326}}));
       if(screen){const x=screen.x+rect.left,y=screen.y+rect.top,w=mapNote.offsetWidth,h=mapNote.offsetHeight;let left=x+w+42<innerWidth?x+32:x-w-32;left=Math.max(16,Math.min(innerWidth-w-16,left));const top=Math.max(116,Math.min(innerHeight-h-24,y-h/2));mapNote.style.left=left+'px';mapNote.style.top=top+'px';mapNote.style.bottom='auto';boxes.push({x:left,y:top,w,h});}
     }else{const r=mapNote.getBoundingClientRect();boxes.push({x:r.x,y:r.y,w:r.width,h:r.height});}
