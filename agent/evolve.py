@@ -64,6 +64,49 @@ SEED_HINTS = [
     ("mixed", "Balanced portfolio: one strong grey measure for the worst basin, green infrastructure upstream, "
               "floodproofing for the top buildings and a full emergency response."),
 ]
+REVIEWER = "gemini-3.5-flash-lite"
+# Specialist mutator agents (Gemini 3.8 Flash with a role); the architect dispatches each direction to one of them.
+SPECIALISTS = {
+    "hydrologist": ("Hydrologist", "#5fe1ff", "water routing: where runoff starts and pools; storage, pumps, tunnels, inlets, regrading",
+                    "You are the team's hydrologist. Think in catchments, flow paths, sags and sewer capacity: size storage (m3) "
+                    "and pumps (m3/s) to the basin volumes, put inlets and pumps at the low points, and stop water upstream."),
+    "cost_engineer": ("Cost engineer", "#ffd166", "value engineering: cuts measures that do not pay back, resizes to the margin",
+                      "You are the team's cost engineer. Find the measures whose cost exceeds the damage they avoid and cut or "
+                      "shrink them; move money to the measures with the best marginal benefit-cost ratio."),
+    "emergency_manager": ("Emergency manager", "#ff7ab6", "people and response: shelters, evacuation, crews, logistics, alerts",
+                          "You are the team's emergency manager (SF DEM). Cut life-safety loss: flood-safe shelters, early phased "
+                          "evacuation of vulnerable residents, crews, supply runs, road closures and alerts, timed before landfall."),
+    "urban_forester": ("Urban forester", "#3fd0a6", "trees and wind: pruning, bracing, removal, wind screens on gust corridors",
+                       "You are the team's urban forester. Reduce tree failures and strike damage on the gust corridors: prune and "
+                       "brace the at-risk trees, remove the hazardous ones, add wind screens where street canyons accelerate."),
+    "green_designer": ("Green-infra designer", "#5dff9d", "permeable streets, bioswales and green roofs upstream of the sags",
+                       "You are the team's green-infrastructure designer. Retain and infiltrate water where it falls: permeable "
+                       "streets, bioswales and green roofs in the catchments that drain into the worst basins."),
+    "building_engineer": ("Building engineer", "#ffb54a", "building protection: floodproofing, barriers, sandbags at entrances",
+                          "You are the team's building engineer. Protect the highest-value buildings that still flood: dry "
+                          "floodproofing up to 0.9 m, deployable barriers and sandbags at the streets that feed them."),
+}
+SEED_AGENT = {"grey": "hydrologist", "green": "green_designer", "building": "building_engineer",
+              "response": "emergency_manager", "trees": "urban_forester", "mixed": "cost_engineer"}
+
+
+def roster(architect_model: str, mutator_model: str, use_llm: bool) -> list[dict]:
+    out = []
+    if use_llm:
+        out.append({"key": "architect", "label": "Architect", "model": architect_model, "color": "#b48cff",
+                    "role": "reads the whole archive, dispatches work to the specialists, writes a crossover each generation"})
+        out += [{"key": k, "label": v[0], "model": mutator_model, "color": v[1], "role": v[2]} for k, v in SPECIALISTS.items()]
+        out.append({"key": "reviewer", "label": "Reviewer", "model": REVIEWER, "color": "#9fb3ff",
+                    "role": "predicts each change's effect before it is simulated (calibration is scored)"})
+    out += [{"key": "tweak", "label": "Hill-climber", "model": None, "color": "#ffb54a",
+             "role": "no LLM: rescales sizing literals of an elite"},
+            {"key": "sandbox", "label": "Sandbox + cost planner", "model": None, "color": "#8fa1b6",
+             "role": "runs the plan with no network and prices it from cited unit costs"},
+            {"key": "sim", "label": "Storm simulator", "model": None, "color": "#cfe3f2",
+             "role": "deterministic storm: flood, wind, trees, people, damage"}]
+    return out
+
+
 TWEAK_KEYS = ("height_m", "m3s", "volume_m3", "intake_m3s", "factor", "width_m", "depth_m", "capacity_m3s",
               "retention_mm", "capacity", "trucks", "dz_m", "n")
 TWEAK_FACTORS = (0.6, 0.75, 0.85, 1.15, 1.3, 1.5)
@@ -291,6 +334,7 @@ class Evolver:
         self._last_write = 0.0
         self.llm_sem = threading.Semaphore(self.llm_workers)
         self.sandbox_sem = threading.Semaphore(8)
+        self.sim_slots = threading.BoundedSemaphore(self.sim_workers)
         self.pool = cf.ProcessPoolExecutor(max_workers=self.sim_workers, mp_context=mp.get_context("spawn"),
                                            initializer=_worker_init)
         self.state = {
@@ -303,6 +347,7 @@ class Evolver:
             "archive": {"strategies": STRATEGIES, "strategy_labels": STRATEGY_LABELS,
                         "cost_bands": band_edges(self.budget), "cells": {}},
             "best_id": None, "usage": {}, "log": [],
+            "agents": roster(architect_model, mutator_model, use_llm), "activity": [], "funnel": {},
         }
         self.n = 0
         self.api_doc = None
@@ -327,9 +372,36 @@ class Evolver:
             self.state["updated"] = now
             self.state["candidates"] = list(self.cands.values())
             self.state["archive"]["cells"] = dict(self.cells)
+            self.state["funnel"] = self.funnel()
             tmp = self.dir / f".state.{threading.get_ident()}.tmp"
             tmp.write_text(json.dumps(self.state, default=str))
             os.replace(tmp, self.dir / "state.json")
+
+    def span_start(self, agent: str, kind: str, cand: str | None = None, model: str | None = None) -> int:
+        with self.lock:
+            sid = len(self.state["activity"])
+            self.state["activity"].append({"id": sid, "agent": agent, "model": model, "kind": kind, "cand": cand,
+                                           "gen": self.state["generation"], "t0": round(time.time(), 2), "t1": None, "ok": None})
+        self.save()
+        return sid
+
+    def span_end(self, sid: int, ok: bool | None = True):
+        with self.lock:
+            a = self.state["activity"][sid]
+            a["t1"], a["ok"] = round(time.time(), 2), ok
+        self.save()
+
+    def funnel(self) -> dict:
+        cs = list(self.cands.values())
+        sim_kinds = {a["cand"] for a in self.state["activity"] if a["kind"] == "sim"}
+        return {"proposed": len(cs),
+                "compiled": sum(1 for c in cs if c.get("plan_hash") and c["status"] != "duplicate"),
+                "cost_ok": sum(1 for c in cs if c["id"] in sim_kinds),
+                "repaired": sum(1 for c in cs if c.get("repaired")),
+                "simulated": sum(1 for c in cs if c["status"] in ("scored", "over_budget") and c.get("run_id")),
+                "within_budget": sum(1 for c in cs if c["status"] == "scored"),
+                "elites": len(set(self.cells.values())),
+                "improved": sum(1 for c in cs if c.get("improved"))}
 
     def set_stage(self, stage: str):
         with self.lock:
@@ -352,7 +424,9 @@ class Evolver:
                                "note": "", "status": "writing", "plan_hash": None, "lines": None, "code_url": None,
                                "score": None, "by_cause": None, "cost_by_strategy": None, "strategy": None,
                                "cost_band": None, "run_id": None, "video_url": None, "error": None,
-                               "t_created": round(time.time(), 2), "t_done": None, "eval_s": None, "llm_s": None}
+                               "t_created": round(time.time(), 2), "t_done": None, "eval_s": None, "llm_s": None,
+                               "agent": None, "agent_label": None, "selection": None, "review": None,
+                               "repaired": False, "improved": None}
         self.update(cid)
         return cid
 
@@ -414,7 +488,19 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         return "\n".join(lines)
 
     # ---- model calls
-    def call(self, model: str, prompt: str, thinking: str, max_output_tokens: int | None = None) -> str:
+    def call(self, model: str, prompt: str, thinking: str, max_output_tokens: int | None = None,
+             agent: str | None = None, kind: str = "call", cand: str | None = None, system: str | None = None) -> str:
+        sid = self.span_start(agent or model, kind, cand, model)
+        try:
+            out = self._call(model, prompt, thinking, max_output_tokens, system)
+        except Exception:
+            self.span_end(sid, False)
+            raise
+        self.span_end(sid, True)
+        return out
+
+    def _call(self, model: str, prompt: str, thinking: str, max_output_tokens: int | None = None,
+              system: str | None = None) -> str:
         gen = {"thinking_level": thinking}
         if max_output_tokens:
             gen["max_output_tokens"] = max_output_tokens
@@ -422,7 +508,7 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         for attempt in range(3):
             try:
                 with self.llm_sem:
-                    it = self.client.interactions.create(model=model, input=prompt, system_instruction=self.system_prompt(),
+                    it = self.client.interactions.create(model=model, input=prompt, system_instruction=system or self.system_prompt(),
                                                          generation_config=gen, timeout=1200)
                 self.usage(model, it)
                 return it.output_text or ""
@@ -492,7 +578,9 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 self.save_code(cid, code)
                 self.update(cid, status="checking")
                 with self.sandbox_sem:
+                    sid = self.span_start("sandbox", "check", cid)
                     est = estimate_cost(code)
+                    self.span_end(sid, bool(est.get("ok")) and est.get("total_usd", 0) <= self.budget)
                 if not est.get("ok"):
                     err = "plan raised an error in the sandbox: " + est.get("error", "")
                 elif est["total_usd"] > self.budget:
@@ -511,7 +599,7 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 self.log("reject", f"{cid}: {' '.join(err.split())[:220]}")
                 return
             repaired = True
-            self.update(cid, status="writing", error=None)
+            self.update(cid, status="writing", error=None, repaired=True)
             self.log("repair", f"{cid}: sent back to its author: {' '.join(err.split())[:180]}")
             try:
                 code = author(err, code) or code
@@ -520,11 +608,14 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 return
         # full storm simulation in a worker process
         self.update(cid, status="simulating", lines=code.count("\n") + 1)
-        try:
-            fut = self.pool.submit(simulate, self.storm, code, f"evolve {self.job.id} {cid}", self.budget)
-            r = fut.result(timeout=60 * 30)
-        except Exception as e:
-            r = {"ok": False, "stage": "sim", "error": f"{type(e).__name__}: {e}"}
+        with self.sim_slots:
+            sid = self.span_start("sim", "sim", cid)
+            try:
+                fut = self.pool.submit(simulate, self.storm, code, f"evolve {self.job.id} {cid}", self.budget)
+                r = fut.result(timeout=60 * 30)
+            except Exception as e:
+                r = {"ok": False, "stage": "sim", "error": f"{type(e).__name__}: {e}"}
+            self.span_end(sid, bool(r.get("ok")))
         if not r.get("ok"):
             self.update(cid, status="failed", error=(r.get("error") or "")[:1500], t_done=round(time.time(), 2))
             self.log("sim_error", f"{cid}: {r.get('stage')}: {(r.get('error') or '')[:200]}")
@@ -547,7 +638,10 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         with self.lock:
             self.summaries[cid] = s
         status = "scored" if score["within_budget"] else "over_budget"
-        self.update(cid, status=status, score=score, run_id=r["run_id"], eval_s=r.get("eval_s"),
+        par = self.cands.get((self.cands[cid].get("parents") or [None])[0] or "")
+        pnet = ((par or {}).get("score") or {}).get("net_benefit_usd")
+        improved = (score["net_benefit_usd"] or 0) > pnet + 1 if pnet is not None and status == "scored" else None
+        self.update(cid, status=status, score=score, improved=improved, run_id=r["run_id"], eval_s=r.get("eval_s"),
                     by_cause={k: v.get("now") for k, v in (s.get("by_cause") or {}).items()},
                     cost_by_strategy=by_strat, strategy=strat, cost_band=cost_band(score["plan_cost_usd"] or 0, self.budget),
                     t_done=round(time.time(), 2))
@@ -572,19 +666,30 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         self.update(cid, plan_hash=code_hash(code), lines=code.count("\n") + 1, code_url=runner_rel(p))
 
     # ---- operators
+    def set_agent(self, cid: str, agent: str, selection: str):
+        label = "Architect" if agent == "architect" else SPECIALISTS.get(agent, (agent,))[0]
+        self.update(cid, agent=agent, agent_label=label, selection=selection)
+
+    @staticmethod
+    def persona(agent: str) -> str:
+        return SPECIALISTS[agent][3] + "\n\n" if agent in SPECIALISTS else ""
+
     def op_seed_llm(self, gen: int, strat: str, hint: str):
         cid = self.new_cand(gen, "seed", self.mutator_model, [], f"Seed ({STRATEGY_LABELS[strat]}): {hint}")
-        prompt = (f"Write a complete first plan. Strategy for this seed: {hint}\n"
+        agent = SEED_AGENT.get(strat, "cost_engineer")
+        self.set_agent(cid, agent, "seed")
+        prompt = (self.persona(agent) + f"Write a complete first plan. Strategy for this seed: {hint}\n"
                   f"Stay well inside the ${self.budget:,.0f} budget (estimate quantities from the unit costs). Target the "
                   "places in the situation where damage concentrates. Start your answer with one line `NOTE: <what the "
                   "plan does>` and then the full plan in one ```python block defining apply(city).")
-        self.run_llm_candidate(cid, self.mutator_model, prompt, self.thinking_mutator, parent_code=None)
+        self.run_llm_candidate(cid, self.mutator_model, prompt, self.thinking_mutator, parent_code=None, agent=agent, kind="seed")
 
-    def op_mutate(self, gen: int, parent: str, directive: str):
+    def op_mutate(self, gen: int, parent: str, directive: str, agent: str = "cost_engineer", selection: str = "archive tournament"):
         insp = self.inspirations(parent)
         cid = self.new_cand(gen, "mutate", self.mutator_model, [parent], directive)
+        self.set_agent(cid, agent, selection)
         budget_left = self.budget - (self.cands[parent]["score"].get("plan_cost_usd") or 0)
-        prompt = (f"Improve the PARENT plan. Direction from the lead engineer (Gemini 4 Argon): {directive}\n"
+        prompt = (self.persona(agent) + f"Improve the PARENT plan. Direction from the lead engineer (Gemini 4 Argon): {directive}\n"
                   f"The parent leaves {money(budget_left)} of budget unused. Make one focused, well-reasoned change set "
                   "(add, resize, move or cut measures) that raises net benefit; cut measures that do not pay back.\n\n"
                   f"# PARENT\n{self.cand_brief(parent, code=True, code_chars=30000)}\n\n"
@@ -594,16 +699,19 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                   "blocks against the PARENT code, exactly:\n<<<<<<< SEARCH\n<exact lines copied from the parent>\n=======\n"
                   "<replacement lines>\n>>>>>>> REPLACE\nSEARCH text must match the parent exactly (keep indentation). "
                   "To add code, SEARCH an existing line and REPLACE it with that line plus the new lines.")
-        self.run_llm_candidate(cid, self.mutator_model, prompt, self.thinking_mutator, parent_code=self.codes[parent])
+        self.run_llm_candidate(cid, self.mutator_model, prompt, self.thinking_mutator, parent_code=self.codes[parent],
+                               agent=agent, kind="mutate", review_parent=parent)
 
     def op_crossover(self, gen: int, a: str, b: str, idea: str):
         cid = self.new_cand(gen, "crossover", self.architect_model, [a, b], idea)
+        self.set_agent(cid, "architect", "architect pick")
         prompt = (f"Write a new complete plan that combines the strongest parts of these two elites. Idea: {idea}\n"
                   f"Keep it within ${self.budget:,.0f}; drop the measures whose cost exceeds the damage they avoid.\n\n"
                   f"# PARENT A\n{self.cand_brief(a, code=True, code_chars=30000)}\n\n# PARENT B\n"
                   f"{self.cand_brief(b, code=True, code_chars=30000)}\n\nStart with `NOTE: <one line>` then the full plan "
                   "in one ```python block defining apply(city).")
-        self.run_llm_candidate(cid, self.architect_model, prompt, "medium", parent_code=None)
+        self.run_llm_candidate(cid, self.architect_model, prompt, "medium", parent_code=None, agent="architect",
+                               kind="crossover", review_parent=a)
 
     @staticmethod
     def tweak_sites(code: str) -> list[tuple[int, int, str]]:
@@ -628,6 +736,8 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         if not sites:
             return
         cid = self.new_cand(gen, "tweak", None, [parent], "Numeric hill-climb: rescale 1-3 sizing parameters of the parent")
+        self.update(cid, agent="tweak", agent_label="Hill-climber", selection="archive tournament")
+        sid = self.span_start("tweak", "tweak", cid)
         picks = sorted(self.rng.sample(sites, min(len(sites), self.rng.choice((1, 2, 3)))), key=lambda t: -t[0])
         changes = []
         for a, b, key in picks:
@@ -648,12 +758,14 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
             changes.append(f"{fn.group(1) + ' ' if fn else ''}{key if key != 'size' else 'size'} {old}->{new} "
                            f"(line {code.count(chr(10), 0, a) + 1})")
         self.update(cid, note="tweak: " + (", ".join(changes) if changes else "no change"))
+        self.span_end(sid, bool(changes))
         self.evaluate(cid, code, author=None)
 
-    def run_llm_candidate(self, cid: str, model: str, prompt: str, thinking: str, parent_code: str | None):
+    def run_llm_candidate(self, cid: str, model: str, prompt: str, thinking: str, parent_code: str | None,
+                          agent: str | None = None, kind: str = "mutate", review_parent: str | None = None):
         t0 = time.time()
         try:
-            text = self.call(model, prompt, thinking)
+            text = self.call(model, prompt, thinking, agent=agent, kind=kind, cand=cid)
         except Exception as e:
             self.update(cid, status="failed", error=str(e)[:800], t_done=round(time.time(), 2))
             return
@@ -664,15 +776,35 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                         t_done=round(time.time(), 2))
             return
 
-        self.evaluate(cid, code, author=self.repairer(cid, model, thinking))
+        if review_parent and review_parent in self.codes:
+            self.review(cid, review_parent, code)
+        self.evaluate(cid, code, author=self.repairer(cid, model, thinking, agent))
 
-    def repairer(self, cid: str, model: str, thinking: str):
+    def review(self, cid: str, parent: str, code: str):
+        """Reviewer agent (Flash-Lite): predicts the change's effect before the sim; calibration is scored later."""
+        import difflib
+        diff = "\n".join(difflib.unified_diff(self.codes[parent].splitlines(), code.splitlines(), "parent", "child", n=1, lineterm=""))
+        prompt = (f"A storm-plan change is about to be simulated. Predict its effect on NET benefit (damage avoided - cost).\n\n"
+                  f"# PARENT RESULT\n{self.cand_brief(parent)}\n\n# CHANGE NOTE\n{self.cands[cid].get('note')}\n\n"
+                  f"# DIFF\n{diff[:8000]}\n\nReturn ONLY JSON: {{\"verdict\": \"run\"|\"risky\", \"predicted\": "
+                  "\"better\"|\"worse\"|\"same\", \"reason\": \"<one sentence>\"}}")
+        try:
+            t = self.call(REVIEWER, prompt, "low", agent="reviewer", kind="review", cand=cid,
+                          system="You review city storm-plan code changes for a flood-damage simulation. Be terse and concrete.")
+            d = parse_json(t) or {}
+            if d.get("predicted") in ("better", "worse", "same"):
+                self.update(cid, review={"verdict": d.get("verdict") or "run", "predicted": d["predicted"],
+                                         "reason": str(d.get("reason") or "")[:300], "model": REVIEWER})
+        except Exception as e:
+            self.log("api_error", f"reviewer failed on {cid}: {str(e)[:160]}")
+
+    def repairer(self, cid: str, model: str, thinking: str, agent: str | None = None):
         """Feedback loop: a plan rejected before simulation goes back to a model once with the error."""
         def author(err: str, bad_code: str) -> str | None:
             fix = (f"Your plan was rejected before simulation:\n{err[:3000]}\n\nReturn the corrected FULL plan "
                    "(start with `NOTE: <one line>`, then one ```python block). Keep what works; fix or cut what broke.\n\n"
                    f"```python\n{bad_code}\n```")
-            t = self.call(model, fix, thinking)
+            t = self.call(model, fix, thinking, agent=agent or "repair", kind="repair", cand=cid)
             note = first_line(t)
             if note:
                 self.update(cid, note=note + " (repaired)", model=self.cands[cid].get("model") or model)
@@ -708,10 +840,11 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                    if prev else "") +
                   f"\n\nReturn ONLY a JSON object:\n{{\"insights\": [3-5 short evidence-based findings],\n"
                   f" \"directions\": [exactly {n_dirs} objects {{\"parent\": \"<candidate id from the archive>\", "
+                  "\"agent\": \"<one of: " + ", ".join(f"{k} ({v[2]})" for k, v in SPECIALISTS.items()) + ">\", "
                   "\"directive\": \"<one concrete instruction: what to add/resize/move/cut, where (coordinates/streets/"
-                  "building ids) and why>\"}}; spread them over different parents and ideas],\n"
+                  "building ids) and why>\"}; spread them over different parents and ideas],\n"
                   " \"crossover\": {\"parents\": [\"<id>\", \"<id>\"], \"idea\": \"<what to combine>\"}}")
-        text = self.call(self.architect_model, prompt, self.thinking_architect)
+        text = self.call(self.architect_model, prompt, self.thinking_architect, agent="architect", kind="architect")
         d = parse_json(text) or {}
         return d
 
@@ -734,9 +867,9 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         with cf.ThreadPoolExecutor(max_workers=self.population + 2) as ex:
             for _, src, code in jobs:
                 cid = self.new_cand(0, "seed", None, [], f"Imported: {src}")
-                self.update(cid, note=f"imported from {src}")
+                self.update(cid, note=f"imported from {src}", agent="import", agent_label="Imported", selection="warm start")
                 futs.append(ex.submit(self.evaluate, cid, code,
-                                      self.repairer(cid, self.mutator_model, self.thinking_mutator) if self.use_llm else None))
+                                      self.repairer(cid, self.mutator_model, self.thinking_mutator, "cost_engineer") if self.use_llm else None))
             if self.use_llm:
                 hints = SEED_HINTS[: max(0, self.population - len(jobs))]
                 for strat, hint in hints:
@@ -778,9 +911,10 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 insights = [str(x) for x in (d.get("insights") or [])][:6]
                 for x in d.get("directions") or []:
                     if isinstance(x, dict) and x.get("directive"):
-                        directions.append({"parent": str(x.get("parent") or ""), "directive": str(x["directive"])})
+                        directions.append({"parent": str(x.get("parent") or ""), "directive": str(x["directive"]),
+                                           "agent": str(x.get("agent") or "").split(" ")[0].strip()})
                     elif isinstance(x, str):
-                        directions.append({"parent": "", "directive": x})
+                        directions.append({"parent": "", "directive": x, "agent": ""})
                 cross = d.get("crossover") if isinstance(d.get("crossover"), dict) else None
                 for ins in insights:
                     self.log("insight", ins)
@@ -801,10 +935,12 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
             futs = []
             for i in range(n_mut):
                 dd = directions[i] if i < len(directions) else {"parent": "", "directive": default_dirs[i % len(default_dirs)]}
-                parent = dd["parent"] if dd["parent"] in self.cands and self.cands[dd["parent"]].get("status") == "scored" \
-                    and dd["parent"] in self.codes else self.sample_parent()
+                picked = dd["parent"] in self.cands and self.cands[dd["parent"]].get("status") == "scored" and dd["parent"] in self.codes
+                parent = dd["parent"] if picked else self.sample_parent()
+                agent = dd.get("agent") if dd.get("agent") in SPECIALISTS else list(SPECIALISTS)[i % len(SPECIALISTS)]
                 if parent:
-                    futs.append(ex.submit(self.op_mutate, gen, parent, dd["directive"]))
+                    futs.append(ex.submit(self.op_mutate, gen, parent, dd["directive"], agent,
+                                          "architect pick" if picked else "archive tournament"))
             if n_cross:
                 elites = sorted(set(self.cells.values()), key=lambda e: -self.cands[e]["score"]["net_benefit_usd"])
                 ps = [p for p in ((cross or {}).get("parents") or []) if p in self.codes and self.cands[p].get("status") == "scored"]

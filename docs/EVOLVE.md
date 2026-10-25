@@ -11,9 +11,11 @@ our own implementation on the Interactions API.
 
 | Step | Who | What |
 | --- | --- | --- |
+| Agents | 10 roles | Architect (Gemini 4 Argon); six Gemini 3.8 Flash specialists: hydrologist, cost engineer, emergency manager, urban forester, green-infrastructure designer, building engineer; Reviewer (Gemini 3.5 Flash-Lite); Hill-climber, Sandbox + cost planner and Storm simulator (no LLM) |
 | Seed | Gemini 3.8 Flash x N | One full plan per strategy (grey, green, building protection, response, trees, mixed); earlier optimizer plans are imported as warm starts |
-| Architect | Gemini 4 Argon (thinking high) | Reads the whole program database (every plan, its ledger, cost items and lineage) and returns insights plus one research direction per mutation slot |
+| Architect | Gemini 4 Argon (thinking high) | Reads the whole program database (every plan, its ledger, cost items and lineage) and returns insights plus one research direction per mutation slot, each dispatched to a named specialist |
 | Mutate | Gemini 3.8 Flash x (N-3), in parallel | Parent + two inspirations + Argon's direction, answers with SEARCH/REPLACE diff blocks against the parent |
+| Review | Gemini 3.5 Flash-Lite | Reads each diff before the sim and predicts better / worse / same; the prediction is scored against the sim (calibration in the view) |
 | Crossover | Gemini 4 Argon | Writes one full plan that combines two elites |
 | Tweak | no LLM | Numeric hill-climb: rescales 1-3 sizing literals (heights, m3/s, volumes, factors) of an elite |
 | Cascade | sandbox + sim | Compile check, then sandboxed cost estimate (Landlock + seccomp, no network; locked cost planner). Crashing or over-budget plans go back to their author once with the error. Survivors run the full storm in worker processes |
@@ -48,4 +50,4 @@ Evolution chart (net benefit per candidate, best-so-far line), cost vs damage-av
 and BCR = 1 lines, the MAP-Elites archive grid, leaderboard, Argon's insights and directions per generation, and a
 candidate panel with lineage, ledger by cause vs no plan, spend by strategy, the code diff against its parent,
 replay video and "Open in 3D". The Architecture tab shows the loop live: nodes light up with the candidates
-currently in each stage.
+currently in each stage. The Agents tab shows every agent's work as swimlanes over time, the evaluation funnel and the reviewer's calibration.

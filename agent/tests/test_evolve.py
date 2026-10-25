@@ -61,7 +61,9 @@ class FakeInteractions:
 
     def create(self, model, input, **kw):
         self.calls.append((model, input[:80]))
-        if "Return ONLY a JSON object" in input:
+        if "Predict its effect" in input:
+            out = '{"verdict": "run", "predicted": "better", "reason": "adds pumping where water pools"}'
+        elif "Return ONLY a JSON object" in input:
             ids = re.findall(r"^(c\d{3}) ", input, re.M)
             out = json.dumps({"insights": ["storage pays back", "walls are wasted"],
                               "directions": [{"parent": ids[0] if ids else "", "directive": "add a pump at the basin"}] * 4,
@@ -94,3 +96,8 @@ def test_full_run_with_fake_llm(tmp_path, monkeypatch):
     assert st["generations"][-1]["insights"] == ["storage pays back", "walls are wasted"]
     assert st["archive"]["cells"], "archive must hold elites"
     assert st["usage"]["gemini-4-argon"]["calls"] >= 1
+    assert any(c.get("review") for c in st["candidates"]), "reviewer must annotate mutations"
+    assert {a["kind"] for a in st["activity"]} >= {"seed", "architect", "mutate", "review", "check", "sim", "tweak"}
+    assert all(a["t1"] is not None for a in st["activity"])
+    assert st["funnel"]["proposed"] == len(st["candidates"]) and st["funnel"]["within_budget"] >= 1
+    assert any(c.get("agent") in ev.SPECIALISTS for c in st["candidates"] if c["op"] == "mutate")
