@@ -2,6 +2,7 @@ import type {Constructor, Layer, Reactive, RenderNodeConstructor, SceneView, Web
 import {installStormRenderer} from './renderer';
 import {followState, loadResult, request, timeAt} from './session';
 import {worldLayer} from './world';
+import {riskView} from './risk';
 
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
 function fail(error: unknown): void {
@@ -50,23 +51,28 @@ async function main(): Promise<void> {
   const sampled = await view.map.ground.queryElevation(new Multipoint({points, spatialReference: {wkid: 4326}}), {demResolution: 'finest-contiguous', noDataValue: -99999});
   if (sampled.geometry.points.some(p => !Number.isFinite(p[2]) || p[2] === -99999)) throw new Error('Display terrain has missing elevations');
   const renderer=installStormRenderer(view, RenderNode, coordinates, manifest, grid, flood, sampled.geometry.points,()=>timeAt(sharedState.playback),()=>sharedState.playback.playing);
+  let riskBase={manifest,grid,flood};
+  const risk=await riskView(document.body,map as {add(layer:unknown):void},value=>renderer.update(riskBase.manifest,riskBase.grid,value??riskBase.flood));
+  risk.status(sharedState);
   const layerView = await view.whenLayerView(buildings);
   await reactive.whenOnce(() => !layerView.updating);
   status.hidden = true;
   document.documentElement.dataset.stormReady = 'true';
   document.documentElement.dataset.scenarioId=loadedId;
-  function drawAssets():void {assets.draw(timeAt(sharedState.playback));requestAnimationFrame(drawAssets);}
+  function drawAssets():void {const time=timeAt(sharedState.playback);assets.draw(time);risk.draw(time);requestAnimationFrame(drawAssets);}
   drawAssets();
   followState(async next=>{
     sharedState=next;
     renderer.node.requestRender();
     if(next.scenario_id!==loadedId) {
       const result=await loadResult(next.scenario_id);
+      riskBase=result;
       renderer.update(result.manifest,result.grid,result.flood);
       assets.set(result.world);
       loadedId=next.scenario_id;
       document.documentElement.dataset.scenarioId=loadedId;
     }
+    risk.status(next);
   },error=>console.warn('Scenario synchronization temporarily unavailable',error));
   reactive.watch(() => view.fatalError, error => {if (error) fail(error);});
 }

@@ -1,6 +1,7 @@
 import type {Constructor, Manifest, Parameters, ScenarioState, WorldData} from './types';
 import {followState,loadResult,request,timeAt} from './session';
 import {worldLayer,frameAt} from './world';
+import {riskView} from './risk';
 
 type Field='flood'|'wind'|'rain';
 interface Map2D {
@@ -20,6 +21,7 @@ const banner=$<HTMLParagraphElement>('#run-status'),canvas=$<HTMLCanvasElement>(
 const raster=document.createElement('canvas'),rctx=raster.getContext('2d')!;
 let redrawRaster=true,lastFrame=-1,lastDraw=0;
 let world:WorldData|undefined,assets:Awaited<ReturnType<typeof worldLayer>>;
+let risk:Awaited<ReturnType<typeof riskView>>|undefined,baseFlood:Float32Array;
 let editVersion=0,sending=false,sendAgain=false;
 let updateTimer:ReturnType<typeof setTimeout>|undefined;
 
@@ -179,6 +181,7 @@ function draw():void {
   $('#probe').textContent=`${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)} · ${inspected}`;
   document.documentElement.dataset.analysisFrame=String(frame);
   assets?.draw(seconds);
+  risk?.draw(seconds);
   if(world){
     const current=frameAt(world,seconds),event=world.events.filter(e=>e.time_seconds<=seconds).at(-1);
     $('#world-metrics').textContent=`${current.metrics.blocked_drains} blocked inlets · ${current.crews.length} crews · ${current.metrics.cleared_kg.toFixed(1)} kg cleared`;
@@ -190,7 +193,7 @@ async function receive(next:ScenarioState):Promise<void> {
   if(state&&(next.request_version??0)<(state.request_version??0))return;
   state=next;labelState(next);
   if(loadedId!==next.scenario_id){
-    const data=await loadResult(next.scenario_id);manifest=data.manifest;grid=data.grid;flood=data.flood;world=data.world;assets?.set(world);loadedId=next.scenario_id;
+    const data=await loadResult(next.scenario_id);manifest=data.manifest;grid=data.grid;flood=data.flood;baseFlood=data.flood;world=data.world;assets?.set(world);loadedId=next.scenario_id;
     nx=manifest.grid.nx;ny=manifest.grid.ny;count=nx*ny;
     if(grid.length!==count*7||flood.length!==count*manifest.times_seconds.length)throw new Error('Scenario data dimensions do not match');
     raster.width=nx;raster.height=ny;
@@ -208,6 +211,7 @@ async function receive(next:ScenarioState):Promise<void> {
     $('#world-details').textContent=world?world.assumptions.join(' '):'';
     $('#play').removeAttribute('disabled');
   }
+  risk?.status(next);
 }
 
 async function main():Promise<void> {
@@ -218,6 +222,8 @@ async function main():Promise<void> {
   assets=await worldLayer(map as {add(layer:unknown):void},false);
   view=new View({container:'map',map,center:[-122.396,37.797],zoom:15.2,rotation:0,ui:{components:['attribution','zoom']},constraints:{rotationEnabled:false,minZoom:13,maxZoom:20},popupEnabled:false});
   await Promise.all([view.when(),receive(await request<ScenarioState>('/api/state'))]);
+  risk=await riskView($('#map-wrap'),map as {add(layer:unknown):void},value=>{flood=value??baseFlood;redrawRaster=true;lastFrame=-1;});
+  risk.status(state);
   view.on('pointer-move',event=>{
     const p=view.toMap(event);if(!p)return;
     // Solve the local affine grid coordinates from three real georeferenced cells.

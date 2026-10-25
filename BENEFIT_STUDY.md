@@ -123,7 +123,9 @@ leave precisely the same water on the street and still protect a vulnerable
 entrance, remove a falling-object hazard, or keep a critical facility operating.
 
 This correction is a research/design result. The expanded damage and service
-models below are **not yet implemented in the local viewer**.
+models below were **not implemented at the initial audit stage**. The later
+[app implementation](#app-implementation) implements a bounded conditional
+version and identifies the remaining limitations.
 
 ### What the current engine actually does with wind
 
@@ -374,4 +376,104 @@ changes with each plan. Verify which randomness actually affects comparisons.
 The parallel coastal forecast pilot is complementary forcing work. It cannot
 supply the missing asset conditions, causal damage models, or service network.
 Neither that pilot nor this scope audit changes the fact that the broader
-consequences remain unimplemented in the current viewer.
+consequences were unimplemented at that audit stage. The subsequent bounded
+implementation is described below.
+
+## App implementation
+
+The app now has a separate **Damage and risk** experiment panel in its analysis
+and 3D views. It calls Argon to propose a no-action control, a separate experiment
+for each available action family, and combined portfolios. Python executes
+travel and work with the same available crews, preparation time and equipment
+stock for every alternative, then runs the full storm for each of three common
+capacity scenarios. Argon receives measured results and selects a tested plan.
+
+The action families are securing loose objects, pruning mapped trees, installing
+a specified structural anchoring kit, protecting entrances with rated barriers,
+connecting local backup power, and placing route closures. The default resources
+are two general crews and one crew each for arboriculture, structural work and
+electrical work, with a two-hour accessible preparation window. Work-method,
+access and readiness assumptions are explicit; this is not a real work order.
+
+Selecting a result changes the flood array and hazard markers in both views.
+Selection is held by the API, and the existing shared clock drives both replays.
+The original storm remains separately selectable. Results become stale when
+their source/model signature or source scenario no longer matches.
+
+Public geometry in the local cut contains 1,568 eligible building footprints,
+4,098 street trees with usable DBH and species records, 607 street segments,
+77 PG&E feeder features, three CEC transmission features and six PG&E substation
+points. Stumps, vacant sites and trees without usable dimensions are excluded
+from tree-failure calculations. Tree condition is not present in this inventory.
+
+Power-line sources are the [PG&E GRIP feeder service](https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer/2)
+and [CEC transmission layer](https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2).
+The [PG&E public data portal](https://www.pge.com/en/about/doing-business-with-pge/interconnections/distributed-resource-planning-data-and-maps.html)
+explains the planning data. The feeder layer does not identify installation
+type. This cut has **zero source-confirmed overhead lines**, and the model never
+treats the 77 unknown-type feeders as overhead. Local load-to-feeder assignment
+is an explicitly assumed nearest-route association. It is not customer topology.
+Power interruptions in these experiments come from conditional local equipment
+or substation flooding; no real utility outage is asserted.
+
+Damage and exposure are separate outputs: failed trees, partial structural
+failures, failed envelope area, wet entrances, unserved modeled load-hours,
+uncordoned hazardous route-minutes and building isolation-minutes. A closure
+does not improve structural strength and may increase isolation. A barrier
+can overtop, a generator can flood, and completed bracing can still fail.
+Negative benefits are preserved. There is no combined “preparedness percent.”
+
+This is a **conditional sensitivity model, not a calibrated catastrophe model**.
+The three capacity cases are not assigned event probabilities. Geometry is
+sourced; actual structural capacities, tree anchorage, roof-object inventory,
+equipment heights and work rates are not observed. Tree overturning uses
+declared dry-anchorage capacities and wetness/crown-load effects; this does not
+resolve stem fracture or claim universal tree breakage speeds. Structural
+failure represents low-rise roof/wall assemblies. Whole high-rise collapse,
+dynamic structural response, wave forces, foundation scour and real casualty
+prediction remain outside the implemented model. GIS footprints cannot supply
+those missing engineering inputs.
+
+Reproduce the bounded asset cut and matched experiments:
+
+```sh
+.venv/bin/python -m backend.risk_assets
+.venv/bin/python -m backend.risk_experiments
+.venv/bin/python -m unittest discover -s tests -p 'test_multihazard.py' -v
+npm run build
+```
+
+The live app uses `GET /api/risk`, `POST /api/risk/run`, and
+`POST /api/risk/select`; assets and binary flood replays have separate read-only
+endpoints. Source responses are cached with hashes under ignored `data/risk/`.
+The same directory stores bounded replay arrays and completed reports.
+`evidence/multihazard-results.json` records the delivered comparison without
+large binary arrays. Tests include sound/calm survival, wind response, finite
+crew budgets, action/type rejection, barrier overtopping, backup-power benefit
+and physical-damage invariance under route closures.
+
+### Delivered comparison
+
+The app-triggered run tested nine portfolios in three paired capacity cases,
+for 27 full-storm outcomes. It used the displayed 85 mm/h rain, 20 m/s mean wind,
+28 m/s gust, 168° wind direction and central coastal case with 0.5 m added rise.
+All work budgets and water balances passed. The no-action central case also
+reproduced using the committed numerical core without the separate coastal
+worktree changes.
+
+| Tested policy | Mean benefit across capacity cases | Important limit or harm |
+|---|---|---|
+| Secure loose objects | 52.67 fewer uncordoned hazardous link-minutes; 79.33 fewer isolation-minutes | No reduction in envelope damage in this tested placement |
+| Prune trees | 0.33 fewer fallen trees (one tree in one case) | Mean interior water increased 28.10 m³ through changed debris/flow interactions |
+| Brace structure | No measured change | The one completed target did not cross its failure boundary; this is not a proof that bracing never helps |
+| Protect entrances | 5.33 fewer wet entrances; 608.74 m³ less modeled interior water | Six completed barriers; capacity and placement matter |
+| Backup power | 0.144 fewer unserved modeled load-hours | One completed connection; no claim of utility-wide outage prevention |
+| Close routes | 241.33 fewer uncordoned hazardous link-minutes | Building isolation increased 177.33 minutes |
+| Argon's selected Combined Damage Focus | 3.33 fewer wet entrances, 400.18 m³ less interior water, 0.33 fewer fallen trees, 0.144 fewer unserved load-hours, 42.67 fewer hazardous link-minutes | No change in envelope loss, partial collapse count or building isolation; 11 tasks completed and two skipped |
+
+Means summarize the three conditional cases; they are not expected values under
+known probabilities. The interface preserves the per-case ranges, zero effects
+and harms. After the pilot, candidates for barriers and backup were screened
+against their declared height limits; this corrected an initially unhelpful
+choice of the deepest sites. No weather intensity was increased to manufacture
+benefits.

@@ -7,6 +7,8 @@ from . import argon
 
 ROOT = Path(__file__).resolve().parents[1]
 app = FastAPI(title="Embarcadero storm prototype", docs_url=None, redoc_url=None)
+from .risk_api import router as risk_router
+app.include_router(risk_router)
 
 
 @app.get("/api/engine")
