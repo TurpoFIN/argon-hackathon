@@ -35,3 +35,4 @@
 .storm-live-chip .status-dot { display: inline-block; margin-right: 7px; }
 .shell-storm #hud .brand { top: 84px; }.shell-storm #hud .topc { top: 82px; }.shell-storm #hud .kpis { top: 82px; }.shell-storm #hud .banner { top: 208px; }
 @media (max-width: 900px) { .storm-live-chip { left: 50%; font-size: 9px; white-space: nowrap; } }
+.compare-headline { display: inline-block; color: #e6f6fb; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
