@@ -166,10 +166,31 @@ flood = {"depth_m": [round(d * FT, 4) for d in depth_ft], "depth_ft": depth_ft,
          "facade_depth_quantile": 0.5,
          "facade_depth_note": "depth at a building = median water depth over the 4 m cells touching its footprint (robust to a single "
                               "deep gutter cell); Hazus applies one flood depth per structure",
-         "exposed_storeys": 2,
-         "exposed_storeys_note": "multi-storey buildings: value exposed to street flooding = lowest 2 storeys / floors (USACE NACCS "
-                                 "physical depth-damage report treats high-rise damage per affected storey; Hazus curves are whole-building for low-rise). Assumption flagged.",
-         "exposed_storeys_url": "https://www.nad.usace.army.mil/Portals/40/docs/NACCS/10A_PhysicalDepthDmgFxSummary_26Jan2015.pdf",
+         "storey_exposure": {
+             "rule": "exposed value share = affected storeys / total storeys, affected = max(1, ceil(depth above first floor / storey height)); "
+                     "storey height = lidar building height / floors (min 2.5 m); applied to structure, contents and BI/relocation floor area. "
+                     "The Hazus damage % itself is unchanged.",
+             "why": "Documented departure from Hazus for multi-storey buildings: Hazus is a regional (census-block) method whose default "
+                    "curves assume low-rise stock and apply one whole-building % at any height (Hazus 5.1 Flood TM Table 5-2), which "
+                    "charges flood damage to dry upper storeys of SF mid/high-rises. USACE NACCS computes damage per affected storey.",
+             "source": "USACE (2015) North Atlantic Coast Comprehensive Study: Physical Depth-Damage Function Summary Report, USACE North Atlantic Division",
+             "url": "https://www.nad.usace.army.mil/Portals/40/docs/NACCS/10A_PhysicalDepthDmgFxSummary_26Jan2015.pdf",
+             "hazus_reference": "https://www.fema.gov/sites/default/files/documents/fema_hazus-flood-model-technical-manual-5-1.pdf",
+             "retrieved": RET},
+         "first_floor_height": {
+             "by_foundation_m": {"slab": 0.3048, "crawlspace": 0.9144, "basement": 1.2192, "fill": 0.6096,
+                                 "pier": 1.524, "pile": 2.1336, "solid_wall": 2.1336},
+             "by_foundation_ft": {"slab": 1, "crawlspace": 3, "basement": 4, "fill": 2, "pier": 5, "pile": 7, "solid_wall": 7},
+             "default_foundation": "slab",
+             "default_note": "SF inventory has no foundation type; Hazus non-basement default (slab-on-grade, 1 ft) used for all buildings. "
+                             "Hazus '1st floor' = lowest floor (ground-floor garages/retail count).",
+             "source": "FEMA Hazus Inventory Technical Manual 6.1 (Aug 2024), default first-floor heights above grade by foundation type; "
+                       "values as tabulated in Nastev & Todorov 2013, Canadian Water Resources Journal 38(3) (pile 7, pier 5, solid wall 7, "
+                       "basement 4, crawlspace 3, fill 2, slab 1 ft)",
+             "url": "https://www.fema.gov/sites/default/files/documents/fema_hazus-inventory-technical-manual-6.1.pdf",
+             "url2": "https://www.tandfonline.com/doi/full/10.1080/07011784.2013.801599", "retrieved": RET},
+         "contents_to_structure": "buildings.json value_contents = Hazus contents ratio x structure value (RES 50%, COM1-5/GOV1/EDU1 100%, "
+                                  "COM6-7/IND/GOV2/EDU2 150%, COM10 50%; Hazus Inventory TM contents value ratios), set by sim/prep.py meta.contents_ratio",
          "structure": ddf("Building_DDF_Riverine_LUT_Hazus4p0.csv"), "contents": ddf("Content_DDF_Riverine_LUT_Hazus4p0.csv"),
          **FAST}
 rest = {}

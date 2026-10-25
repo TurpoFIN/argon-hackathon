@@ -118,3 +118,32 @@ def test_every_priced_line_has_a_source():
     for line in r["ledger"]["lines"]:
         if line["usd"] > 0:
             assert line["source"] and not line["source"].startswith("unpriced"), line
+
+
+def test_physics_path_uses_lbm_field_and_trees_py():
+    """With the team's cached LBM field, wind comes from sim/wind.py and tree failures from sim/trees.py."""
+    import glob
+    st = load_storm("elnino_ar_2026")
+    snapped = int(round(5.0 * round(st.wind_dir_deg / 5.0))) % 360
+    if not glob.glob(os.path.join(ROOT, "data", "grid", f"wind_{snapped:03d}_*.npz")):
+        return   # no cached field on this machine (a fresh solve takes minutes): nothing to check
+    have_water = os.path.exists(os.path.join(ROOT, "runs", "destruction_water_elnino_ar_2026.npz"))
+    wf, trees_out, _, ws = D.physics_inputs(st, water=have_water)
+    r = D.run_destruction(st, wind=wf, tree_result=trees_out, water=ws)
+    assert r["wind_source"].startswith("sim/wind.py LBM field")
+    failed = {t["id"] for t in trees_out["trees"] if t["fail_t"] is not None}
+    assert {t["id"] for t in r["trees"]} == failed
+    assert all(t["source"] == "sim/trees.py" for t in r["trees"])
+    assert D.result_hash(r) == D.result_hash(D.run_destruction(st, wind=wf, tree_result=trees_out, water=ws))
+
+
+def test_incidents_road_blocks_and_tree_strikes():
+    r = _run(scale=1.6)
+    s = r["summary"]
+    assert s["roads_blocked"] == len(r["road_blocks"]) > 0
+    assert s["trees_into_buildings"] == len(r["tree_strikes"]) > 0
+    tree_ids = {t["id"] for t in r["trees"]}
+    assert all(x["tree_id"] in tree_ids for x in r["tree_strikes"])
+    causes = {x["cause"] for x in r["road_blocks"]}
+    assert causes <= {"tree", "power_pole", "streetlight", "mast", "power_wire"}
+    assert all(x["length_m"] >= 3 for x in r["road_blocks"] if x["cause"] != "power_wire")

@@ -175,8 +175,10 @@ async function main() {
   const CAP_GAP = 0.034, CAP_LEN = 0.036;
   let slots: CaptionSlot[] = [];
   const phasesFor = (v: RunVisual | undefined): Phase[] => {
-    const s = v ? statsOf(visuals[noneIdx] || v) : null; const tp = s ? s.t[s.peakF] : tEnd / 2;
-    const p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000);
+    // storm peak = strongest rain + gust in the forcing
+    let tp = tEnd / 2;
+    if (base) { let bv = -1; const mr = Math.max(1, ...base.rain), mg = Math.max(1, ...base.gust); base.t.forEach((tt, i) => { const x = base.rain[i] / mr + base.gust[i] / mg; if (x > bv) { bv = x; tp = tt; } }); }
+    let p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000); if (p1 - p0 < 2400) p0 = Math.max(600, p1 - 3600);
     const plan = v && !isNoneV(v);
     return [
       { u0: 0, u1: PREP_U, label: 'PREP  −72 h → −1 h', sub: plan ? 'Gemini’s plan deploys' : 'no plan · nothing deployed', cls: 'prep' },
@@ -358,7 +360,7 @@ async function main() {
     if (walker.active) setWalk(false);
     if (isNoneV(visuals[active]) || compare) setView('plan');
     syncInspector(); const items = [...insp.items].sort((a, b) => a.o.t_s - b.o.t_s);
-    if (!items.length) { tourToken = 0; return; }
+    if (!items.length) { capOverride = { key: 'notour', time: '', text: 'This run has no plan objects to show', color: '#ff9d7a' }; await sleep(2500); capOverride = null; tourToken = 0; hud.setCtl(walker.active, !!dirToken, false); return; }
     // steps: majors one by one, minor items batched per category
     type Step = { its: InspItem[] };
     const steps: Step[] = []; const minor = new Map<string, InspItem[]>();
@@ -541,6 +543,25 @@ async function main() {
     if (e > 1.5) flashT = -1; return a;
   };
 
+  // ---- cinema mode (public/cinema.js) shows the weather of the moment on this timeline ----
+  (window as any).sfCinemaHost = {
+    conditions: () => {
+      const preK = t < 0 ? Math.max(0, Math.min(1, 1 + t / (12 * 3600))) : 1;
+      const gust = Math.max(0, interp(base?.gust, t)) * preK;
+      const hour = STORM_START.getUTCHours() - 7 + STORM_START.getUTCMinutes() / 60 + t / 3600;
+      return {
+        rainMmH: Math.max(0, interp(base?.rain, t)) * preK,
+        gustMs: gust,
+        meanMs: gust / 1.45, // gust factor of the sim/storm.py forcing (El Niño peak: 25.2 / 17.4 m/s)
+        fromDeg: base?.manifest?.wind_dir_deg ?? 200, // sim/storm.py elnino_ar_2026: from 200° (SSW)
+        tideM: interp(base?.tide, t, 1),
+        localHour: ((hour % 24) + 24) % 24,
+        sun: [7.48, 18.2], // San Francisco, 27 Oct: sunrise 07:29, sunset 18:12 PDT
+        flash: shared.lightning.value,
+      };
+    },
+  };
+
   // ---- main loop ----
   refreshStory(); syncInspector(); hud.setCtl(false, false, false);
   let last = performance.now(), weatherT = 0, hudT = 0;
@@ -566,7 +587,7 @@ async function main() {
     audio.set(rn, gn, shared.time.value);
     if (!shotMode && !pre && !walker.active) { const sh = Math.max(0, gn - 0.75) * 6 + L * 1.5; container.style.transform = sh > 0.05 ? `scale(1.008) translate(${(Math.sin(now * 0.061) + Math.sin(now * 0.137)) * sh}px, ${(Math.cos(now * 0.053) + Math.sin(now * 0.171)) * sh * 0.6}px)` : ''; } else container.style.transform = '';
     if (wind && !pre) { wind.lines.visible = true; wind.update(dt, gust, uref); } else if (wind) wind.lines.visible = false;
-    if (arc && now - weatherT > 400) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
+    if (arc && now - weatherT > 400 && !(window as any).sfCinema?.state?.active) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
     // camera
     applyWalk(dt);
     if (orbit && arc && !walker.active) { const s = orbit.s; s.heading = (s.heading + dt * 1.6) % 360; arc.setCamera(shotCam(s)); }
@@ -619,7 +640,7 @@ async function main() {
       if (mouse && !walker.active && !insp.pinned) { const it = pickAt(mouse.x, mouse.y); if (it !== insp.hovered) { insp.hovered = it; insp.show(it); } }
       else if (!mouse && insp.hovered && !insp.pinned) { insp.hovered = null; insp.show(null); }
     }
-    if (t > 600 && !shotMode && !dirToken) hud.hideBanner();
+    if ((t > 600 || tourToken) && !shotMode) hud.hideBanner();
     document.body.classList.toggle('agent-open', !!panel?.isOpen());
   };
 

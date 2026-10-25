@@ -220,7 +220,7 @@ class _Enc:
         mod = type(v).__module__
         if hasattr(v, "__dict__") and (mod.startswith("sim.") or mod.startswith("agent.citylib")):
             return {"__obj__": f"{mod}:{type(v).__qualname__}",
-                    "state": {k: self.enc(x, f"{path}.{k}") for k, x in vars(v).items() if k not in SKIP_ATTRS}}
+                    "state": {k: self.enc(x, f"{path}.{k}") for k, x in vars(v).items() if k not in SKIP_ATTRS and not callable(x)}}
         self.skipped.append(f"{path}: {type(v).__name__}")
         return None
 
@@ -262,7 +262,7 @@ def export_city(city, out_dir: str | Path) -> dict:
     state = {}
     fresh = None
     for k, v in vars(city).items():
-        if k in SKIP_ATTRS:
+        if k in SKIP_ATTRS or callable(v):  # annotating wrappers are not state
             continue
         if k in ("buildings", "trees", "cars", "inlets") and isinstance(v, list):
             if fresh is None:
@@ -300,6 +300,8 @@ def load_editor(plan_dir: str | Path):
         arrays = {k: z[k] for k in z.files}
     city = load_city()
     for k, v in meta["state"].items():
+        if v is None and callable(getattr(type(city), k, None)):
+            continue  # never shadow a method (old exports stored wrappers as null)
         setattr(city, k, _dec(v, arrays))
     if hasattr(city, "_bl"):
         city._bl = {int(b["id"]): b for b in city.buildings}

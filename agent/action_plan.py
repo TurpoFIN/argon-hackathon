@@ -4,10 +4,16 @@ The simulator remains the authority for quantities, costs, and damage.  This mod
 only turns the already scored plan into an operations document.  The response action
 normalisation deliberately follows Alex's ``alex/backend/action_plan.py`` contract,
 while using StormSim's real ``CityEditor`` and ``ResponsePlan`` objects.
+
+CLI: ``python -m agent.action_plan --from-tournament evidence/tournament.json``
+defensively resolves the Argon winner, its scored run, and the no-plan baseline,
+then writes ``runs/tournament-argon-*/eop.{json,html}``.
 """
 from __future__ import annotations
 
 import html
+import argparse
+import hashlib
 import json
 import math
 import os
@@ -17,6 +23,13 @@ from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parents[1]
+
+# These are a guardrail against stale/mixed tournament artifacts, not simulation
+# parameters.  The current El Niño no-plan ledger is expected in the hundreds of
+# millions; a tens-of-billions value means a run from a different code/data epoch.
+BASELINE_SANITY_RANGES = {
+    "elnino_ar_2026": (10_000_000.0, 5_000_000_000.0),
+}
 
 
 def _jsonable(value):
@@ -268,11 +281,24 @@ def _allocate_avoided(actions: list[dict], avoided_by_cause: dict) -> None:
     groups = defaultdict(list)
     for action in actions:
         groups[action.get("cause", "operations")].append(action)
+    # Ledger cause names are more granular than the dispatch categories. Fold
+    # them into the first matching action group so the displayed per-action
+    # amounts reconcile to the total without asking Argon to invent attribution.
+    buckets = defaultdict(float)
+    fallback_group = "flood" if "flood" in groups else next(iter(groups), "operations")
+    for raw, value in avoided_by_cause.items():
+        raw_text = str(raw).lower()
+        if raw in groups:
+            target = raw
+        elif "life" in raw_text or "unmet" in raw_text:
+            target = "life_safety" if "life_safety" in groups else fallback_group
+        elif any(x in raw_text for x in ("wind", "tree", "glazing")):
+            target = "wind/tree" if "wind/tree" in groups else fallback_group
+        else:
+            target = fallback_group
+        buckets[target] += _money(value)
     for cause, rows in groups.items():
-        source_cause = cause if cause in avoided_by_cause else next((k for k in avoided_by_cause if cause in k or k in cause), None)
-        if source_cause is None and "unattributed" in avoided_by_cause:
-            source_cause = "unattributed"
-        total = _money(avoided_by_cause.get(source_cause, 0)) if source_cause else 0.0
+        total = round(buckets.get(cause, 0.0), 2)
         weights = [max(_money(r.get("cost_usd")), 1.0) for r in rows]
         denom = sum(weights) or 1.0
         remaining = total
@@ -300,6 +326,66 @@ def _reported_avoided(result: dict, baseline: dict | None, avoided_by_cause: dic
         if not avoided_by_cause or not any(abs(_money(v)) > 0.01 for v in avoided_by_cause.values()):
             return {"unattributed": reported}, reported
     return avoided_by_cause, avoided_total
+
+
+def _integrity_checks(result: dict, baseline: dict | None, storm_name: str | None, plan_total: float) -> dict:
+    """Validate the two numbers most likely to be corrupted by stale runs."""
+    budget = result.get("budget_usd")
+    if budget is None:
+        budget = result.get("budget")
+    try:
+        budget = float(budget) if budget is not None else None
+    except (TypeError, ValueError):
+        budget = None
+    if budget is None or budget <= 0:
+        budget_check = {"status": "unknown", "budget_usd": budget, "plan_cost_usd": plan_total,
+                        "over_budget": None, "message": "No positive job budget was supplied; dispatch is unverified."}
+    else:
+        over = plan_total > budget + 0.01
+        budget_check = {"status": "over_budget" if over else "within_budget", "budget_usd": budget,
+                        "plan_cost_usd": plan_total, "over_budget": over,
+                        "utilization_pct": round(100.0 * plan_total / budget, 2),
+                        "message": (f"BLOCKED: plan cost ${plan_total:,.0f} exceeds job budget ${budget:,.0f}. "
+                                    "Do not dispatch this plan." if over else "Plan cost is within the supplied job budget.")}
+
+    baseline_total = _money((baseline or {}).get("total_usd"))
+    range_for_storm = BASELINE_SANITY_RANGES.get(storm_name or "")
+    baseline_meta = result.get("baseline_meta") or {}
+    baseline_errors = []
+    if baseline is None:
+        baseline_errors.append("No current-sim baseline ledger was supplied.")
+    elif range_for_storm and not (range_for_storm[0] <= baseline_total <= range_for_storm[1]):
+        baseline_errors.append(f"Baseline ${baseline_total:,.0f} is outside the current {storm_name} sanity range "
+                               f"${range_for_storm[0]:,.0f}–${range_for_storm[1]:,.0f}; likely stale or mixed-run data.")
+    reported = result.get("baseline_damage_usd")
+    if reported is not None and baseline_total and abs(_money(reported) - baseline_total) > max(1_000_000.0, baseline_total * 0.05):
+        baseline_errors.append(f"Run report baseline ${_money(reported):,.0f} does not match supplied baseline ${baseline_total:,.0f}.")
+    if baseline_meta.get("mock") is True:
+        baseline_errors.append("Baseline is marked mock; a current simulator ledger is required for dispatch.")
+    baseline_check = {"status": "invalid" if baseline_errors else "verified", "total_usd": baseline_total,
+                      "sanity_range_usd": list(range_for_storm) if range_for_storm else None,
+                      "run_id": baseline_meta.get("run_id"), "mock": baseline_meta.get("mock"),
+                      "errors": baseline_errors}
+    flags = []
+    if budget_check["status"] != "within_budget":
+        flags.append(budget_check["message"])
+    flags.extend(baseline_errors)
+    blocked = budget_check["status"] == "over_budget" or baseline_check["status"] == "invalid"
+    if budget_check["status"] == "unknown":
+        blocked = True
+    return {"budget_check": budget_check, "baseline_check": baseline_check, "flags": flags,
+            "dispatch_status": "blocked" if blocked else "ready", "eligible_for_dispatch": not blocked}
+
+
+def _top_actions(actions: list[dict], limit: int = 10) -> list[dict]:
+    ranked = sorted(actions, key=lambda a: (-_money(a.get("damage_avoided_usd")), -_money(a.get("cost_usd")), str(a.get("id"))))
+    out = []
+    for rank, action in enumerate(ranked[:limit], 1):
+        row = {k: action.get(k) for k in ("id", "kind", "site", "site_label", "work", "crew_type", "crew_size",
+                                           "equipment", "start_by", "end_by", "cost_usd", "damage_avoided_usd", "evidence")}
+        row["rank"] = rank
+        out.append(row)
+    return out
 
 
 def _build_action_plan_from_objects(objects: list[dict], result: dict, baseline: dict | None, timeline: dict) -> dict:
@@ -540,14 +626,31 @@ def make_eop(plan_code: str, result: dict, baseline: dict | None = None, storm_n
              precomputed_objects: list[dict] | None = None) -> dict:
     doc = build_action_plan(plan_code, result, baseline=baseline, storm_name=storm_name,
                             precomputed_objects=precomputed_objects)
+    plan_total = _money((doc.get("plan_cost") or {}).get("total_usd"))
+    integrity = _integrity_checks(result, baseline, storm_name or result.get("storm"), plan_total)
+    doc.update(integrity)
+    doc["top_actions"] = _top_actions(doc.get("actions", []), 10)
+    doc["summary"] = {"dispatch_status": doc["dispatch_status"], "eligible_for_dispatch": doc["eligible_for_dispatch"],
+                      "plan_cost_usd": plan_total, "budget_usd": doc["budget_check"].get("budget_usd"),
+                      "damage_avoided_usd": _money(doc.get("damage_avoided_usd")),
+                      "baseline_total_usd": _money(doc["baseline_check"].get("total_usd")),
+                      "top_action_count": len(doc["top_actions"])}
+    doc.setdefault("checks", {}).setdefault("flags", [])
+    for flag in integrity["flags"]:
+        if flag not in doc["checks"]["flags"]:
+            doc["checks"]["flags"].append(flag)
     brief_payload = {"storm": doc["storm"], "plan_cost_usd": _money(doc["plan_cost"].get("total_usd")),
                      "damage_avoided_usd": doc["damage_avoided_usd"], "checks": doc["checks"],
-                     "actions": [{k: a.get(k) for k in ("id", "work", "site_label", "start_by", "cost_usd", "damage_avoided_usd", "evidence")} for a in doc["actions"]]}
-    model_text = _argon_text(brief_payload, "brief_review")
+                     "budget_check": doc["budget_check"], "baseline_check": doc["baseline_check"],
+                     "actions": [{k: a.get(k) for k in ("id", "work", "site_label", "start_by", "cost_usd", "damage_avoided_usd", "evidence")} for a in doc["top_actions"]]}
+    model_text = None if not doc["eligible_for_dispatch"] else _argon_text(brief_payload, "brief_review")
     if model_text:
         brief, sep, audit = model_text.partition("ARGON AUDIT")
         doc["executive_brief"] = brief.replace("EXECUTIVE BRIEF", "").strip() or model_text
         doc["argon_review"] = audit.lstrip(" :\n") if sep else model_text
+    elif not doc["eligible_for_dispatch"]:
+        doc["executive_brief"] = "DISPATCH BLOCKED. " + " ".join(integrity["flags"])
+        doc["argon_review"] = "Argon review skipped because the deterministic integrity checks blocked dispatch."
     else:
         doc["executive_brief"] = _fallback_brief(doc)
         doc["argon_review"] = "No Argon review was available; machine checks remain authoritative."
@@ -557,12 +660,13 @@ def make_eop(plan_code: str, result: dict, baseline: dict | None = None, storm_n
 
 def render_eop_html(doc: dict) -> str:
     esc = lambda x: html.escape(str(x if x is not None else ""))
-    rows = []
-    for a in doc.get("actions", []):
+    def action_row(a, include_evidence=True):
         ev = "; ".join(str(x.get("source", "")) for x in a.get("evidence", [])[:2])
-        rows.append("<tr>" + "".join(f"<td>{esc(v)}</td>" for v in (a.get("start_by"), a.get("end_by"), a.get("site_label"), a.get("work"),
+        cells = (a.get("start_by"), a.get("end_by"), a.get("site_label"), a.get("work"),
             f"{a.get('crew_type')} ({a.get('crew_size')})", a.get("equipment"), f"${_money(a.get('cost_usd')):,.2f}",
-            f"${_money(a.get('damage_avoided_usd')):,.2f}", ev)) + "</tr>")
+            f"${_money(a.get('damage_avoided_usd')):,.2f}") + ((ev,) if include_evidence else ())
+        return "<tr>" + "".join(f"<td>{esc(v)}</td>" for v in cells) + "</tr>"
+    rows = [action_row(a) for a in doc.get("actions", [])]
     queue_rows = []
     for q in doc.get("crew_queues", []):
         queue_rows.append(f"<li><b>{esc(q.get('crew_id'))}</b>: " + esc(", ".join(q.get("actions", [])) or "standby") + "</li>")
@@ -595,16 +699,21 @@ def render_eop_html(doc: dict) -> str:
         left = max(0.0, min(100.0, (float(a.get("start_t_s", 0)) - start_bound) / span * 100.0))
         width = max(0.6, min(100.0 - left, (float(a.get("end_t_s", 0)) - float(a.get("start_t_s", 0))) / span * 100.0))
         gantt_rows.append(f'<div class="gantt-row"><span>{esc(a.get("id"))}</span><div class="gantt-track"><i style="left:{left:.2f}%;width:{width:.2f}%" title="{esc(a.get("start_by"))} to {esc(a.get("end_by"))}"></i></div></div>')
+    status = str(doc.get("dispatch_status", "unverified")).upper()
+    status_class = "ok" if doc.get("eligible_for_dispatch") else "bad"
     return f'''<!doctype html><html><head><meta charset="utf-8"><title>StormSim SF Emergency Operations Plan</title>
 <style>body{{font:14px system-ui,sans-serif;color:#17202a;max-width:1400px;margin:32px auto;padding:0 24px}}h1{{margin-bottom:4px}}h2{{border-bottom:2px solid #d7e1ea;padding-bottom:5px;margin-top:28px}}.meta{{color:#52616b}}.brief{{background:#eef7ff;border-left:4px solid #2471a3;padding:14px;white-space:pre-wrap}}table{{border-collapse:collapse;width:100%;font-size:12px}}th,td{{border:1px solid #ccd6dd;padding:7px;vertical-align:top}}th{{background:#1f4057;color:white;text-align:left}}tr:nth-child(even){{background:#f6f8fa}}.warn{{color:#9b2c2c}}svg{{width:100%;max-height:520px;border:1px solid #ccd6dd}}.gantt-row{{display:flex;gap:8px;align-items:center;margin:3px 0;font:11px monospace}}.gantt-row>span{{width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.gantt-track{{position:relative;height:13px;flex:1;background:linear-gradient(90deg,#dcecf4 0 {landfall_pct:.2f}%,#f7e4c2 {landfall_pct:.2f}%);border:1px solid #bccbd4}}.gantt-track i{{position:absolute;top:0;height:100%;background:#2471a3;display:block}}@media print{{body{{margin:10mm;max-width:none}}h2{{break-after:avoid}}tr{{break-inside:avoid}}}}</style></head>
+<style>.status{{padding:14px;margin:12px 0;font-weight:700;border:2px solid}}.status.ok{{background:#e9f8ef;color:#176b3a;border-color:#39a96b}}.status.bad{{background:#fff0f0;color:#9b1c1c;border-color:#d64545}}.summary-table td{{font-weight:600}}@media print{{.status{{break-inside:avoid}}}}</style></head>
 <body><h1>Emergency Operations Plan · StormSim SF</h1><p class="meta">{esc(doc.get('storm', {}).get('title',doc.get('storm', {}).get('name','')))} · Run {esc(doc.get('run_id'))}</p>
+<div class="status {status_class}">DISPATCH STATUS: {esc(status)}<br>{esc(doc.get('budget_check', {}).get('message'))}<br>{esc('; '.join(doc.get('baseline_check', {}).get('errors', [])) or 'Baseline sanity check passed.')}</div>
 <div class="brief"><b>Executive brief</b><br>{esc(doc.get('executive_brief'))}</div>
 <h2>Storm timeline</h2><p>Modeled duration {esc(doc.get('storm', {}).get('duration'))}; total rain {esc(doc.get('storm', {}).get('total_rain_mm'))} mm. Peak rain {esc(doc.get('storm', {}).get('peak_rain', {}).get('time'))}; peak gust {esc(doc.get('storm', {}).get('peak_gust', {}).get('time'))}; peak tide {esc(doc.get('storm', {}).get('peak_tide', {}).get('time'))}.</p>
-<h2>Decision numbers</h2><p>Plan cost: <b>${_money(doc.get('plan_cost', {}).get('total_usd')):,.2f}</b> · Deterministic damage avoided: <b>${_money(doc.get('damage_avoided_usd')):,.2f}</b></p>
-<h2>Executable actions</h2><table><thead><tr><th>Start by</th><th>End</th><th>Site</th><th>Work</th><th>Crew</th><th>Equipment</th><th>Cost</th><th>Damage avoided</th><th>Evidence</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
+<h2>One-page dispatch summary</h2><p>Plan cost <b>${_money(doc.get('plan_cost', {}).get('total_usd')):,.2f}</b> · Budget <b>${_money(doc.get('budget_check', {}).get('budget_usd')):,.2f}</b> · Deterministic damage avoided <b>${_money(doc.get('damage_avoided_usd')):,.2f}</b> · Baseline <b>${_money(doc.get('baseline_check', {}).get('total_usd')):,.2f}</b></p>
+<table class="summary-table"><thead><tr><th>Rank</th><th>Start</th><th>End</th><th>Site</th><th>Work</th><th>Crew</th><th>Equipment</th><th>Cost</th><th>Damage avoided</th></tr></thead><tbody>{''.join('<tr><td>'+esc(a.get('rank'))+'</td>'+action_row(a, False)[4:] for a in doc.get('top_actions', []))}</tbody></table>
 <h2>Dispatch timeline (hours relative to landfall)</h2><p>T-72h is the left edge; the shaded transition marks T0 (storm arrival) and bars end at their release time.</p>{''.join(gantt_rows)}
 <h2>Action positions</h2>{map_svg}
 <h2>Crew queues</h2><ul>{''.join(queue_rows) or '<li>No explicit crew queues.</li>'}</ul>
+<h2>Full executable action ledger</h2><table><thead><tr><th>Start by</th><th>End</th><th>Site</th><th>Work</th><th>Crew</th><th>Equipment</th><th>Cost</th><th>Damage avoided</th><th>Evidence</th></tr></thead><tbody>{''.join(rows)}</tbody></table>
 <h2>Machine checks</h2><p>Ledger delta by cause: {esc(json.dumps(doc.get('damage_avoided_by_cause', {}), sort_keys=True))}</p><ul class="warn">{flag_html}</ul><p>{esc(doc.get('argon_review'))}</p>
 <h2>Sources</h2><ul>{sources}</ul></body></html>'''
 
@@ -651,12 +760,17 @@ def generate_eop_for_job(job_id: str, job_result: dict, repo: str | Path = REPO)
         scored.update({k: v for k, v in result.items() if k not in ("ledger", "plan_cost")})
         result = scored
     baseline = None
+    baseline_meta = {}
     idx = root / "runs" / "_baselines.json"
     if idx.exists():
         entries = json.loads(idx.read_text())
         bid = entries.get(f"{result.get('storm', job_result.get('storm', 'elnino_ar_2026'))}") or entries.get(f"{result.get('storm', job_result.get('storm', 'elnino_ar_2026'))}-mock")
         if bid and (root / "runs" / bid / "result.json").exists():
-            baseline = json.loads((root / "runs" / bid / "result.json").read_text()).get("ledger")
+            baseline_doc = json.loads((root / "runs" / bid / "result.json").read_text())
+            baseline = baseline_doc.get("ledger")
+            baseline_meta = {"run_id": bid, "mock": bool(baseline_doc.get("mock")), "storm": baseline_doc.get("storm")}
+    if baseline_meta:
+        result["baseline_meta"] = baseline_meta
     objects = None
     objects_path = run_path / "plan_objects.json"
     if objects_path.exists():
@@ -667,3 +781,183 @@ def generate_eop_for_job(job_id: str, job_result: dict, repo: str | Path = REPO)
             objects = None
     return write_eop(job_id, _safe_read(plan_path), result, baseline=baseline, out_dir=root / "runs" / job_id,
                      precomputed_objects=objects)
+
+
+def _dicts(value):
+    """Yield nested dicts from any tournament schema without assuming its shape."""
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from _dicts(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _dicts(child)
+
+
+def _first(record: dict, keys):
+    for key in keys:
+        value = record.get(key)
+        if value not in (None, "", []):
+            return value
+    return None
+
+
+def _as_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _path_candidates(root: Path, value) -> list[Path]:
+    if not isinstance(value, str) or not value:
+        return []
+    clean = value.split("?", 1)[0].lstrip("/")
+    out = [root / clean, root / "runs" / clean.removeprefix("runs/")]
+    return [p for p in out if p.is_file()]
+
+
+def _run_result_paths(root: Path):
+    for path in (root / "runs").glob("**/result.json"):
+        if "/_jobs/" in str(path) or "/evolve/" in str(path):
+            continue
+        yield path
+
+
+def _resolve_tournament_winner(root: Path, tournament: dict) -> tuple[dict, Path, dict | None]:
+    """Resolve an Argon winner from several plausible tournament JSON layouts."""
+    records = list(_dicts(tournament))
+    run_docs = {}
+    for path in _run_result_paths(root):
+        try:
+            doc = json.loads(path.read_text())
+        except Exception:
+            continue
+        run_docs[path.parent.name] = (path, doc)
+    candidates = []
+    for rec in records:
+        model_blob = " ".join(str(rec.get(k, "")) for k in ("model", "planner", "agent", "name", "label", "winner")).lower()
+        plan_hash = _first(rec, ("plan_hash", "hash", "winner_plan_hash"))
+        run_id = _first(rec, ("run_id", "best_run_id", "plan_run_id", "winner_run_id"))
+        plan_value = _first(rec, ("plan_path", "best_plan_path", "plan_url", "best_plan_url", "path"))
+        has_argon = "argon" in model_blob or str(rec.get("model", "")).lower() == "gemini-4-argon"
+        winner_flag = bool(rec.get("winner") is True or rec.get("is_winner") is True or rec.get("rank") == 1)
+        score = _as_float(_first(rec, ("net_benefit_usd", "fitness", "score", "damage_avoided_usd"))) or 0.0
+        if has_argon or winner_flag or plan_hash or run_id or plan_value:
+            candidates.append((int(winner_flag) * 10_000_000 + int(has_argon) * 1_000_000 + score, rec))
+    candidates.sort(key=lambda pair: pair[0], reverse=True)
+    for _, rec in candidates:
+        run_id = _first(rec, ("run_id", "best_run_id", "plan_run_id", "winner_run_id"))
+        run_path = None
+        if isinstance(run_id, str):
+            run_id = Path(run_id.rstrip("/")).name
+            if run_id in run_docs:
+                run_path = run_docs[run_id][0]
+        plan_path = next(iter(_path_candidates(root, _first(rec, ("plan_path", "best_plan_path", "plan_url", "best_plan_url", "path")))), None)
+        plan_code = _first(rec, ("plan_code", "code", "winner_plan_code"))
+        if plan_path is None and isinstance(plan_code, str) and "def apply" in plan_code:
+            plan_path = root / "runs" / "_jobs" / "tournament-argon.plan.py"
+            plan_path.parent.mkdir(parents=True, exist_ok=True)
+            plan_path.write_text(plan_code)
+        expected_hash = _first(rec, ("plan_hash", "hash", "winner_plan_hash"))
+        if plan_path is None and expected_hash:
+            for candidate in list((root / "runs").glob("**/*.plan.py")):
+                try:
+                    digest = hashlib.sha256(candidate.read_text().strip().encode()).hexdigest()[:16]
+                except Exception:
+                    continue
+                full_digest = hashlib.sha256(candidate.read_text().strip().encode()).hexdigest()
+                if digest == str(expected_hash) or digest.startswith(str(expected_hash)) or full_digest == str(expected_hash):
+                    plan_path = candidate
+                    break
+        if run_path is None and expected_hash:
+            for candidate_path, run_doc in run_docs.values():
+                if str(run_doc.get("plan_hash", "")) == str(expected_hash):
+                    run_path = candidate_path
+                    break
+        if plan_path is not None and run_path is not None:
+            return rec, plan_path, run_docs[run_path.parent.name][1]
+    raise FileNotFoundError("could not resolve a tournament Argon winner with both plan and result artifacts")
+
+
+def _resolve_tournament_baseline(root: Path, tournament: dict, storm: str, winner_run_id: str | None):
+    """Find the no-plan artifact from either the tournament file or the baseline index."""
+    index = root / "runs" / "_baselines.json"
+    if index.exists():
+        try:
+            entries = json.loads(index.read_text())
+            baseline_id = entries.get(storm) or entries.get(f"{storm}-mock")
+            candidate = root / "runs" / str(baseline_id) / "result.json"
+            if baseline_id and candidate.exists():
+                doc = json.loads(candidate.read_text())
+                if str(doc.get("run_id", candidate.parent.name)) != str(winner_run_id):
+                    return doc.get("ledger"), {"run_id": candidate.parent.name, "mock": bool(doc.get("mock")), "storm": doc.get("storm")}
+        except Exception:
+            pass
+    for rec in _dicts(tournament):
+        blob = " ".join(str(rec.get(k, "")) for k in ("model", "name", "label", "kind", "role", "scenario")).lower()
+        if not any(term in blob for term in ("baseline", "no-plan", "noplan", "no plan")):
+            continue
+        rid = _first(rec, ("run_id", "baseline_run_id", "id"))
+        if not rid or str(rid) == str(winner_run_id):
+            continue
+        rid = Path(str(rid).rstrip("/")).name
+        candidate = root / "runs" / rid / "result.json"
+        if candidate.exists():
+            doc = json.loads(candidate.read_text())
+            return doc.get("ledger"), {"run_id": rid, "mock": bool(doc.get("mock")), "storm": doc.get("storm")}
+    return None, {}
+
+
+def precompute_from_tournament(path: str | Path, repo: str | Path = REPO) -> dict:
+    """Precompute an EOP for the Argon winner in a defensively-read tournament file."""
+    root = Path(repo)
+    tournament_path = Path(path)
+    if not tournament_path.is_absolute():
+        tournament_path = root / tournament_path
+    tournament = json.loads(tournament_path.read_text())
+    if not isinstance(tournament, (dict, list)):
+        raise ValueError("tournament JSON must contain an object or list")
+    record, plan_path, run_doc = _resolve_tournament_winner(root, tournament)
+    result = dict(run_doc or {})
+    for key in ("storm", "budget_usd", "budget", "plan_hash", "run_id", "best_run_id", "damage_avoided_usd"):
+        if key in record and key not in result:
+            result[key] = record[key]
+    result.setdefault("run_id", _first(record, ("run_id", "best_run_id")))
+    storm = result.get("storm") or tournament.get("storm", "elnino_ar_2026") if isinstance(tournament, dict) else "elnino_ar_2026"
+    result["storm"] = storm
+    baseline, baseline_meta = _resolve_tournament_baseline(root, tournament, storm, result.get("run_id"))
+    if baseline_meta:
+        result["baseline_meta"] = baseline_meta
+    job_id = re.sub(r"[^a-zA-Z0-9_-]+", "-", f"tournament-argon-{tournament_path.stem}").strip("-")
+    run_id = result.get("run_id")
+    run_path = root / "runs" / str(run_id) if run_id and not Path(str(run_id)).is_absolute() else Path(str(run_id))
+    objects = None
+    if (run_path / "plan_objects.json").exists():
+        payload = json.loads((run_path / "plan_objects.json").read_text())
+        objects = payload.get("objects", payload) if isinstance(payload, dict) else payload
+    output = write_eop(job_id, plan_path.read_text(), result, baseline=baseline, out_dir=root / "runs" / job_id,
+                       precomputed_objects=objects)
+    output["job_id"] = job_id
+    output["winner"] = {"plan_path": str(plan_path), "run_id": result.get("run_id"),
+                        "plan_hash": result.get("plan_hash") or hashlib.sha256(plan_path.read_text().strip().encode()).hexdigest()[:16]}
+    return output
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Precompute a cited StormSim Emergency Operations Plan.")
+    parser.add_argument("--from-tournament", metavar="PATH", help="tournament JSON containing a scored Argon winner")
+    args = parser.parse_args(argv)
+    if not args.from_tournament:
+        parser.error("--from-tournament PATH is required")
+    output = precompute_from_tournament(args.from_tournament)
+    doc = output["document"]
+    print(json.dumps({"job_id": output["job_id"], "eop_json": output["eop_json"], "eop_html": output["eop_html"],
+                      "dispatch_status": doc.get("dispatch_status"), "plan_cost_usd": doc.get("summary", {}).get("plan_cost_usd"),
+                      "budget_usd": doc.get("summary", {}).get("budget_usd"), "damage_avoided_usd": doc.get("summary", {}).get("damage_avoided_usd"),
+                      "baseline_usd": doc.get("summary", {}).get("baseline_total_usd"), "top_actions": len(doc.get("top_actions", []))}, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

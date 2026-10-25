@@ -19,6 +19,12 @@
 .destruction-stats dt { color: var(--panel-muted, #a4a4a4); }
 .destruction-stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 .destruction-cams { display: flex; gap: 6px; }
+.destruction-feed-head { color: var(--panel-muted, #a4a4a4); margin-top: 2px; }
+.destruction-feed { list-style: none; margin: 4px 0 8px; padding: 0; max-height: 132px; overflow: auto; }
+.destruction-feed li button { display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid transparent; border-radius: 0; padding: 2px 6px; font-variant-numeric: tabular-nums; }
+.destruction-feed li.block button { border-left-color: #ff2d55; }
+.destruction-feed li.strike button { border-left-color: #f644b9; }
+.destruction-feed li.none { color: var(--panel-muted, #a4a4a4); padding: 2px 6px; }
 .destruction-note { margin: 6px 0 0; color: var(--panel-muted, #a4a4a4); font-size: 11px; }
 body.cinema .destruction { bottom: calc(var(--cinema-bar, 0px) + 12px); }
 @media (max-width: 520px) { .destruction { left: 8px; right: 8px; width: auto; bottom: 8px; } }
