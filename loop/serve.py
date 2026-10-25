@@ -119,6 +119,15 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path in ("/cinema.js", "/cinema.css"):
+            body = (ROOT / "dist" / path[1:]).read_bytes() if (ROOT / "dist" / path[1:]).is_file() else None
+            if body is None:
+                return self.send_error(404, "Run npm run build for cinema mode")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript" if path.endswith(".js") else "text/css")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if path in ("/", "/index.html"):
             names = runs()
             if not names:

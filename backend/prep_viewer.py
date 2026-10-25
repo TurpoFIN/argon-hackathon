@@ -61,3 +61,29 @@ def preparation_result(run: str, model: str, filename: str):
     if not path.is_file() or not path.resolve().is_relative_to(RUNS.resolve()):
         raise HTTPException(404)
     return FileResponse(path, headers={"Cache-Control": "no-cache"})
+
+
+@router.get("/api/prep-runs/{run}/{model}/{label}/actions")
+def action_catalog(run: str, model: str, label: str):
+    if not NAME.fullmatch(run) or model not in ("argon", "flash") or not NAME.fullmatch(label):
+        raise HTTPException(404)
+    from .viewer_actions import load_pack, summary
+    try:
+        return summary(load_pack(RUNS, run, model, label))
+    except FileNotFoundError:
+        raise HTTPException(404, "Run or action evidence is not available")
+
+
+@router.get("/api/prep-runs/{run}/{model}/{label}/actions/{action_id}")
+def action_detail(run: str, model: str, label: str, action_id: str):
+    if not NAME.fullmatch(run) or model not in ("argon", "flash") or not NAME.fullmatch(label):
+        raise HTTPException(404)
+    from .viewer_actions import load_pack
+    try:
+        pack = load_pack(RUNS, run, model, label)
+    except FileNotFoundError:
+        raise HTTPException(404)
+    found = next((row for row in pack['actions'] if row['id'] == action_id), None)
+    if not found:
+        raise HTTPException(404)
+    return {**found, 'storm_id': pack['storm_id'], 'minutes_axis': pack['minutes'], 'weather': pack['weather']}

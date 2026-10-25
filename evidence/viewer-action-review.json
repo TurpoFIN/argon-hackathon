@@ -1,0 +1,44 @@
+{
+  "storm_id": "cd8bb6f9bdaac6ff730079cbf54fd03f23670d885a4c15d1dd946fcb2797919f",
+  "run": "today",
+  "model": "gemini-4-argon",
+  "review": {
+    "prioritized_action_ids": [
+      "fit-barrier:47675206",
+      "portable-pump:0",
+      "backup-pump:47675206",
+      "latch-windows:47674922",
+      "install-cordon:R12552201-0",
+      "move-contents:47675206",
+      "clear-inlet:156105",
+      "sandbag-wall:47675206",
+      "prune-defect:T193357",
+      "engineered-support:47674922",
+      "secure-items:47674922",
+      "clear-route:R12552201-0"
+    ],
+    "findings": [
+      "Flood: Installing the pre-fitted doorway barrier (fit-barrier:47675206, 15-30 min) is faster than building a sandbag wall (sandbag-wall:47675206, 70-110 min) for the same modeled reduction (9 cm entry water and 10 wet boxes to 0), while moving contents (move-contents:47675206) avoids wet boxes without stopping water entry and clearing the inlet (clear-inlet:156105) lowers local water from 11 cm to 7 cm.",
+      "Flood (pump): Deploying the portable pump (portable-pump:0) reduces modeled local water from 92 cm to 0 cm in the 12 m cell using a bounded local flow-balance approximation.",
+      "Power: Deploying a pump on an existing approved backup circuit (backup-pump:47675206) reduces modeled local water at building 47675206 from 24 cm to 9 cm.",
+      "Wind: Under weak wind (5.45 m/s sustained, 7.88 m/s gusts), latching operable windows (latch-windows:47674922) eliminates 77 L of modeled indoor rain, whereas securing loose exterior items (secure-items:47674922) shows no modeled benefit (0 broken panes and 77 L indoor rain before and after).",
+      "Routes: Installing an authorized cordon (install-cordon:R12552201-0) shifts the flooded road from uncontrolled entry to blocked entry, while light debris clearance (clear-route:R12552201-0) leaves the flooded road impassable with uncontrolled entry.",
+      "Trees: Under this weak wind forcing, pruning an arborist-specified defect (prune-defect:T193357, 150-300 min) shows no modeled benefit because the tree remains standing and the road stays open in both branches.",
+      "Structure: Installing an engineer-designed support package (engineered-support:47674922, 210-420 min) shows no modeled benefit under weak wind because the facade stays in place before and after.",
+      "Model basis: All six hazard views rely on extrapolated local mechanism models reusing the same logged P50 storm and 31 flood frames rather than validated local predictions."
+    ],
+    "misleading_claims": [
+      "Claiming the counterfactuals are validated local predictions, or inferring city-wide dollar savings or available specialist team counts from action roles and labor estimates.",
+      "Treating portable-pump:0 (92 cm to 0 cm) as an isolated full-city hydrodynamic rerun rather than a bounded local flow-balance approximation at a single 12 m cell.",
+      "Treating the clear-inlet:156105 reduction (11 cm to 7 cm) as an isolated marginal drain benefit or a validated estimate of avoided property damage per cleared inlet.",
+      "Crediting arbitrary barriers or assuming sandbag-wall:47675206 guarantees watertightness, when barrier benefits are conditional on assessed protection levels and proper construction.",
+      "Using Hurricane Andrew observational tree survival rates or non-specific structural failure studies to claim a causal local benefit for prune-defect:T193357 or engineered-support:47674922 in this weak-wind scenario.",
+      "Claiming quantified avoided injuries from install-cordon:R12552201-0 or route reopenings from clear-route:R12552201-0 when the road remains flooded and impassable.",
+      "Assuming backup-pump:47675206 guarantees flood control without an approved circuit and protected supporting backup power components."
+    ]
+  },
+  "receipt": {
+    "result_sha256": "66b0492c86fc7e68f65e40e0b5ef43a4c6470f32a2190e7c92fb7a6ac98da01a",
+    "generated_at": "2026-10-25T23:30:20.156266+00:00"
+  }
+}
