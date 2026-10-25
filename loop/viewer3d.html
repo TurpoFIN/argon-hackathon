@@ -27,7 +27,6 @@ dt { color:var(--muted); } dd { margin:0; text-align:right; }
 ul.legend { list-style:none; margin:8px 0 0; padding:0; display:grid; gap:3px; font-size:12px; color:var(--muted); }
 ul.legend li { display:flex; gap:8px; align-items:center; }
 .sw { width:12px; height:12px; border-radius:2px; flex:none; }
-.why { font-size:12px; color:var(--muted); white-space:pre-wrap; margin:8px 0 0; max-height:140px; overflow:auto; }
 video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 #status { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); color:#eee; font:14px var(--font); margin:0; }
 .esri-attribution { font-size:10px; }
@@ -59,7 +58,6 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
   <input id="scrub" type="range" min="0" max="30" value="30" step="1" aria-label="Storm time" style="width:100%;margin-top:6px;accent-color:var(--c1)">
   <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
   <video id="video" muted playsinline controls></video>
-  <p class="why" id="why"></p>
 </aside>
 <p id="status" role="status">Loading the city…</p>
 <script>
@@ -172,7 +170,6 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
       ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
       ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    document.getElementById('why').textContent = option.entry.critique ? 'What Argon saw and changed: ' + option.entry.critique : '';
     const video = document.getElementById('video'), play = document.getElementById('play');
     video.style.display = 'none';
     if (option.entry.video) { play.style.display = 'inline-block'; play.onclick = () => { video.src = folder + option.entry.video; video.style.display = 'block'; video.play(); }; }
