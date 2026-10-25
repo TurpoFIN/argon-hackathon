@@ -186,6 +186,33 @@ def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int 
 
 def _evolve_entry(label: str, architect: str, storm: str, budget: float, generations: int,
                   population: int, max_minutes: float, base: dict, sim_workers: int) -> dict:
+    if architect == "gemini-3.8-flash":
+        # Flash's fair condition is explicitly allowed to be one-shot + revise;
+        # keep one storm run so it has the same deterministic scorer and budget.
+        from agent.optimizer import optimize
+        t0 = time.time()
+        job = new_job("tournament-flash", {"label": label, "model": architect})
+        try:
+            rep = optimize(job, architect, storm, budget, max_runs=1, max_minutes=max_minutes,
+                           thinking_level="medium", watch_video=False, screenshots=False,
+                           pack="full", write_eop=False)
+            code = rep.get("plan_code") or rep.get("submitted_plan_code")
+            if not code and rep.get("plan_path"):
+                plan_path = REPO / str(rep["plan_path"]).lstrip("/")
+                if plan_path.exists():
+                    code = plan_path.read_text()
+            rid = rep.get("run_id")
+            if code and rid and (REPO / "runs" / rid / "result.json").exists():
+                rec = _entry_from_run(label, architect, code,
+                                      {"ok": True, "run_id": rid, "run_dir": str(REPO / "runs" / rid)},
+                                      base, budget, time.time() - t0, "flash_one_shot")
+                rec.update({"job_id": job.id, "optimizer": {k: rep.get(k) for k in ("runs_used", "usage", "plan_hash")}})
+                return rec
+            return {"name": label, "kind": "flash_one_shot", "model": architect, "status": "failed",
+                    "error": "Flash returned no scored plan", "job_id": job.id, "wall_time_s": round(time.time() - t0, 1)}
+        except Exception as exc:
+            return {"name": label, "kind": "flash_one_shot", "model": architect, "status": "failed",
+                    "error": f"{type(exc).__name__}: {exc}", "job_id": job.id, "wall_time_s": round(time.time() - t0, 1)}
     from agent import evolve as evolve_module
     # Keep this comparison focused on deterministic ledger numbers and wall
     # time; Evolve's normal UI replay rendering can dominate a short run.
@@ -275,10 +302,11 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
         # Same Evolve settings/call budget for both model conditions.  The Flash
         # condition uses Flash as both architect and mutator; Argon changes only
         # the architect, making the comparison legible.
-        for label, architect in (("Gemini 3.8 Flash alone (Evolve)", "gemini-3.8-flash"),
-                                 ("Gemini 4 Argon (Evolve architect)", "gemini-4-argon")):
-            entries.append(_evolve_entry(label, architect, storm, budget, generations, population,
-                                          max_minutes, base, sim_workers))
+        model_jobs = [("Gemini 3.8 Flash alone (one-shot + revise)", "gemini-3.8-flash"),
+                      ("Gemini 4 Argon (Evolve architect)", "gemini-4-argon")]
+        with cf.ThreadPoolExecutor(max_workers=2) as pool:
+            entries.extend(pool.map(lambda x: _evolve_entry(x[0], x[1], storm, budget, generations,
+                                                             population, max_minutes, base, sim_workers), model_jobs))
     evidence = {"schema_version": 1, "status": "done", "storm": storm, "budget_usd": budget, "started_utc": started,
                 "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1], "baseline_run_id": base_dir.name,
                 "entries": entries}
