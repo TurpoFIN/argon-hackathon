@@ -130,7 +130,19 @@ def test_physics_path_uses_lbm_field_and_trees_py():
     wf, trees_out, _ = D.physics_inputs(st)
     r = D.run_destruction(st, wind=wf, tree_result=trees_out)
     assert r["wind_source"].startswith("sim/wind.py LBM field")
-    failed = {t["id"] for t in trees_out if t["fail_t"] is not None}
+    failed = {t["id"] for t in trees_out["trees"] if t["fail_t"] is not None}
     assert {t["id"] for t in r["trees"]} == failed
     assert all(t["source"] == "sim/trees.py" for t in r["trees"])
     assert D.result_hash(r) == D.result_hash(D.run_destruction(st, wind=wf, tree_result=trees_out))
+
+
+def test_incidents_road_blocks_and_tree_strikes():
+    r = _run(scale=1.6)
+    s = r["summary"]
+    assert s["roads_blocked"] == len(r["road_blocks"]) > 0
+    assert s["trees_into_buildings"] == len(r["tree_strikes"]) > 0
+    tree_ids = {t["id"] for t in r["trees"]}
+    assert all(x["tree_id"] in tree_ids for x in r["tree_strikes"])
+    causes = {x["cause"] for x in r["road_blocks"]}
+    assert causes <= {"tree", "power_pole", "streetlight", "mast", "power_wire"}
+    assert all(x["length_m"] >= 3 for x in r["road_blocks"] if x["cause"] != "power_wire")

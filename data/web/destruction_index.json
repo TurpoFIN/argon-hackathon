@@ -3,13 +3,19 @@
   "id": "elnino_ar_2026",
   "title": "El Ni\u00f1o atmospheric river 2026 (as forecast)",
   "file": "/data/web/destruction_elnino_ar_2026.json",
-  "ledger_total_usd": 283328.62
+  "ledger_total_usd": 4172454.07
  },
  {
   "id": "elnino_ar_2026_x1.6",
   "title": "Stress test: El Ni\u00f1o gusts x1.6 (ARkStorm-class wind)",
   "file": "/data/web/destruction_elnino_ar_2026_x1.6.json",
-  "ledger_total_usd": 333638109.06
+  "ledger_total_usd": 16951711.32
+ },
+ {
+  "id": "elnino_ar_2026_x2.2",
+  "title": "Extreme: gusts x2.2 (hurricane-force; collapses take down power lines)",
+  "file": "/data/web/destruction_elnino_ar_2026_x2.2.json",
+  "ledger_total_usd": 119018474.52
  },
  {
   "id": "dec31_2022",

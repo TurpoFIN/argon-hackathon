@@ -18,6 +18,7 @@ from sim.destruction import P_ROOT, physics_inputs, run_destruction, scaled_stor
 OUT = os.path.join(P_ROOT, "data", "web")
 SCENARIOS = [("elnino_ar_2026", 1.0, "El Niño atmospheric river 2026 (as forecast)"),
              ("elnino_ar_2026", 1.6, "Stress test: El Niño gusts x1.6 (ARkStorm-class wind)"),
+             ("elnino_ar_2026", 2.2, "Extreme: gusts x2.2 (hurricane-force; collapses take down power lines)"),
              ("dec31_2022", 1.0, "Replay: 31.12.2022 storm")]
 
 
@@ -50,10 +51,10 @@ def _flat(ring):
     return out
 
 
-def export(storm, title, res=None):
+def export(storm, title, res=None, fallback=False):
     P = params()
     if res is None:
-        wf, trees_out, _ = physics_inputs(storm)
+        wf, trees_out = (None, None) if fallback else physics_inputs(storm)[:2]
         res = run_destruction(storm, wind=wf, tree_result=trees_out)
     grid = os.path.join(P_ROOT, "data", "grid")
     assets = json.load(open(os.path.join(grid, "assets.json")))
@@ -114,6 +115,12 @@ def export(storm, title, res=None):
     keep = hits[:1500] + rest[: max(0, 1500 - len(hits))]
     debris = [[*_ll(d["x0"], d["y0"]), d["z0"], *_ll(d["x1"], d["y1"]), d["z1"], tn(d["t0"]), round(d["t0"] + d["flight_s"], 1), d["hit"]]
               for d in keep]
+    road_blocks = [[*_ll(r["x"], r["y"]), tn(r["t"]), r["cause"], r["street"] or "", r["length_m"]] for r in res["road_blocks"]]
+    tree_strikes = []
+    for r in res["tree_strikes"]:
+        bb = bl.get(r["bldg_id"])
+        tree_strikes.append([*_ll(r["x"], r["y"]), tn(r["t"]), r["bldg_id"], round(float((bb or {}).get("height_m") or 6.0), 1),
+                             _flat(bb["footprint"]) if bb and bb.get("footprint") else [], r["tree_id"]])
     S = res["summary"]
     return {
         "scenario": storm.name, "title": title, "t": [round(v, 1) for v in t],
@@ -124,6 +131,7 @@ def export(storm, title, res=None):
                     "ocs_wire": P["ocs"]["wire_height_m"], "signal": P["signal"]["height_m"]},
         "buildings": buildings, "outage": outage, "poles": poles, "spans": spans, "ocs": ocs, "lights": lights,
         "signals": signals, "shelters": shelters, "trees": tr, "debris": debris,
+        "road_blocks": road_blocks, "tree_strikes": tree_strikes,
         "notes": res["notes"],
     }
 
@@ -140,7 +148,7 @@ def export_street_trees():
                    "source": "DataSF Street Tree Inventory tkzw-k3nq via data/grid/trees.json"}, fh, separators=(",", ":"))
 
 
-def main():
+def main(fallback=False):
     from sim.storm import load_storm
     os.makedirs(OUT, exist_ok=True)
     export_street_trees()
@@ -149,7 +157,7 @@ def main():
         st = load_storm(name)
         if scale != 1.0:
             st = scaled_storm(st, scale)
-        d = export(st, title)
+        d = export(st, title, fallback=fallback)
         p = os.path.join(OUT, f"destruction_{st.name}.json")
         with open(p, "w") as fh:
             json.dump(d, fh, separators=(",", ":"))
@@ -161,4 +169,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(fallback="--fallback" in sys.argv)
