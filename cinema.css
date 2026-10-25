@@ -74,3 +74,4 @@ body.cinema .esri-attribution { background: rgba(0, 0, 0, .45); color: #9aa3aa; 
 }
 .cinema-select option { color: #000; }
 .cinema-select:focus-visible { outline: 1px solid #a4a4a4; outline-offset: 2px; }
+.cinema-phase .cinema-button:not(:first-child):not(:last-child) { border-radius: 0; margin-left: -1px; }

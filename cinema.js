@@ -57,13 +57,20 @@
   const compass = (deg) => COMPASS[Math.round(deg / 22.5) % 16];
   const pad = (n) => String(n).padStart(2, "0");
   const elapsed = (t) => `T+${Math.floor(t / 3600)}:${pad(Math.floor(t / 60) % 60)}`;
-  // Local clock time of storm time t from the scenario's start ("2026-12-24T07:07-08:00").
+  // Local clock hour of storm time t from the scenario's start ("2026-12-24T07:07-08:00"); null if unknown.
+  function localHour(storm, t) {
+    const m = /T(\d\d):(\d\d)/.exec(storm?.start_local || "");
+    return m ? ((Number(m[1]) + Number(m[2]) / 60 + t / 3600) % 24 + 24) % 24 : null;
+  }
   function localClock(storm, t) {
-    const m = /T(\d\d):(\d\d)/.exec(storm.start_local || "");
-    if (!m) return "";
-    const minutes = (Number(m[1]) * 60 + Number(m[2]) + Math.floor(t / 60)) % 1440;
+    const hour = localHour(storm, t);
+    if (hour === null) return "";
+    const minutes = Math.floor(hour * 60);
     return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)} PST`;
   }
+  // San Francisco in late December: sunrise about 07:23, sunset about 17:00 PST; blend through civil twilight.
+  const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
+  const darknessAt = (hour) => (hour === null ? 0 : 1 - smooth(6.9, 7.7, hour) * (1 - smooth(16.75, 17.55, hour)));
 
   // ---------------------------------------------------------------------------------------------
   // Shader: one full-screen pass over the composite colour and depth of the SceneView.
@@ -544,8 +551,9 @@ void main() {
       storm: null,
       t: null, // storm seconds; null until a scenario is loaded (then its peak rain unless set elsewhere)
       weather: CALM,
-      night: 1, // lighting target: 1 night, 0 day
-      nightNow: 1,
+      light: "auto", // "auto" follows the moment's local time; "night" and "day" override it
+      night: 0, // lighting target: 1 night, 0 day
+      nightNow: 0,
       link: null,
       gustiness: 0,
       strikes: [],
@@ -668,6 +676,7 @@ void main() {
         state.weather = conditionsAt(state.storm, state.t, state.link?.scenario === state.scenario ? state.link.run : null);
         if (state.playing || now - (hud.syncedAt ?? 0) > 250) hud.sync();
       }
+      state.night = state.light === "night" ? 1 : state.light === "day" ? 0 : darknessAt(state.storm && state.t !== null ? localHour(state.storm, state.t) : null);
       state.nightNow += (state.night - state.nightNow) * (1 - Math.exp(-dt * 1.6));
       const t = now / 1000;
       // Gusts arrive as slow swells toward the reported gust speed.
@@ -1015,13 +1024,15 @@ void main() {
       const phase = el("div", "cinema-phase");
       phase.setAttribute("role", "group");
       phase.setAttribute("aria-label", "Light");
-      const nightButton = el("button", "cinema-button", "Night");
-      const dayButton = el("button", "cinema-button", "Day");
-      for (const [button, value] of [[nightButton, 1], [dayButton, 0]]) {
+      const lightButtons = [["auto", "Auto"], ["night", "Night"], ["day", "Day"]].map(([value, label]) => {
+        const button = el("button", "cinema-button", label);
         button.type = "button";
-        button.addEventListener("click", () => { state.night = value; sync(); });
+        button.dataset.light = value;
+        if (value === "auto") button.title = "Light follows the storm's local time";
+        button.addEventListener("click", () => { state.light = value; sync(); });
         phase.append(button);
-      }
+        return button;
+      });
       const play = el("button", "cinema-button");
       play.type = "button";
       const slider = el("input", "cinema-time");
@@ -1056,8 +1067,7 @@ void main() {
         scenario.value = state.scenario;
         if (storm) slider.max = String(storm.duration_s);
         if (document.activeElement !== slider && state.t !== null) slider.value = String(state.t);
-        nightButton.setAttribute("aria-pressed", String(state.night === 1));
-        dayButton.setAttribute("aria-pressed", String(state.night === 0));
+        for (const button of lightButtons) button.setAttribute("aria-pressed", String(button.dataset.light === state.light));
         play.textContent = state.playing ? "Pause" : "Play";
         play.setAttribute("aria-label", state.playing ? "Pause the storm clock" : "Play the storm clock");
         sound.textContent = audio.muted ? "Sound off" : "Sound on";
