@@ -445,7 +445,12 @@ async function main() {
   addEventListener('keydown', (e) => { if (walker.active || (e.target as HTMLElement)?.closest?.('input,textarea') || e.ctrlKey || e.metaKey) return; const k = camKey(e); if (k) { held.add(k); orbit = null; camAnim = null; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   addEventListener('keyup', (e) => { const k = camKey(e); if (k) held.delete(k); }, true);
   addEventListener('blur', () => held.clear());
-  addEventListener('mousemove', (e) => { if (e.shiftKey && !e.buttons) { lookDX += e.movementX; lookDY += e.movementY; orbit = null; } });
+  // Shift = look mode: pointer lock so the mouse can turn a full 360° without hitting the screen edge.
+  let shiftHeld = false;
+  addEventListener('keydown', (e) => { if (e.key === 'Shift' && !shiftHeld && !walker.active) { shiftHeld = true; orbit = null; (container as any).requestPointerLock?.(); } });
+  addEventListener('keyup', (e) => { if (e.key === 'Shift') { shiftHeld = false; if (document.pointerLockElement) document.exitPointerLock(); } });
+  addEventListener('blur', () => { shiftHeld = false; });
+  addEventListener('mousemove', (e) => { if ((e.shiftKey || shiftHeld) && !e.buttons) { lookDX += e.movementX; lookDY += e.movementY; orbit = null; } });
   // ArcGIS has its own keyboard navigation (arrows/WASD pan & zoom); swallow those keys so only ours apply.
   if (arc) arc.view.on('key-down', (e: any) => { const k = String(e.key || '').toLowerCase(); if (['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(k)) e.stopPropagation(); });
   let hintShown = false;
@@ -454,8 +459,9 @@ async function main() {
     const nowF = performance.now(); const dt = Math.min(0.5, (nowF - fcLast) / 1000); fcLast = nowF;
     if (walker.active || (!held.size && !lookDX && !lookDY)) return;
     if (!hintShown) { hintShown = true; setTimeout(() => document.body.classList.add('hinted'), 4000); }
-    const mf = (held.has('f') ? 1 : 0) - (held.has('b') ? 1 : 0), mr = (held.has('r') ? 1 : 0) - (held.has('l') ? 1 : 0), mu = (held.has('up') ? 1 : 0) - (held.has('dn') ? 1 : 0);
-    const dyaw = lookDX * 0.15, dpitch = lookDY * 0.12; lookDX = lookDY = 0;
+    const mf = (held.has('f') ? 1 : 0) - (held.has('b') ? 1 : 0); let mr = (held.has('r') ? 1 : 0) - (held.has('l') ? 1 : 0); const mu = (held.has('up') ? 1 : 0) - (held.has('dn') ? 1 : 0);
+    const turnKeys = shiftHeld ? mr : 0; // Shift + A/D (or ←/→) turns instead of strafing
+    const dyaw = lookDX * 0.4 + turnKeys * 120 * dt, dpitch = lookDY * 0.3; lookDX = lookDY = 0; if (shiftHeld) mr = 0;
     if (arc) {
       const c = arc.view.camera; const p = c.position; const [x, y] = tile.lonLatToLocal(p.longitude, p.latitude);
       const g = arc.groundAt(p.longitude, p.latitude) ?? city.zAt(x, y) + tile.zOffset; const alt = Math.max(3, p.z - g); const sp = Math.min(220, Math.max(8, alt * 0.35));
