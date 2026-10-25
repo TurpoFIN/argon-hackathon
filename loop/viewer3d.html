@@ -14,6 +14,10 @@ html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; backgro
   background:var(--surface); color:var(--fg); border-radius:8.4px; box-shadow:inset 0 0 0 .5px var(--edge), 0 2px 4px rgba(0,0,0,.14), 0 24px 48px -12px rgba(0,0,0,.32);
   font:13px/1.4 var(--font); padding:12px; z-index:1; }
 #panel h1 { font-size:16px; font-weight:500; margin:0 0 2px; }
+#panel h1 { padding-right:24px; }
+#panel[hidden], #show-plan[hidden] { display:none; }
+#hide-plan { position:absolute; right:8px; top:8px; width:24px; height:24px; padding:0; border:0; background:transparent; color:var(--fg); font:20px/1 var(--font); cursor:pointer; }
+#show-plan { position:fixed; left:16px; bottom:24px; z-index:1; border:0; border-radius:8px; padding:6px 10px; color:var(--fg); background:var(--surface); font:12px var(--font); cursor:pointer; }
 #panel .sub { color:var(--muted); font-size:12px; margin:0 0 10px; }
 #plans { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
 #plans button, .destruction-cams button { height:28px; padding:0 10px; border-radius:9999px; border:0; background:transparent; color:var(--fg);
@@ -39,10 +43,12 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 </style>
 <script src="https://js.arcgis.com/4.33/"></script>
 <script src="/loop/destruction-layer.js"></script>
+<script type="module" src="/prepViewer.js"></script>
 </head>
 <body>
 <main id="scene" aria-label="3D San Francisco with the storm preparation plan"></main>
 <aside id="panel" aria-label="Storm preparation plan">
+  <button id="hide-plan" type="button" aria-label="Hide plan" title="Hide plan (H)">×</button>
   <h1 id="title">Loading plan</h1>
   <p class="sub" id="sub"></p>
   <div id="plans" role="group" aria-label="Plan shown"></div>
@@ -79,15 +85,23 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
     <span id="clock" class="sub" style="margin:0;font-variant-numeric:tabular-nums">Peak water</span>
   </div>
   <input id="scrub" type="range" min="0" max="30" value="30" step="1" aria-label="Storm time" style="width:100%;margin-top:6px;accent-color:var(--c1)">
-  <button id="fly" type="button" style="display:none;margin-top:6px;margin-right:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:#f644b9;color:#fff;font:500 12px var(--font);cursor:pointer">Fly to pumps</button>
   <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
   <video id="video" muted playsinline controls></video>
 </aside>
+<button id="show-plan" type="button" hidden aria-label="Show plan" title="Show plan (H)">Plan</button>
 <p id="status" role="status">Loading the city…</p>
 <script>
 const params = new URLSearchParams(location.search);
-const run = params.get('run'), model = params.get('model') || 'argon';
-const folder = `/runs/${run}/${model}/`;
+let run = params.get('run'), model = params.get('model') || 'argon', folder;
+const panel = document.getElementById('panel'), showPlan = document.getElementById('show-plan');
+function setPlanVisible(visible) { panel.hidden = !visible; showPlan.hidden = visible; (visible ? document.getElementById('hide-plan') : showPlan).focus(); }
+document.getElementById('hide-plan').onclick = () => setPlanVisible(false);
+showPlan.onclick = () => setPlanVisible(true);
+document.addEventListener('keydown', event => {
+  if (event.key.toLowerCase() === 'h' && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest('input,select,textarea,[contenteditable=true]')) {
+    event.preventDefault(); setPlanVisible(panel.hidden);
+  }
+});
 const usd = v => (v < 0 ? '−' : '') + '$' + (Math.abs(v) / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + 'M';
 const square = (lon, lat, half) => {
   const dlat = half / 111320, dlon = half / (111320 * Math.cos(lat * Math.PI / 180));
@@ -119,6 +133,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     .then(layer => (destruction = layer))
     .catch(error => { console.error('Destruction layer unavailable', error); return null; });
   let showVersion = 0;
+  view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
   const storm = { frames: 0, minutes: [], frame: null, timer: null, layer: null };
   const floodRenderer = field => ({ type: 'class-breaks', field, classBreakInfos: [
@@ -223,14 +238,16 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
       ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
       ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    const fly = document.getElementById('fly');
-    fly.style.display = layers.pumps.length ? 'inline-block' : 'none';
-    fly.onclick = async () => {
-      // Let the view frame the actual pump features, looking north-west across them.
-      const pumpLayer = plan.layers.find(l => l.title === 'Pumps');
-      const { features } = await pumpLayer.queryFeatures({ where: '1=1', returnGeometry: true });
-      await view.goTo({ target: features, heading: 325, tilt: 62 }, { duration: 2500 });
-    };
+    // Frame the plan's placements once, on the first plan that has any; later switches keep the camera
+    // so before and after compare from the same spot.
+    if (!storm.framed) {
+      const targets = plan.layers.filter(l => l.title === 'Pumps' || l.title === 'Cleared drains').toArray();
+      const features = (await Promise.all(targets.map(l => l.queryFeatures({ where: '1=1', returnGeometry: true })))).flatMap(r => r.features);
+      if (features.length) {
+        storm.framed = true;
+        await view.goTo({ target: features, heading: 325, tilt: 60 }, { animate: false });
+      }
+    }
     const video = document.getElementById('video'), play = document.getElementById('play');
     video.style.display = 'none';
     if (option.entry.video) { play.style.display = 'inline-block'; play.onclick = () => { video.src = folder + option.entry.video; video.style.display = 'block'; video.play(); }; }
@@ -238,6 +255,15 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   }
 
   (async () => {
+    if (!run) {
+      const response = await fetch('/api/prep-runs');
+      if (!response.ok) throw new Error('Choose a completed preparation run.');
+      const available = (await response.json()).runs;
+      const latest = available.find(r => r.model === model) || available[0];
+      if (!latest) throw new Error('No completed preparation runs are available.');
+      run = latest.run; model = latest.model;
+    }
+    folder = `/runs/${encodeURIComponent(run)}/${encodeURIComponent(model)}/`;
     const log = await fetch(folder + model + '.json').then(r => r.json());
     const name = log.model.includes('argon') ? 'Argon' : 'Flash';
     const rounds = log.rounds.filter(r => r.ledger);

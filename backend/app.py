@@ -11,6 +11,15 @@ from .risk_api import router as risk_router
 app.include_router(risk_router)
 from .prestorm_api import router as prestorm_router
 app.include_router(prestorm_router)
+from .prep_viewer import router as prep_viewer_router, available_runs, viewer as preparation_viewer
+app.include_router(prep_viewer_router)
+
+
+@app.get("/")
+def home():
+    if available_runs():
+        return preparation_viewer()
+    return FileResponse(ROOT / "dist/index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/engine")
