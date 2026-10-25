@@ -53,6 +53,7 @@ async function main(): Promise<void> {
   const renderer=installStormRenderer(view, RenderNode, coordinates, manifest, grid, flood, sampled.geometry.points,()=>timeAt(sharedState.playback),()=>sharedState.playback.playing);
   let riskBase={manifest,grid,flood};
   const risk=await riskView(document.body,map as {add(layer:unknown):void},value=>renderer.update(riskBase.manifest,riskBase.grid,value??riskBase.flood));
+  risk.setView(view as unknown as {goTo(target:unknown,options?:unknown):Promise<unknown>});
   risk.status(sharedState);
   const layerView = await view.whenLayerView(buildings);
   await reactive.whenOnce(() => !layerView.updating);

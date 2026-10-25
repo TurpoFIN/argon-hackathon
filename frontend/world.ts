@@ -28,6 +28,7 @@ export async function worldLayer(map:MapHost,is3d:boolean):Promise<{set(data:Wor
     return {type:'simple-marker',style,color,size,outline:{color:'#172126',width:.7}};
   }
   return {set(data){world=data;last=-1;layer.removeAll();},draw(seconds){
+    if(document.body.classList.contains('planning-mode')&&!document.body.classList.contains('research-mode')){layer.removeAll();last=-1;return;}
     if(!world)return;
     const key=Math.floor(seconds/2);if(key===last)return;last=key;
     const frame=frameAt(world,seconds);

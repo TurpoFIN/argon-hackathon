@@ -223,6 +223,7 @@ async function main():Promise<void> {
   view=new View({container:'map',map,center:[-122.396,37.797],zoom:15.2,rotation:0,ui:{components:['attribution','zoom']},constraints:{rotationEnabled:false,minZoom:13,maxZoom:20},popupEnabled:false});
   await Promise.all([view.when(),receive(await request<ScenarioState>('/api/state'))]);
   risk=await riskView($('#map-wrap'),map as {add(layer:unknown):void},value=>{flood=value??baseFlood;redrawRaster=true;lastFrame=-1;});
+  risk.setView(view as unknown as {goTo(target:unknown,options?:unknown):Promise<unknown>});
   risk.status(state);
   view.on('pointer-move',event=>{
     const p=view.toMap(event);if(!p)return;

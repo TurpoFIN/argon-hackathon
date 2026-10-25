@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 app = FastAPI(title="Embarcadero storm prototype", docs_url=None, redoc_url=None)
 from .risk_api import router as risk_router
 app.include_router(risk_router)
+from .prestorm_api import router as prestorm_router
+app.include_router(prestorm_router)
 
 
 @app.get("/api/engine")

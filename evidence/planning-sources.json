@@ -1,0 +1,1018 @@
+{
+  "version": 1,
+  "reviewed_at": "2026-10-25",
+  "sources": [
+    {
+      "id": "sf-glass",
+      "title": "SF DBI / WJE \u00b7 March 2023 glass investigation",
+      "url": "https://media.api.sf.gov/documents/BIC_Meeting_092023_-_Item_9.pdf",
+      "published": "2023-09-20",
+      "locator": "Slides 5\u20138; table on PDF page 6",
+      "kind": "Post-storm forensic investigation",
+      "finding": "Investigators examined 31 broken panes at seven buildings. They judged the likely causes of 30 identifiable and mitigable before the storms; this was not a measured prevention rate.",
+      "sha256": "51a73ed32545d14baefe6068b40107fa5b725a1f8a7cefe1fcb24f4cd862c8ee"
+    },
+    {
+      "id": "uf-trees",
+      "title": "UF/IFAS \u00b7 Wind and Trees: Lessons Learned from Hurricanes",
+      "url": "https://ask.ifas.ufl.edu/publication/FR173",
+      "published": "Study includes Hurricane Andrew (1992)",
+      "locator": "Lessons about trees, lesson 9",
+      "kind": "Post-storm observational comparison",
+      "finding": "After Andrew, studied broad-leaved species with proper prior pruning had 73% survival versus 47% without. The comparison is observational and does not establish a San Francisco or last-minute pruning effect."
+    },
+    {
+      "id": "sandy",
+      "title": "FEMA P-942 \u00b7 Hurricane Sandy field investigation",
+      "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo110213/pdf/GOVPUB-HS5_100-PURL-gpo110213.pdf",
+      "published": "2013-11",
+      "locator": "\u00a73.1.3; \u00a74.2.2\u20134.2.3; \u00a75.3.4\u20135.3.5",
+      "kind": "Post-storm field investigation",
+      "finding": "Foundation depth affected scour damage. A garage slab was damaged by flood loading. Floodgates were overtopped; protected fuel equipment survived. Functional backup systems supported operations; submerged transfer switches or pumps defeated some elevated generators."
+    },
+    {
+      "id": "sf-works",
+      "title": "San Francisco Public Works \u00b7 January 2023 storm response",
+      "url": "https://www.sfpublicworkstv.org/es/january2023",
+      "published": "2023-01",
+      "locator": "Storm Response; catch basins and flooded intersections",
+      "kind": "Operator account",
+      "finding": "Crews handled tree, road, power-line and drainage incidents together. Counts are service orders, not independent failures or measured benefits of preparation."
+    },
+    {
+      "id": "sf-311",
+      "title": "DataSF \u00b7 historical 311 reports in this area",
+      "url": "https://data.sfgov.org/resource/vw6y-z8j6.json?%24where=requested_datetime+between+%272022-12-27T00%3A00%3A00%27+and+%272023-03-23T23%3A59%3A59%27+AND+lat+between+37.786+and+37.808+AND+long+between+-122.406+and+-122.386+AND+%28service_name+like+%27%25Tree%25%27+OR+service_name+like+%27%25Sewer%25%27%29&%24select=service_request_id%2Crequested_datetime%2Cservice_name%2Cservice_subtype%2Cservice_details%2Caddress%2Clat%2Clong%2Cstatus_description%2Cmedia_url&%24limit=2000&%24order=requested_datetime",
+      "published": "Reports from 2022-12-27 to 2023-03-23",
+      "locator": "Frozen query; only flooding and fallen-tree reports within the two storm windows are mapped",
+      "kind": "Public incident reports",
+      "finding": "Reports identify places to re-check. They can be duplicated or misclassified; they are not verified failures, current defects, or evidence that an action prevented damage.",
+      "sha256": "bc9e8c325262653ebf7bbfbeef599409d1297d8c398927100910c84572d51143"
+    },
+    {
+      "id": "pge",
+      "title": "PG&E \u00b7 public distribution planning map",
+      "url": "https://www.pge.com/en/about/doing-business-with-pge/interconnections/distributed-resource-planning-data-and-maps.html",
+      "published": "Public GIS snapshot, 2026-10-25",
+      "locator": "GRIP feeders and substations",
+      "kind": "Asset inventory",
+      "finding": "Mapped feeder routes do not establish overhead installation, customer connections, live status or outage probability."
+    },
+    {
+      "id": "cec",
+      "title": "California Energy Commission \u00b7 transmission line source",
+      "url": "https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2",
+      "published": "Public GIS snapshot, 2026-10-25",
+      "locator": "Transmission line layer; Type field",
+      "kind": "Asset inventory",
+      "finding": "Transmission installation types are retained as supplied. These lines do not identify building service connections."
+    },
+    {
+      "id": "buildings",
+      "title": "DataSF building footprints",
+      "url": "https://data.sfgov.org/resource/ynuv-fyni.json",
+      "published": "Public inventory snapshot",
+      "locator": "Original mapped geometry",
+      "kind": "Asset inventory",
+      "finding": "Mapped location only; not a current condition survey."
+    },
+    {
+      "id": "tree-map",
+      "title": "DataSF street tree inventory",
+      "url": "https://data.sfgov.org/resource/tkzw-k3nq.json",
+      "published": "Public inventory snapshot",
+      "locator": "Original mapped geometry",
+      "kind": "Asset inventory",
+      "finding": "Mapped location only; not a current condition survey."
+    },
+    {
+      "id": "street-map",
+      "title": "DataSF active street centerlines",
+      "url": "https://data.sfgov.org/resource/3psu-pn9h.json",
+      "published": "Public inventory snapshot",
+      "locator": "Original mapped geometry",
+      "kind": "Asset inventory",
+      "finding": "Mapped location only; not a current condition survey."
+    }
+  ],
+  "hazards": [
+    {
+      "id": "wind",
+      "label": "Wind & flying debris",
+      "role": "building",
+      "check": "Inspect glazing, window hardware and loose roof or balcony items",
+      "action": "Secure loose items and have the owner repair identified glazing or hardware defects",
+      "benefit": "Reduce falling-glass and windborne-debris exposure where a correctable defect is found.",
+      "needs": [
+        "Owner access and current inspection",
+        "Suitable repair or securing method",
+        "Clear public area below any work"
+      ],
+      "source_ids": [
+        "sf-glass"
+      ],
+      "validation": "Local failure mechanism supported",
+      "validation_detail": "The investigation supports finding and correcting defects. It does not validate a percentage reduction for these buildings today.",
+      "transfer": "No local damage reduction has been measured."
+    },
+    {
+      "id": "trees",
+      "label": "Falling trees",
+      "role": "arborist",
+      "check": "Re-inspect trees at historical fallen-tree report locations",
+      "action": "Have an arborist address confirmed defects; arrange specialist pruning or removal if warranted",
+      "benefit": "Reduce failure exposure for the particular defect and tree addressed.",
+      "needs": [
+        "Current arborist assessment",
+        "Tree ownership and access confirmed",
+        "Utility clearance if wires may be involved"
+      ],
+      "source_ids": [
+        "uf-trees",
+        "sf-works"
+      ],
+      "validation": "External observational evidence",
+      "validation_detail": "The Andrew comparison supports proper maintenance, not an emergency pruning recipe. Species, roots, decay and local exposure must be assessed.",
+      "transfer": "The 73% versus 47% historical survival comparison is not a predicted benefit here."
+    },
+    {
+      "id": "structure",
+      "label": "Structural collapse",
+      "role": "building",
+      "check": "Have an engineer review roof, wall, connection and foundation concerns",
+      "action": "Use an engineer-designed repair or temporary support; restrict exposure if the structure cannot be made ready",
+      "benefit": "Address a verified failure mechanism; reducing exposure does not strengthen a structure.",
+      "needs": [
+        "Current condition and structural system",
+        "Engineer assessment of wind, flood loading and scour where relevant",
+        "Designed repair or support, permits and access"
+      ],
+      "source_ids": [
+        "sandy"
+      ],
+      "validation": "Mechanism documented; local benefit unmeasured",
+      "validation_detail": "Sandy field evidence distinguishes foundation scour and flood-loaded slabs. A generic roof brace does not address every collapse mode.",
+      "transfer": "Neither whole-building collapse likelihood nor bracing benefit is validated here."
+    },
+    {
+      "id": "flood",
+      "label": "Flooding",
+      "role": "general",
+      "check": "Check inlets, thresholds, backflow paths and stored goods at reported flood locations",
+      "action": "Clear confirmed surface blockages; use a suitable, fitted barrier and move vulnerable goods where the owner can do so",
+      "benefit": "Reduce a confirmed entry path or blocked inlet, within the protection system\u2019s capacity.",
+      "needs": [
+        "Current inlet or entry-path inspection",
+        "Barrier fit, height and drainage/backflow checked",
+        "Storage relocation or safe overflow plan"
+      ],
+      "source_ids": [
+        "sf-311",
+        "sf-works",
+        "sandy"
+      ],
+      "validation": "Failure limits documented",
+      "validation_detail": "Sandy\u2019s 42-inch gates were overtopped. Local 311 flooding reports do not show whether inlet clearing or a barrier would have prevented those incidents.",
+      "transfer": "The earlier 400 m\u00b3 simulated saving has no field validation and is not used."
+    },
+    {
+      "id": "power",
+      "label": "Power loss",
+      "role": "electrician",
+      "check": "Identify critical loads and test the complete backup power chain",
+      "action": "Arrange a compatible, tested backup supply with protected switching, fuel and distribution",
+      "benefit": "Maintain verified critical loads during an outage, for the tested runtime.",
+      "needs": [
+        "Critical load and compatible connection confirmed",
+        "Generator, fuel, switchgear and pumps protected and tested",
+        "Owner and electrician approval"
+      ],
+      "source_ids": [
+        "sandy",
+        "pge",
+        "cec"
+      ],
+      "validation": "Operational benefit observed elsewhere",
+      "validation_detail": "In one documented Manhattan building, staff connected additional sump pumps to emergency power before Sandy; generators remained operational. Other facilities lost backup when supporting components flooded.",
+      "transfer": "No building-to-feeder mapping or avoided outage duration is established here."
+    },
+    {
+      "id": "routes",
+      "label": "Blocked routes",
+      "role": "traffic",
+      "check": "Survey access and an alternative around historical tree and flood reports",
+      "action": "Prepare an authorized closure and a verified alternative before exposure becomes unsafe",
+      "benefit": "Keep people away from a confirmed hazard while preserving needed access.",
+      "needs": [
+        "Primary and alternative route checked",
+        "Emergency and accessible access retained",
+        "Traffic authority and closure trigger agreed"
+      ],
+      "source_ids": [
+        "sf-works",
+        "sf-311"
+      ],
+      "validation": "Incident mechanism documented",
+      "validation_detail": "SF crews documented tree-related road closures and power-line obstructions. No matched evidence measures how much a proposed cordon reduces exposure.",
+      "transfer": "Closure is not counted as less physical damage or proven safer access."
+    }
+  ],
+  "incidents": [
+    {
+      "id": "16234780",
+      "date": "2022-12-30",
+      "kind": "flood",
+      "address": "201 SPEAR ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.3920152,
+        37.7912629
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16237271",
+      "date": "2022-12-30",
+      "kind": "flood",
+      "address": "4 BAY ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.40596619,
+        37.80663043
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16237945",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "619 CALIFORNIA ST, SAN FRANCISCO, CA, 94108",
+      "position": [
+        -122.405023272223,
+        37.792031824078
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16238515",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "201 SACRAMENTO ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.3982912,
+        37.7940979
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16239088",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "601 HOWARD ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.398103333333,
+        37.786746666667
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16239293",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "Justin Herman/Embarcadero Plaza, , SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.3947546,
+        37.7948289
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16239820",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "100 LOMBARD ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.403556258233,
+        37.804075123103
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16240253",
+      "date": "2022-12-31",
+      "kind": "flood",
+      "address": "353 SACRAMENTO ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.3996401,
+        37.7940981
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16255533",
+      "date": "2023-01-04",
+      "kind": "flood",
+      "address": "Intersection of BEALE ST and HOWARD ST",
+      "position": [
+        -122.39423425083,
+        37.789898084074
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16261265",
+      "date": "2023-01-05",
+      "kind": "flood",
+      "address": "13 FRONT ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.398435224405,
+        37.79175458265
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16270353",
+      "date": "2023-01-07",
+      "kind": "trees",
+      "address": "Intersection of SECURITY PACIFIC PL and OFARRELL ST",
+      "position": [
+        -122.405571182372,
+        37.786613241833
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16274399",
+      "date": "2023-01-09",
+      "kind": "flood",
+      "address": "Intersection of FREMONT ST and HOWARD ST",
+      "position": [
+        -122.3951636,
+        37.7892367
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16274506",
+      "date": "2023-01-09",
+      "kind": "flood",
+      "address": "Intersection of FREMONT ST and HOWARD ST",
+      "position": [
+        -122.395146119205,
+        37.789123137771
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16274991",
+      "date": "2023-01-09",
+      "kind": "flood",
+      "address": "Intersection of FREMONT ST and HOWARD ST",
+      "position": [
+        -122.395102292837,
+        37.789225551529
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16275501",
+      "date": "2023-01-09",
+      "kind": "flood",
+      "address": "333 MARKET ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.3977775,
+        37.7917902
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16276303",
+      "date": "2023-01-09",
+      "kind": "flood",
+      "address": "455 THE EMBARCADERO, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.397279821735,
+        37.798531959129
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16281039",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "Intersection of LOMBARD ST and SANSOME ST",
+      "position": [
+        -122.403382256104,
+        37.804048916056
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16281311",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "100 LOMBARD ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.403402975496,
+        37.804055538026
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16281823",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "100 LOMBARD ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.40352,
+        37.804038333333
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16281938",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "Intersection of FILBERT ST and MONTGOMERY ST",
+      "position": [
+        -122.404524110349,
+        37.801880530257
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16282371",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "Intersection of HOWARD ST and 1ST ST",
+      "position": [
+        -122.393439775941,
+        37.790599266939
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16282611",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "169 STEUART ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.3919907,
+        37.7927017
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16284355",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "8 DAVIS ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.397155111466,
+        37.792525469567
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16284356",
+      "date": "2023-01-10",
+      "kind": "flood",
+      "address": "250 MARKET ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.396959155697,
+        37.792666999677
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16285846",
+      "date": "2023-01-11",
+      "kind": "trees",
+      "address": "323 SUTTER ST, SAN FRANCISCO, CA, 94108",
+      "position": [
+        -122.405861839859,
+        37.789494359672
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16286324",
+      "date": "2023-01-11",
+      "kind": "flood",
+      "address": "Intersection of MONTEREY BLVD and EDNA ST",
+      "position": [
+        -122.4032327,
+        37.7950747
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16288327",
+      "date": "2023-01-11",
+      "kind": "flood",
+      "address": "Intersection of BATTERY ST and JACKSON ST",
+      "position": [
+        -122.400573,
+        37.7968178
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16291635",
+      "date": "2023-01-12",
+      "kind": "trees",
+      "address": "1 HARRISON ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.3888066,
+        37.7890659
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16296302",
+      "date": "2023-01-13",
+      "kind": "trees",
+      "address": "450 HARRISON ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.392954010638,
+        37.786527588782
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16298527",
+      "date": "2023-01-14",
+      "kind": "flood",
+      "address": "251 HOWARD ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.393782083059,
+        37.790245176328
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16298811",
+      "date": "2023-01-14",
+      "kind": "flood",
+      "address": "Intersection of FOLSOM ST and ECKER ST",
+      "position": [
+        -122.395092787951,
+        37.786790573944
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16298824",
+      "date": "2023-01-14",
+      "kind": "flood",
+      "address": "Intersection of ESSEX ST and FOLSOM ST",
+      "position": [
+        -122.395653129105,
+        37.786380144325
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16302169",
+      "date": "2023-01-15",
+      "kind": "flood",
+      "address": "280 HOWARD ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.393940584848,
+        37.789988312905
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16302887",
+      "date": "2023-01-15",
+      "kind": "flood",
+      "address": "100 LOMBARD ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.403484435557,
+        37.804108729685
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16306641",
+      "date": "2023-01-16",
+      "kind": "flood",
+      "address": "455 THE EMBARCADERO, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.397353333333,
+        37.798538333333
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16540301",
+      "date": "2023-03-14",
+      "kind": "flood",
+      "address": "455 THE EMBARCADERO, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.39755448904,
+        37.798516989839
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16542174",
+      "date": "2023-03-14",
+      "kind": "trees",
+      "address": "Intersection of MERCHANT ST and MONTGOMERY ST",
+      "position": [
+        -122.4032327,
+        37.7950747
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16547079",
+      "date": "2023-03-15",
+      "kind": "trees",
+      "address": "396 HARRISON ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.392007,
+        37.787017
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16570488",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "510 FOLSOM ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.39506352643,
+        37.78687425681
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16570496",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "470 SPEAR ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.388587817664,
+        37.787961778266
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16570588",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "528 FOLSOM ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.395278333333,
+        37.786833333333
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16570672",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "430 HARRISON ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.39228,
+        37.786686666667
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571200",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "500 DAVIS ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.398120460119,
+        37.797145023735
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571277",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "Intersection of ECKER ST and FOLSOM ST",
+      "position": [
+        -122.395130790345,
+        37.786863013621
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571542",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "1791 MONTGOMERY ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.4055121,
+        37.8055562
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571559",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "1791 MONTGOMERY ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.4055121,
+        37.8055562
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571568",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "1791 MONTGOMERY ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.4055121,
+        37.8055562
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16571750",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "360 GREEN ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.405232277679,
+        37.800046597277
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572074",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "334 UNION ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.40499722,
+        37.80097222
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572132",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "735 DAVIS ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.3988843,
+        37.79925
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572155",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "163 MAIN ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.393700714908,
+        37.790907276306
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572267",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "528 FOLSOM ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.395296776781,
+        37.787017179688
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572287",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "425 PACIFIC AVE, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.40236111,
+        37.79717222
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572324",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "340 1ST ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.393973588873,
+        37.786743490726
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572439",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "101 ALTA ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.404731,
+        37.801452
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16572973",
+      "date": "2023-03-21",
+      "kind": "trees",
+      "address": "340 1ST ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.393713333333,
+        37.786755
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16573088",
+      "date": "2023-03-21",
+      "kind": "flood",
+      "address": "Intersection of BEALE ST and BRYANT ST",
+      "position": [
+        -122.389647983451,
+        37.786222315427
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16573468",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "333 GREENWICH ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.4052761,
+        37.8026825
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16573491",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "10 TELEGRAPH HILL BLVD, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.4058658,
+        37.8023818
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16573493",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "333 GREENWICH ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.405260208851,
+        37.802734375
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16574655",
+      "date": "2023-03-22",
+      "kind": "flood",
+      "address": "400 SPEAR ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.389344004336,
+        37.788461904064
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16575597",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "Intersection of ICEHOUSE ALY and END (000 BLOCK OF)",
+      "position": [
+        -122.4022541,
+        37.8009565
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16575857",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "333 GREENWICH ST, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.405489737859,
+        37.802718577986
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16578231",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "Intersection of SPEAR ST and END (400 BLOCK OF)",
+      "position": [
+        -122.388341886635,
+        37.787824710033
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16578360",
+      "date": "2023-03-22",
+      "kind": "trees",
+      "address": "755 SANSOME ST, SAN FRANCISCO, CA, 94111",
+      "position": [
+        -122.4021142,
+        37.79735079
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16580364",
+      "date": "2023-03-23",
+      "kind": "trees",
+      "address": "163 MAIN ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.394011666667,
+        37.790796666667
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16580380",
+      "date": "2023-03-23",
+      "kind": "trees",
+      "address": "425 PACIFIC AVE, SAN FRANCISCO, CA, 94133",
+      "position": [
+        -122.4024371,
+        37.7973095
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16580788",
+      "date": "2023-03-23",
+      "kind": "trees",
+      "address": "101 STEUART ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.392975,
+        37.7932194
+      ],
+      "source_id": "sf-311"
+    },
+    {
+      "id": "16582625",
+      "date": "2023-03-23",
+      "kind": "trees",
+      "address": "300 BEALE ST, SAN FRANCISCO, CA, 94105",
+      "position": [
+        -122.3925037,
+        37.7880801
+      ],
+      "source_id": "sf-311"
+    }
+  ],
+  "glass_sites": [
+    {
+      "address": "50 California St, San Francisco, CA",
+      "position": [
+        -122.397347717731,
+        37.794053218232
+      ],
+      "matched_address": "50 California St, San Francisco, California, 94111",
+      "score": 100,
+      "url": "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=50+California+St%2C+San+Francisco%2C+CA&f=json&outFields=Match_addr&maxLocations=1"
+    },
+    {
+      "address": "301 Mission St, San Francisco, CA",
+      "position": [
+        -122.395929667352,
+        37.790576111428
+      ],
+      "matched_address": "301 Mission St, San Francisco, California, 94105",
+      "score": 100,
+      "url": "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=301+Mission+St%2C+San+Francisco%2C+CA&f=json&outFields=Match_addr&maxLocations=1"
+    },
+    {
+      "address": "350 Mission St, San Francisco, CA",
+      "position": [
+        -122.396685882656,
+        37.790885487474
+      ],
+      "matched_address": "350 Mission St, San Francisco, California, 94105",
+      "score": 100,
+      "url": "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=350+Mission+St%2C+San+Francisco%2C+CA&f=json&outFields=Match_addr&maxLocations=1"
+    }
+  ],
+  "validation": {
+    "method": "Compare proposed mechanisms and prerequisites with documented storm outcomes. No fitted fragility curves, numerical transfer or causal local benefit is claimed.",
+    "scope": "San Francisco 2022\u201323 reports and glass investigation; Andrew and Sandy field evidence used with explicit transfer limits.",
+    "quantified_local_benefits": 0
+  }
+}
