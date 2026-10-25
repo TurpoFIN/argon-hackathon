@@ -154,7 +154,8 @@ The Python solver now retains each of the 1,003 modeled DataSF drain IDs.
 A finite, seeded loose-debris inventory is released over 40 simulation minutes,
 transported at an assumed 3% of local wind speed (capped at 1 m/s), and intercepted
 within an assumed 8.4 m inlet radius. Interception increases each inlet's clog
-mass; effective capacity is `capacity * exp(-clog_kg / 3)`. Initial clog mass
+mass; effective capacity follows a capped exponential clog response (3 kg scale),
+normalized so the 100% blockage slider gives exactly zero capacity. Initial clog mass
 reproduces the selected initial blockage percentage. These are transparent
 scenario assumptions, not calibrated debris mechanics or observed failures.
 

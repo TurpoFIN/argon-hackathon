@@ -27,7 +27,15 @@ class CoupledTests(unittest.TestCase):
         self.z=np.ones((7,7));self.empty=np.zeros((7,7),bool);self.zero=np.zeros((7,7))
 
     def world(self,**params):
-        return World(self.root,Parameters(response_mode='baseline',blockage_pct=0,debris_kg=12,clearing_crews=0,**params),self.z,self.empty,self.empty,self.lon,self.lat,self.zero,self.zero)
+        values={'response_mode':'baseline','blockage_pct':0,'debris_kg':12,'clearing_crews':0,**params}
+        return World(self.root,Parameters(**values),self.z,self.empty,self.empty,self.lon,self.lat,self.zero,self.zero)
+
+    def test_initial_blockage_matches_slider_including_fully_closed(self):
+        for percent in (0,20,65,99.9,100):
+            with self.subTest(percent=percent):
+                world=self.world(blockage_pct=percent)
+                self.assertAlmostEqual(world.blockage()[0]*100,percent)
+                self.assertAlmostEqual(world.rates()[3,3],world.p.drain_capacity_lps/1000/144*(1-percent/100))
 
     def test_route_respects_buildings_and_deep_water(self):
         blocked=self.empty.copy();blocked[3,:]=True

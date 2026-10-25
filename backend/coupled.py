@@ -65,7 +65,8 @@ class World:
         if not self.drains:
             raise ValueError("No real drains in the modeled land area")
         self.drain_tree = cKDTree([(d["cell"][1], d["cell"][0]) for d in self.drains])
-        self.clog = np.full(len(self.drains), -3*math.log(max(.001, 1-p.blockage_pct/100)))
+        # Normalize the exponential response so the UI's 100% boundary is exactly closed.
+        self.clog = np.full(len(self.drains), -3*math.log(1-.999*p.blockage_pct/100))
         self.initial_clog_kg = float(self.clog.sum()); self.cleared_kg = 0.; self.deposited_kg = 0.; self.escaped_kg = 0.
         self.delivered_kg = 0.
         valid = np.argwhere(~self.blocked & (z < 18))
@@ -98,7 +99,7 @@ class World:
         self.events.append({"time_seconds": seconds, "kind": kind, **data})
 
     def blockage(self):
-        return 1-np.exp(-self.clog/3)
+        return np.minimum(1.,(1-np.exp(-self.clog/3))/.999)
 
     def rates(self):
         result = np.zeros_like(self.z)
