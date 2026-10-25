@@ -72,7 +72,7 @@ def compact(entry):
     return dict(label=entry['label'],name=entry['name'],action_ids=entry['action_ids'],
                 expected_flood_damage_usd=entry['ledger']['total_usd'],
                 completed=len(entry['receipt']['completed']),skipped=entry['receipt']['skipped'],
-                crew_minutes=entry['receipt']['crew_minutes'],local_harm=entry.get('local_harm'))
+                crew_minutes=entry['receipt']['crew_minutes'],local_harm=entry.get('local_harm'),site_water=entry.get('site_water'))
 
 
 def pairs(candidates, weather, with_layers, without_layers, selected_ids):
@@ -147,6 +147,9 @@ def run(folder, minutes=30):
         entry=judge.evaluate_work(ids,name,label)
         layers=json.loads((folder/f'{label}_layers.json').read_text())
         entry['local_harm']=local_summary(judge.work_candidates,baseline['weather'],layers,entry['action_ids'])
+        actual=viewer_actions.Field(layers)
+        entry['site_water']=[dict(id=a['id'],no_preparation_cm=round(basefield.at(a['site']['position'])[-1]*100),
+            plan_cm=round(actual.at(a['site']['position'])[-1]*100)) for a in judge.work_candidates if a['id'] in entry['action_ids']]
         entries[label]=entry;return entry
     for i,p in enumerate(proposals.plans):
         entry=evaluate(p.action_ids,p.name,f'work_candidate{i+1}')
@@ -157,7 +160,8 @@ def run(folder, minutes=30):
         'Choose ONE tested plan label, including work_control if work is wasteful. Return reasons grounded in the actual results. '
         'Use completed IDs only; skipped IDs have no benefit. Lower flood dollars, indoor rain and wet contents are better; '
         'route closure reduces exposure, not flooding, and may impair access. Do not invent a combined score or validated benefits. '
-        'The same storm and finite resources apply.\n'+json.dumps(dict(context=context,results=[compact(control),*tested])),
+        'The same storm and finite resources apply. site_water contains actual full-city replay depths, not the preliminary local balance. '
+        'Do not quote preliminary candidate water estimates as measured simulation results.\n'+json.dumps(dict(storm_id=baseline['storm_id'],weather=baseline['weather'],resources=judge.resources,results=[compact(control),*tested])),
         thinking='medium',max_tokens=2600,timeout=120)
     if decision.selected_plan not in {e['label'] for e in tested}|{'work_control'}:raise ValueError('Argon selected an untested plan')
     selected=entries[decision.selected_plan]
