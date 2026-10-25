@@ -865,7 +865,8 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                 final["best_seed_net_usd"] = seeds[0]["score"]["net_benefit_usd"]
                 final["improvement_over_best_seed_usd"] = b["score"]["net_benefit_usd"] - seeds[0]["score"]["net_benefit_usd"]
         with self.lock:
-            self.state["status"] = "completed"
+            # people stay in control: the best plan waits for a planner (POST /api/evolve/<id>/approve)
+            self.state["status"] = "awaiting_approval" if b else "completed"
             self.state["final"] = final
         self.save(True)
         (self.dir / "final.json").write_text(json.dumps(final, indent=1, default=str))
@@ -923,7 +924,10 @@ def evolve_job(job: Job, cfg: dict) -> dict:
     kw = {k: cfg[k] for k in keys if cfg.get(k) is not None}
     if cfg.get("budget_usd") is not None:
         kw["budget"] = cfg["budget_usd"]
-    return Evolver(job, **kw).run()
+    res = Evolver(job, **kw).run()
+    if res.get("best_id"):
+        res["_final_status"] = "awaiting_approval"
+    return res
 
 
 def list_runs(limit: int = 50) -> list[dict]:

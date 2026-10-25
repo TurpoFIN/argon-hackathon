@@ -5,11 +5,13 @@ Mounted by server/app.py with `app.include_router(evolve_api.router)` before the
                            sim_workers?, max_minutes?, use_llm?}             -> {job_id, events_url, state_url}
   GET  /api/evolve        recent evolution runs (newest first)
   GET  /api/evolve/{id}   state.json of one run ("latest" = newest)
+  POST /api/evolve/{id}/approve {approved, approver?, note?}   planner decision on the best plan
   GET  /evolve/...        the view (web/public/evolve, no build step)
 """
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -67,10 +69,41 @@ def api_evolve_state(job_id: str):
     if not p.exists() or OUT.resolve() not in p.resolve().parents:
         raise HTTPException(404, "no such evolution run")
     st = json.loads(p.read_text())
-    j = events.JOBS.get(job_id)
-    if st.get("status") == "running" and j is None:
-        st["status"] = "interrupted"  # server restarted while it ran
+    if st.get("status") == "running" and events.JOBS.get(job_id) is None and time.time() - st.get("updated", 0) > 900:
+        st["status"] = "interrupted"  # no progress for 15 min and not running in this server
+    ap = REPO / "runs" / "_jobs" / f"{job_id}.approval.json"
+    if ap.exists():
+        st["approval"] = json.loads(ap.read_text())
+        st["status"] = "approved" if st["approval"].get("approved") else "rejected"
     return st
+
+
+class ApproveReq(BaseModel):
+    approved: bool
+    approver: str = "planner"
+    note: str = ""
+
+
+@router.post("/api/evolve/{job_id}/approve")
+def api_evolve_approve(job_id: str, req: ApproveReq):
+    """Planner decision on the best plan. Works for runs started here or from the CLI."""
+    from agent.evolve import OUT
+    p = OUT / job_id / "state.json"
+    if not p.exists() or OUT.resolve() not in p.resolve().parents:
+        raise HTTPException(404, "no such evolution run")
+    st = json.loads(p.read_text())
+    if st.get("status") != "awaiting_approval":
+        raise HTTPException(409, f"run status is {st.get('status')}, not awaiting_approval")
+    rec = {"approved": req.approved, "approver": req.approver, "note": req.note, "t": time.time(),
+           "best_id": st.get("best_id"), "plan": f"/runs/evolve/{job_id}/best.plan.py"}
+    (REPO / "runs" / "_jobs").mkdir(parents=True, exist_ok=True)
+    (REPO / "runs" / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
+    j = events.JOBS.get(job_id)
+    if j is not None and j.status == "awaiting_approval":
+        j.emit("approval", **rec)
+        j.finish("approved" if req.approved else "rejected", {**(j.result or {}), "approval": rec})
+        j.status = "completed"
+    return {"ok": True, **rec}
 
 
 @router.get("/evolve")

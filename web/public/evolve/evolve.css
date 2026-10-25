@@ -403,3 +403,27 @@ video { width: 100%; max-height: 74vh; border-radius: 8px; background: #000; dis
 }
 @media (max-width: 1400px) { #board th:nth-child(7), #board td:nth-child(7) { display: none; } }
 .is-empty .layout { grid-template-columns: minmax(0, 1fr); }
+
+/* long model text: clamp, click to expand */
+.d-dir, .ins p { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.d-dir { -webkit-line-clamp: 3; }
+.ins p { -webkit-line-clamp: 4; }
+.d-dir.open, .ins p.open { display: block; -webkit-line-clamp: unset; }
+
+/* planner approval */
+.pill.awaiting_approval { border-color: rgba(255, 181, 74, 0.45); background: rgba(255, 181, 74, 0.08); }
+.pill.awaiting_approval .dot { background: var(--warn); animation: pulse 1.4s ease-in-out infinite; }
+.pill.approved { border-color: rgba(93, 255, 157, 0.35); background: rgba(93, 255, 157, 0.06); }
+.pill.approved .dot { background: var(--good); }
+.pill.rejected, .pill.interrupted { border-color: rgba(255, 93, 108, 0.4); background: rgba(255, 93, 108, 0.08); }
+.pill.rejected .dot, .pill.interrupted .dot { background: var(--bad); }
+.approval { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 10px 12px;
+  border-radius: 8px; font-size: 12px; border: 1px solid var(--line); }
+.approval.ask { border-color: rgba(255, 181, 74, 0.45); background: rgba(255, 181, 74, 0.06); }
+.approval.ask b { display: block; color: var(--warn); font-weight: 600; margin-bottom: 2px; }
+.approval.ask span { color: var(--dim); }
+.approval .acts { display: flex; gap: 8px; flex: none; }
+.approval.ok { border-color: rgba(93, 255, 157, 0.35); background: rgba(93, 255, 157, 0.06); color: var(--dim); }
+.approval.ok b { color: var(--good); }
+.approval.no { border-color: rgba(255, 93, 108, 0.4); background: rgba(255, 93, 108, 0.06); color: var(--dim); }
+.approval.no b { color: var(--bad); }

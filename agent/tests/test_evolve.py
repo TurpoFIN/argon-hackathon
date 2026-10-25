@@ -87,7 +87,7 @@ def test_full_run_with_fake_llm(tmp_path, monkeypatch):
     e.api_doc = "(api docs omitted in test)"
     final = e.run()
     st = json.loads((ev.OUT / job.id / "state.json").read_text())
-    assert st["status"] == "completed" and final.get("best_id")
+    assert st["status"] == "awaiting_approval" and final.get("best_id")
     ops = {c["op"] for c in st["candidates"]}
     assert {"seed", "mutate", "crossover", "tweak"} <= ops, ops
     assert any(c["status"] == "duplicate" for c in st["candidates"])  # identical seeds are deduplicated

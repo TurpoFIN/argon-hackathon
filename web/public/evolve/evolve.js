@@ -9,7 +9,6 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 
 const OPS = {
   seed: { label: 'Seed', color: 'var(--seed)', hex: '#8fa1b6' },
-  architect: { label: 'Argon rewrite', color: 'var(--argon)', hex: '#b48cff' },
   crossover: { label: 'Argon crossover', color: 'var(--cross)', hex: '#e58cff' },
   mutate: { label: 'Flash diff', color: 'var(--flash)', hex: '#5fe1ff' },
   tweak: { label: 'Tweak', color: 'var(--tweak)', hex: '#ffb54a' },
@@ -156,7 +155,7 @@ function renderTop() {
   $('#sub').textContent = `${cfg.storm || 'storm'} · budget ${money(cfg.budget_usd, { dp: 0 })} · ${cfg.population || '?'} per generation · ${cfg.sim_workers || '?'} parallel sims`;
   $('#budgetHint').textContent = Math.round((cfg.budget_usd || 50e6) / 1e6);
   const stage = S.status === 'running' ? S.stage : '';
-  const label = S.status === 'running' ? 'Running' : S.status === 'completed' ? 'Completed' : S.status === 'failed' ? 'Failed' : S.status;
+  const label = { running: 'Running', completed: 'Completed', failed: 'Failed', awaiting_approval: 'Awaiting planner approval', approved: 'Approved by planner', rejected: 'Rejected by planner', interrupted: 'Interrupted' }[S.status] || S.status;
   $('#status').innerHTML = `<span class="pill ${esc(S.status)}"><span class="dot"></span>${esc(label)}
       <span class="muted">· gen ${S.generation ?? 0}/${genTotal()}${stage ? ' · ' + esc(stage) : ''}</span></span>
     ${cfg.mock_sim ? '<span class="badge mock" title="The real storm simulator was not available; candidates were scored by the mock bathtub model">Mock sim</span>' : ''}`;
@@ -470,6 +469,7 @@ async function renderDetail() {
     ${c.error ? `<div class="err">${esc(c.error)}</div>` : ''}
     ${PENDING.has(c.status) ? `<div class="d-dir live">● ${esc(c.status)}…</div>` : ''}
     ${scores}
+    ${isBest ? approvalHtml() : ''}
     <div class="btns">
       <button class="btn" id="btnVideo" ${c.video_url ? '' : 'disabled'}>▶ Watch replay</button>
       <a class="btn" ${can3d ? `href="/?a=${encodeURIComponent(base.run_id || '')}&c=${encodeURIComponent(c.run_id)}" target="_blank"` : 'disabled'}>Open in 3D ↗</a>
@@ -485,6 +485,7 @@ async function renderDetail() {
   box.querySelectorAll('.tnode[data-id]').forEach((n) => { if (n.dataset.id !== c.id) n.addEventListener('click', () => select(n.dataset.id)); });
   box.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => { diffMode = b.dataset.m; lastDetailKey = ''; renderDetail(); }));
   $('#btnVideo').addEventListener('click', () => openVideo(c));
+  box.querySelectorAll('[data-approve]').forEach((b) => b.addEventListener('click', () => approve(b.dataset.approve === '1')));
 
   const tok = ++detailToken;
   const parent = c.parents && c.parents.length ? D.byId.get(c.parents[0]) : null;
@@ -561,13 +562,13 @@ function renderArch() {
   const nodes = {
     sampler: { x: 30, y: 96, w: 270, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell, the top', 'elites as inspiration, their ledgers'], c: '#5fe1ff', on: running && (llmOn || st === 'architect' || st === 'mutating') },
     db: { x: 30, y: 352, w: 270, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#5dff9d', on: running && st === 'selecting', n: nCells },
-    argon: { x: 400, y: 40, w: 310, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, writes research', 'directions, rewrites and crossovers'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
+    argon: { x: 400, y: 40, w: 310, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, writes research', 'directions and a crossover plan'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
     flash: { x: 400, y: 166, w: 310, h: 100, k: `Mutators × ${Math.max(1, N - 2)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', 'plan, one directive each'], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
     tweak: { x: 400, y: 292, w: 310, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#ffb54a', on: running && cnt.tweak > 0, n: cnt.tweak },
     sandbox: { x: 800, y: 70, w: 210, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#5fe1ff', on: running && cnt.check > 0, n: cnt.check },
     cost: { x: 1050, y: 70, w: 210, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical diff', 'from cited unit costs'], c: '#ffb54a', on: running && cnt.check > 0 },
     sim: { x: 800, y: 300, w: 460, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood on 4 m lidar · LBM wind', 'tree failure · people & response · Hazus damage', 'same plan → same ledger, every time'], c: '#5fe1ff', on: running && cnt.sim > 0, n: cnt.sim },
-    eop: { x: 400, y: 446, w: 340, h: 78, k: 'People stay in control', t: 'Planner approval → EOP', s: ['best plan → cited Emergency Operations Plan'], c: '#5dff9d', on: S.status === 'completed' },
+    eop: { x: 400, y: 446, w: 340, h: 78, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
   };
   const simOut = running && (cnt.sim > 0 || st === 'selecting');
   const edges = [
@@ -581,8 +582,8 @@ function renderArch() {
     { d: 'M1012,120 L1048,120', on: cnt.check > 0 && running, c: '#ffb54a' },
     { d: 'M1155,172 L1155,298', on: cnt.sim > 0 && running, c: '#5fe1ff', label: 'within budget', lx: 1166, ly: 240 },
     { d: 'M798,384 C620,384 480,408 302,408', on: simOut, c: '#5dff9d', m: 'ahg', label: 'ledger + score', lx: 480, ly: 392 },
-    { d: 'M240,466 C240,486 330,486 398,486', on: S.status === 'completed', c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 270, ly: 504 },
-    { d: 'M555,38 C555,8 110,8 110,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads the whole archive (1M context)', lx: 168, ly: 58 },
+    { d: 'M240,466 C240,486 330,486 398,486', on: DONE.has(S.status), c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 270, ly: 504 },
+    { d: 'M555,38 C555,8 110,8 110,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 150, ly: 58 },
   ];
   edges.forEach((e) => {
     const p = el('path', { d: e.d, class: 'aedge' + (e.on ? ' on' : '') + (e.exit ? ' exit' : ''), style: `--c:${e.c}`, 'marker-end': `url(#${e.m || 'ah'})` }, svg);
@@ -623,6 +624,7 @@ function renderUsage() {
 
 // ---------------------------------------------------------------- log
 let logOpen = false;
+const DONE = new Set(['completed', 'awaiting_approval', 'approved', 'rejected']);
 const KIND_COLORS = { architect: 'var(--argon)', insight: 'var(--argon)', score: 'var(--good)', best: 'var(--good)', elite: 'var(--good)', fail: 'var(--bad)', reject: 'var(--warn)', error: 'var(--bad)', api_error: 'var(--bad)', sim_error: 'var(--bad)', over: 'var(--warn)', repair: 'var(--warn)', info: 'var(--accent)', start: 'var(--accent)', generation: 'var(--accent)', video: 'var(--accent)', stop: 'var(--warn)' };
 function renderLog() {
   const L = [...(S.log || [])].reverse();
@@ -764,3 +766,28 @@ setInterval(() => { if (S && S.status === 'running') renderTop(); }, 1000);
   }
   poll();
 })();
+
+// expand clamped directives / insights on click
+document.addEventListener('click', (e) => {
+  const el = e.target instanceof Element ? e.target.closest('.d-dir, .ins p') : null;
+  if (el) el.classList.toggle('open');
+});
+
+// ---------------------------------------------------------------- planner approval (people stay in control)
+function approvalHtml() {
+  const a = S.approval;
+  if (a) {
+    const t = new Date((a.t || 0) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `<div class="approval ${a.approved ? 'ok' : 'no'}"><b>${a.approved ? '✓ Approved' : '✕ Rejected'}</b> by ${esc(a.approver || 'planner')} at ${esc(t)}${a.note ? ` · ${esc(a.note)}` : ''}</div>`;
+  }
+  if (S.status !== 'awaiting_approval' || FIXTURE) return '';
+  return `<div class="approval ask"><div><b>Planner approval</b><span>Nothing is built or spent until a person approves this plan.</span></div>
+    <span class="acts"><button class="btn" data-approve="0">Reject</button><button class="btn primary" data-approve="1">Approve plan</button></span></div>`;
+}
+async function approve(ok) {
+  if (!S || !S.id) return;
+  const note = ok ? '' : (prompt('Reason for rejecting (optional):') || '');
+  const r = await fetch(`/api/evolve/${encodeURIComponent(S.id)}/approve`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ approved: ok, approver: 'planner', note }) });
+  if (!r.ok) { alert('Approval failed: ' + (await r.text()).slice(0, 200)); return; }
+  S.updated = 0; lastDetailKey = ''; poll();
+}
