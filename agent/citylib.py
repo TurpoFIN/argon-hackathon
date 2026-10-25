@@ -86,7 +86,7 @@ def annotate_objects(objs: list, ann: dict | None) -> list:
 _QUERY_METHODS = {"utm", "cell", "polygon_mask", "polyline_cells", "log", "elevation", "is_building", "low_points",
                   "basin_of", "basins", "buildings_in", "building", "trees_near", "trees_in", "inlets_in", "cars_in",
                   "streets", "help", "to_water_edits", "tree_flags", "wind_screens_utm", "damage_plan",
-                  "export_objects", "summary", "merged_floodproofed", "of", "get", "max_capacity", "building_info",
+                  "export_objects", "summary", "merged_floodproofed", "edited_trees", "edited_cars", "of", "get", "max_capacity", "building_info",
                   "to_json", "hash", "shelters", "sandbagged", "pump_sinks", "cost_lines", "total_cost", "plan_objects",
                   "for_grid"}
 
