@@ -129,7 +129,7 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
     render(this:RenderHost) {
       this.resetWebGLState();
       const output=this.bindRenderTarget(), gl=this.gl;
-      if(document.body.classList.contains('planning-mode')&&!document.body.classList.contains('research-mode'))return output;
+      if(document.body.classList.contains('planning-mode')&&!document.body.classList.contains('plan-ui-hidden')&&!document.body.classList.contains('research-mode'))return output;
       if(!glReady) initialize(gl);
       const now=performance.now(),dt=playing?.()===false?0:Math.min((now-last)/1000,0.05);last=now;elapsed+=dt;
       // One forward 60-minute scenario, looped for viewing. Starts at 35 minutes.
