@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 from pathlib import Path
 import urllib.parse
 import urllib.request
@@ -148,7 +149,151 @@ def prepare():
 
 
 def load():
-    return json.loads((FOLDER/'assets.json').read_text())
+    assets = json.loads((FOLDER/'assets.json').read_text())
+    assets['destruction_inventory'] = build_destruction_inventory()
+    return assets
+
+
+def _inside(meta, x, y):
+    lon, lat = FROM(x, y)
+    return BBOX[0] <= lon <= BBOX[2] and BBOX[1] <= lat <= BBOX[3]
+
+
+def _pt(meta, kind, i, x, y, **kw):
+    ix, iy = meta.cell(x, y) if meta is not None else (None, None)
+    return dict(id=i, kind=kind, x=round(x, 2), y=round(y, 2), ix=ix, iy=iy, **kw)
+
+
+def _split(p, q, max_len):
+    n = max(1, int(math.ceil(math.hypot(q[0]-p[0], q[1]-p[1]) / max_len)))
+    return [((p[0]+(q[0]-p[0])*k/n, p[1]+(q[1]-p[1])*k/n),
+             (p[0]+(q[0]-p[0])*(k+1)/n, p[1]+(q[1]-p[1])*(k+1)/n)) for k in range(n)]
+
+
+OCS_MAX_SPAN_M = 30.0
+
+
+def build_destruction_inventory(grid=None):
+    """Original inventory construction, using this app's bounded fetch/cache layer."""
+    bbox = ','.join(map(str, (BBOX[1], BBOX[0], BBOX[3], BBOX[2])))
+    queries = [
+        ('osm-overhead.json', f'[out:json];(way["power"~"^(line|minor_line)$"]({bbox});node["power"~"^(pole|tower)$"]({bbox});way["trolley_wire"="yes"]({bbox});way["railway"~"^(tram|light_rail)$"]["electrified"="contact_line"]({bbox}););out body;>;out skel qt;'),
+        ('osm-street-assets.json', f'[out:json];(node["highway"="street_lamp"]({bbox});node["highway"="bus_stop"]["shelter"="yes"]({bbox});node["amenity"="shelter"]({bbox});node["man_made"~"^(mast|tower)$"]({bbox}););out body;'),
+    ]
+    data = []; sources = []
+    for name, query in queries:
+        rows, source = fetch(name, 'https://overpass-api.de/api/interpreter?'+urllib.parse.urlencode({'data':query}))
+        source['license'] = '© OpenStreetMap contributors, ODbL'
+        data.append(rows); sources.append(source)
+    query = {'$where':'within_box(shape,37.808,-122.406,37.786,-122.386)', '$limit':5000}
+    signal_rows, source = fetch('datasf-traffic-signals.json', 'https://data.sfgov.org/resource/ybh5-27n2.json?'+urllib.parse.urlencode(query))
+    source['license'] = 'DataSF Open Data; SFMTA Traffic Signals'
+    sources.append(source)
+    osm = {'elements': data[0]['elements'] + data[1]['elements']}
+    meta = grid
+    nodes = {}
+    for e in osm["elements"]:   # "out body; >; out skel" repeats tagged nodes without tags: keep the tagged copy
+        if e["type"] == "node" and (e.get("tags") or e["id"] not in nodes):
+            nodes[e["id"]] = e
+    utm = {nid: TO(n["lon"], n["lat"]) for nid, n in nodes.items()}
+    tagged = [e for e in osm["elements"] if e.get("tags") and (e["type"] != "node" or nodes[e["id"]] is e)]
+
+    # ---------------- power: poles, lines (OSM ways), spans between consecutive line nodes
+    pole_nodes = sorted(e["id"] for e in tagged if e["type"] == "node" and e["tags"].get("power") in ("pole", "tower"))
+    pole_idx = {}
+    poles = []
+    for nid in pole_nodes:
+        x, y = utm[nid]
+        if not _inside(meta, x, y):
+            continue
+        t = nodes[nid]["tags"]
+        pole_idx[nid] = len(poles)
+        poles.append(_pt(meta, "power_pole", len(poles), x, y, osm_id=nid, material=t.get("material", "wood"),
+                         operator=t.get("operator:short") or t.get("operator") or "", tower=t.get("power") == "tower",
+                         spans=[]))
+    lines, spans = [], []
+    for w in sorted((e for e in tagged if e["type"] == "way" and e["tags"].get("power") in ("line", "minor_line")),
+                    key=lambda e: e["id"]):
+        if w["tags"].get("layer", "0").startswith("-"):
+            continue   # mapped as underground
+        lid = len(lines)
+        span_ids = []
+        for a, b in zip(w["nodes"][:-1], w["nodes"][1:]):
+            if a not in utm or b not in utm:
+                continue
+            pa, pb = utm[a], utm[b]
+            if not (_inside(meta, *pa) or _inside(meta, *pb)):
+                continue
+            sid = len(spans)
+            ia, ib = pole_idx.get(a), pole_idx.get(b)
+            spans.append(dict(id=sid, kind="power_span", line_id=lid, a=[round(pa[0], 2), round(pa[1], 2)],
+                              b=[round(pb[0], 2), round(pb[1], 2)], pole_a=ia, pole_b=ib,
+                              length_m=round(math.hypot(pb[0] - pa[0], pb[1] - pa[1]), 2)))
+            for ip in (ia, ib):
+                if ip is not None:
+                    poles[ip]["spans"].append(sid)
+            span_ids.append(sid)
+        if span_ids:
+            lines.append(dict(id=lid, osm_id=w["id"], kind=w["tags"]["power"],
+                              operator=w["tags"].get("operator:short") or w["tags"].get("operator") or "",
+                              spans=span_ids))
+
+    # ---------------- Muni overhead contact system: trolleybus wire streets + electrified tram/light rail
+    ocs = []
+    sections = {}
+    for w in sorted((e for e in tagged if e["type"] == "way" and (
+            e["tags"].get("trolley_wire") == "yes" or
+            (e["tags"].get("railway") in ("tram", "light_rail") and e["tags"].get("electrified") == "contact_line"))),
+            key=lambda e: e["id"]):
+        t = w["tags"]
+        mode = "trolleybus" if t.get("trolley_wire") == "yes" else t["railway"]
+        name = t.get("name") or f"way {w['id']}"
+        sec = sections.setdefault((mode, name), len(sections))
+        for a, b in zip(w["nodes"][:-1], w["nodes"][1:]):
+            if a not in utm or b not in utm:
+                continue
+            for p, q in _split(utm[a], utm[b], OCS_MAX_SPAN_M):
+                if not (_inside(meta, *p) or _inside(meta, *q)):
+                    continue
+                ocs.append(dict(id=len(ocs), kind="ocs_span", mode=mode, street=name, section=sec, osm_id=w["id"],
+                                a=[round(p[0], 2), round(p[1], 2)], b=[round(q[0], 2), round(q[1], 2)],
+                                length_m=round(math.hypot(q[0] - p[0], q[1] - p[1]), 2)))
+
+    # ---------------- streetlights, shelters, masts (OSM points)
+    lights, shelters, masts = [], [], []
+    for e in sorted((e for e in tagged if e["type"] == "node"), key=lambda e: e["id"]):
+        t = e["tags"]
+        x, y = utm[e["id"]]
+        if not _inside(meta, x, y):
+            continue
+        if t.get("highway") == "street_lamp":
+            mount = t.get("lamp_mount", "straight_mast")
+            lights.append(_pt(meta, "streetlight", len(lights), x, y, osm_id=e["id"], mount=mount,
+                              high_mast=mount == "high_mast"))
+        elif (t.get("highway") == "bus_stop" and t.get("shelter") == "yes") or t.get("amenity") == "shelter":
+            shelters.append(_pt(meta, "shelter", len(shelters), x, y, osm_id=e["id"], name=t.get("name", "")))
+        elif t.get("man_made") in ("mast", "tower") and t.get("tower:type") != "bell_tower" and t.get("location") != "roof":
+            masts.append(_pt(meta, "mast", len(masts), x, y, osm_id=e["id"], tower_type=t.get("tower:type", ""),
+                             lattice=t.get("tower:construction") == "lattice"))
+
+    # ---------------- traffic signals (SFMTA official inventory)
+    signals = []
+    for r in sorted(signal_rows, key=lambda r: int(r["objectid"])):
+        if r.get("type") not in ("SIGNAL", "FLASHER", "BEACON") or not r.get("shape"):
+            continue
+        lon, lat = r["shape"]["coordinates"]
+        x, y = TO(lon, lat)
+        if _inside(meta, x, y):
+            signals.append(_pt(meta, "signal", len(signals), x, y, sfmta_id=int(r["objectid"]), type=r["type"],
+                               street1=r.get("street1", ""), street2=r.get("street2", "")))
+
+    out = dict(power_poles=poles, power_lines=lines, power_spans=spans, ocs_spans=ocs,
+               ocs_sections=[dict(id=v, mode=k[0], street=k[1]) for k, v in sorted(sections.items(), key=lambda kv: kv[1])],
+               streetlights=lights, signals=signals, shelters=shelters, masts=masts,
+               sources={
+                   'osm': sources[0], 'street_assets': sources[1], 'signals': sources[2],
+                   'coverage': 'Mapped objects only; OSM counts are a floor on real stock.'})
+    return out
 
 
 if __name__=='__main__':prepare()

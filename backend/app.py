@@ -46,7 +46,7 @@ def playback(update: PlaybackUpdate):
 
 @app.get("/api/results/{scenario_id}/{filename}")
 def result(scenario_id: str, filename: str):
-    if filename not in {"manifest.json", "grid.bin", "flood.bin", "world.json", "destruction.json"}:
+    if filename not in {"manifest.json", "grid.bin", "flood.bin", "world.json", "destruction.json", "destruction_street_trees.json"}:
         raise HTTPException(404)
     if scenario_id != "baseline" and (len(scenario_id) != 12 or any(c not in "0123456789abcdef" for c in scenario_id)):
         raise HTTPException(404)

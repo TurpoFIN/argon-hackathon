@@ -58,6 +58,8 @@ a { color:var(--foreground); }
 #map-wrap { flex:1; min-height:240px; position:relative; overflow:hidden; background:var(--muted); }
 #map,#field { position:absolute; inset:0; width:100%; height:100%; }
 #field { pointer-events:none; z-index:2; }
+/* Destruction has its own overlay: planning mode hides #field but keeps storm consequences visible. */
+#destruction-field { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
 #map-status { position:absolute; z-index:3; left:50%; top:50%; transform:translate(-50%,-50%); background:var(--card); padding:8px 12px; border-radius:6px; }
 .legend { position:absolute; z-index:3; left:16px; bottom:28px; width:220px; padding:12px; border:1px solid var(--border); border-radius:6px; background:var(--card); box-shadow:0 2px 8px #0001; }
 .legend strong { font-size:12px; font-weight:500; }
@@ -75,3 +77,7 @@ a { color:var(--foreground); }
 [data-theme=dark] fieldset>section,[data-theme=dark] details,[data-theme=dark] .apply { border-color:var(--gray-800); }
 @media(max-width:1050px) { .workspace { grid-template-columns:270px minmax(0,1fr); }.map-toolbar{padding:10px;gap:6px}.results-row{gap:12px}.results-row>.muted{display:none} }
 @media(max-width:800px) { .workspace { display:flex; flex-direction:column; }.controls{max-height:34vh;flex:none;border-right:0;border-bottom:1px solid var(--border)}.analysis-view{flex:1}.controls form{padding-top:12px}fieldset>section{padding:12px 0}.app-header{padding:0 12px}.app-header .muted{display:none}.map-toolbar{flex-wrap:wrap}.field-tabs button{padding:0 10px}.legend{width:188px;left:10px;padding:10px}.legend #probe{font-size:10px}.results-row{font-size:11px;gap:14px}.timeline{padding:10px;gap:8px}.timeline button{padding:0 10px} }
+
+#destruction-events { display:flex; flex-wrap:wrap; gap:4px 8px; }
+#destruction-events[hidden] { display:none; }
+#destruction-events button { font-size:11px; padding:2px 6px; min-height:24px; }

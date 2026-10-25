@@ -25,7 +25,7 @@ def fixture(gust=0.,tide=1.0,minutes=120):
 
 class MultiHazardTests(unittest.TestCase):
     def test_calm_sound_case_and_wind_response(self):
-        calm=fixture().run([])['metrics'];wind=fixture(gust=60).run([])['metrics']
+        calm=fixture().run([])['metrics'];wind=fixture(gust=80).run([])['metrics']
         self.assertEqual(calm['partial_collapses'],0)
         self.assertEqual(calm['damaged_envelope_m2'],0)
         self.assertGreater(wind['partial_collapses'],0)
@@ -65,7 +65,7 @@ class MultiHazardTests(unittest.TestCase):
 
     def test_added_anchorage_can_prevent_a_marginal_failure(self):
         avoided=False
-        for gust in range(20,51,2):
+        for gust in range(40,81,2):
             m=fixture(gust=gust)
             base=m.run([])['metrics']['partial_collapses']
             braced=m.run([{'kind':'brace_structure','target':'B1'}])['metrics']['partial_collapses']

@@ -53,7 +53,8 @@ class DestructionReplayTests(unittest.TestCase):
         event=next(e for e in result['events'] if e['kind']=='tree_strike')
         self.assertEqual((event['tree_id'],event['building_id']),('T1','B1'))
         fall=next(e for e in result['events'] if e['kind']=='tree_fall')
-        self.assertEqual((fall['fall_dir_deg'],fall['height_m'],fall['species']),(90.,20.,'Test tree'))
+        self.assertEqual((fall['height_m'],fall['species']),(20.,'Test tree'))
+        self.assertEqual(fall['fall_dir_deg'],result['destruction']['trees'][0]['fall_dir_deg'])
         self.assertEqual(result['frames'][-1]['struck_building_ids'],['B1'])
         self.assertEqual(result['metrics']['tree_strikes'],1)
 
@@ -68,21 +69,23 @@ class DestructionReplayTests(unittest.TestCase):
             with self.subTest(reach=reach):
                 model=strike_model(reach=reach);result=model.replay(*depths(model))
                 self.assertEqual(result['frames'][-1]['unpowered_ids'],expected)
-        for offset,expected in [(7.9,1),(8.1,0)]:  # Line starts 2.9 / 3.1 m from fall line.
+        for offset,expected in [(10.4,1),(10.6,0)]:  # Crown radius 4 m + 1.5 m contact allowance, with seeded bearing.
             with self.subTest(offset=offset):
                 model=strike_model(offset=offset);result=model.replay(*depths(model))
                 self.assertEqual(result['metrics']['lines_down'],expected)
 
-    def test_nearest_power_conductor_only_and_backup(self):
+    def test_service_drop_and_backup_with_nearer_unstruck_conductor(self):
         model=strike_model();assets=copy.deepcopy(model.a);x,y=assets['buildings'][0]['xy']
         assets['power_lines'].append(dict(id='OSM2',kind='power',installation='overhead',geometry={
             'type':'LineString','coordinates':[list(FROM(x+1,y-1)),list(FROM(x+1,y+1))]}))
         # Move the struck conductor away; the nearer, unstruck one supplies the building.
         assets['power_lines'][0]['geometry']['coordinates']=[list(FROM(x-9,y-5)),list(FROM(x-9,y+5))]
-        assets['power_lines'][1]['geometry']['coordinates']=[list(FROM(x,y+4)),list(FROM(x,y+6))]
+        assets['power_lines'][1]['geometry']['coordinates']=[list(FROM(x,y+8)),list(FROM(x,y+10))]
         nearest=Model(assets,model.world);result=nearest.replay(*depths(nearest))
         self.assertEqual(result['frames'][-1]['down_line_ids'],['OSM1'])
-        self.assertEqual(result['frames'][-1]['unpowered_ids'],[])
+        # The exact engine also tears the struck building's individual service drop.
+        self.assertEqual(result['destruction']['outage']['service_drops_torn'],1)
+        self.assertEqual(result['frames'][-1]['unpowered_ids'],['B1'])
         result=model.replay(*depths(model),actions=[dict(kind='backup_power',target='B1')])
         self.assertEqual(result['frames'][-1]['unpowered_ids'],[])
 
@@ -96,19 +99,14 @@ class DestructionReplayTests(unittest.TestCase):
         self.assertEqual(run['events'],replay['events']);self.assertEqual(run['frames'],replay['frames'])
         for key in old-{'mass_balance_error_m3'}:self.assertEqual(run['metrics'][key],replay['metrics'][key])
 
-    def test_artifact_contains_only_referenced_geometry(self):
+    def test_artifact_preserves_positional_export_and_full_inventory(self):
         model=strike_model();artifact=destruction(model,*depths(model))
         json.dumps(artifact,allow_nan=False)
-        used=set()
-        for frame in artifact['frames']:
-            for key,value in frame.items():
-                if key.endswith('_ids'):used.update(value)
-        for event in artifact['events']:
-            for key in ('id','tree_id','building_id'):
-                if key in event:used.add(event[key])
-        self.assertTrue(all(set(items)<=used for items in artifact['geometry'].values()))
-        self.assertEqual(artifact['geometry']['lines']['OSM1']['kind'],'power')
-        self.assertIn('geometry',artifact['geometry']['buildings']['B1'])
+        self.assertEqual(artifact['t'],list(range(0,3601,120)))
+        self.assertEqual(len(artifact['spans']),1)
+        self.assertEqual(len(artifact['trees'][0]),11)
+        self.assertTrue(artifact['tree_strikes'][0][5])
+        self.assertEqual(artifact['summary']['trees_failed'],1)
 
     def test_invalid_timeline(self):
         model=strike_model();frames,times=depths(model)
