@@ -36,21 +36,43 @@ def running():
         return {key: job["run"] for key, job in JOBS.items() if job["process"].poll() is None}
 
 
+TIMESFM_PYTHON = ROOT / ".venv" / "bin" / "python"  # the isolated TimesFM venv (loop/README.md)
+
+
 FORCING = OUT / "forcing-2023-01-04.json"  # TimesFM 3 backtest of the January 2023 storm (loop.forecast)
 
 
-def start(rounds):
+def start(rounds, source="2023", rain_mm_h=None, models=("argon", "flash")):
+    """source: "2023" (TimesFM backtest of the January 2023 storm), "today" (fresh TimesFM forecast from the
+    gauge's last 30 days, run first) or "design" (fixed design storm, no forecast)."""
     if running():
         return None
     run = "live-" + datetime.now().strftime("%H%M%S")
-    forcing = ["--forcing", str(FORCING)] if FORCING.is_file() else []
-    with LOCK:
-        for model in ("argon", "flash"):
-            log = OUT / run / f"{model}.out"
-            log.parent.mkdir(parents=True, exist_ok=True)
-            process = subprocess.Popen([sys.executable, "-u", "-m", "loop.judge", "--model", model, "--rounds", str(rounds),
-                                        "--run", f"{run}/{model}", *forcing], cwd=ROOT, stdout=log.open("w"), stderr=subprocess.STDOUT)
-            JOBS[model] = {"run": run, "process": process}
+    folder = OUT / run
+    folder.mkdir(parents=True, exist_ok=True)
+    extra = ["--rain-mm-h", str(rain_mm_h)] if rain_mm_h is not None else []
+
+    def launch(forcing):
+        with LOCK:
+            for model in models:
+                log = folder / f"{model}.out"
+                process = subprocess.Popen([sys.executable, "-u", "-m", "loop.judge", "--model", model, "--rounds", str(rounds),
+                                            "--run", f"{run}/{model}", *forcing, *extra],
+                                           cwd=ROOT, stdout=log.open("w"), stderr=subprocess.STDOUT)
+                JOBS[model] = {"run": run, "process": process}
+
+    if source == "today":
+        with LOCK:
+            forecast = subprocess.Popen([str(TIMESFM_PYTHON), "-m", "loop.forecast", "--out", str(folder / "forcing.json")],
+                                        cwd=ROOT, stdout=(folder / "forecast.out").open("w"), stderr=subprocess.STDOUT)
+            JOBS["forecast"] = {"run": run, "process": forecast}
+
+        def after_forecast():
+            if forecast.wait() == 0 and (folder / "forcing.json").is_file():
+                launch(["--forcing", str(folder / "forcing.json")])
+        threading.Thread(target=after_forecast, daemon=True).start()
+    else:
+        launch(["--forcing", str(FORCING)] if source == "2023" and FORCING.is_file() else [])
     return run
 
 
@@ -97,7 +119,11 @@ class Handler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         body = json.loads(self.rfile.read(length) or b"{}") if length else {}
         rounds = max(1, min(5, int(body.get("rounds", 3))))
-        run = start(rounds)
+        source = body.get("source", "2023") if body.get("source") in ("2023", "today", "design") else "2023"
+        rain = body.get("rain_mm_h")
+        rain = None if rain in (None, "") else max(0.0, min(150.0, float(rain)))
+        models = ("argon", "flash") if body.get("flash", True) else ("argon",)
+        run = start(rounds, source, rain, models)
         if run is None:
             return self.send_json({"error": "a run is already in progress", "running": running()}, 409)
         self.send_json({"run": run, "page": f"/runs/{run}/index.html"}, 202)

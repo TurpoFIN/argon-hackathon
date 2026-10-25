@@ -74,7 +74,7 @@ class _Captured(Exception):
     pass
 
 
-def build_base(use_shared_state=False, scenario=None):
+def build_base(use_shared_state=False, scenario=None, rain_mm_h=None):
     """The same world scenarios.calculate() builds. By default the benchmark pins Codex's default
     storm (Atlas 14 100-yr 1-h rain, 1 m coastal rise) so runs stay comparable; the shared UI
     sliders are used only on request."""
@@ -83,6 +83,8 @@ def build_base(use_shared_state=False, scenario=None):
     # A forecast scenario sets the wind and holds the bay boundary at its forecast peak water level.
     overrides = dict(wind_mps=scenario["wind_mps"], gust_mps=scenario["gust_mps"], wind_from_deg=scenario["wind_from_deg"],
                      coastal_rise_m=0) if scenario else {}
+    if rain_mm_h is not None:
+        overrides["rain_mm_h"] = rain_mm_h
     p = scenarios.Parameters(**{**shared, **overrides, "response_mode": "argon"})
     with np.load(data / "model-inputs.npz") as arrays:
         z, walls, ocean = arrays["ground"], arrays["buildings"], arrays["ocean"]
@@ -149,16 +151,16 @@ def validate(plan: Plan, context, judge):
 
 
 class Judge:
-    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None):
+    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None):
         self.run_dir = run_dir
         run_dir.mkdir(parents=True, exist_ok=True)
         self.forcing = json.loads(Path(forcing).read_text()) if forcing else None
         if self.forcing:
-            built = {s["name"]: build_base(use_shared_state, s) for s in self.forcing["scenarios"]}
+            built = {s["name"]: build_base(use_shared_state, s, rain_mm_h) for s in self.forcing["scenarios"]}
             self.base, self.p, self.source = built["P50"]
             self.scenarios = [dict(name=s["name"], weight=s["weight"], spec=s, base=built[s["name"]][0]) for s in self.forcing["scenarios"]]
         else:
-            self.base, self.p, self.source = build_base(use_shared_state)
+            self.base, self.p, self.source = build_base(use_shared_state, None, rain_mm_h)
             self.scenarios = [dict(name="design", weight=1.0, spec=None, base=self.base)]
         self.context, self.heuristic = codex_context(self.base)  # candidates come from the P50 (or design) world
         for scenario in self.scenarios:
@@ -221,6 +223,7 @@ class Judge:
         video_path = render.video(worst["sim"]["world"], worst["sim"]["flood"], self.run_dir / f"{label}.mp4")
         primary = next(r for r in runs if r["scenario"]["base"] is self.base)
         self._last_raw = primary["ledger"]
+        self._last_raw_all = {r["scenario"]["name"]: r["ledger"] for r in runs}
         expected = sum(r["scenario"]["weight"] * r["ledger"]["total_usd"] for r in runs)
         ledger = {k: v for k, v in primary["ledger"].items() if not k.startswith("_")}
         ledger.update(total_usd=round(expected, 2), primary_scenario=primary["scenario"]["name"],
@@ -263,9 +266,12 @@ class Judge:
                     for i, c in enumerate(self.candidates, start=1)]
         evidence = [{k: v for k, v in e.items() if k in ("id", "title", "center", "radius_m", "interpretation")}
                     for e in self.context["evidence"]]
-        exposed = sorted(zip(self.exposure.rows, control["_usd"], control["_depth"]), key=lambda t: -t[1])[:60]
-        structures = [{"fd_id": r["fd_id"], "occtype": r["occtype"], "lon": round(r["x"], 6), "lat": round(r["y"], 6),
-                       "control_depth_m": round(float(d), 2), "control_damage_usd": round(float(u))} for r, u, d in exposed if u > 0]
+        # The whole exposure table: Argon's context holds every flooded building, not a top-N excerpt.
+        names = list(control["_depth"])
+        table = ["fd_id,occtype,lon,lat," + ",".join(f"depth_m_{n}" for n in names) + ",damage_usd_no_prep"]
+        table += [f"{r['fd_id']},{r['occtype']},{r['x']:.6f},{r['y']:.6f},"
+                  + ",".join(f"{control['_depth'][n][i]:.2f}" for n in names) + f",{control['_usd'][i]:.0f}"
+                  for i, r in enumerate(self.exposure.rows) if control["_usd"][i] > 0]
         w, s, e, n = argon.BBOX
         if self.forcing:
             f = self.forcing
@@ -302,13 +308,18 @@ class Judge:
             f"Total sandbag stock: {STOCK} bags for walls plus doorways. Python rejects plans over the stock.\n"
             "Score (lower is better): dollar flood damage = NSI 2022 structure and contents value x USACE depth-damage curves "
             "on water depth above each building's first floor. Secondary: flood exposure, crew exposure.\n"
+            "Baseline to beat: the greedy rule (no AI) sandbags the costliest buildings whose no-preparation water stays below "
+            f"{DOOR['height_m']} m until the stock runs out. Its plan and result are in the run history and are the latest run "
+            "you are watching. You may start from its plan; find what it misses.\n"
             + attached +
             "First critique the latest run: what the render and ledger show went wrong and where (coordinates, candidate "
             "numbers, fd_ids), and why. Then write the improved plan; keep what worked.\n"
             f"Rounds left after this one: {rounds_left}.\n\n"
             f"Candidate drains: {json.dumps(numbered)}\n"
             f"Crews: {json.dumps(self.context['crews'])}\n"
-            f"Most damaged structures with no preparation: {json.dumps(structures)}\n"
+            f"Every structure that floods with no preparation ({len(table) - 1} rows, CSV). depth_m_* is the peak water "
+            f"against the building in each scenario; doorway sandbags only work below {DOOR['height_m']} m; damage is for "
+            f"{self.scenarios[0]['name'] if len(self.scenarios) == 1 else 'P50'}:\n" + "\n".join(table) + "\n"
             f"Historical evidence in effect: {json.dumps(evidence)}\n"
             f"Assumptions: {self.context['assumptions']}\n"
             f"Runs so far (oldest first): {json.dumps(history)}"
@@ -343,18 +354,28 @@ class Judge:
         model_id = MODELS[key]
         control = self.evaluate(dict(name="No preparation", drain_ids=[], stage_ids=[]), "control", "No preparation (control)")
         control_raw = self._last_raw
-        control_scores = {"_usd": control_raw["_per_structure_usd"], "_depth": control_raw["_per_structure_depth_m"]}
+        control_scores = {"_usd": control_raw["_per_structure_usd"],
+                          "_depth": {name: raw["_per_structure_depth_m"] for name, raw in self._last_raw_all.items()}}
         heuristic_plan = dict(name=self.heuristic["selected_plan"], drain_ids=self.heuristic["drain_ids"], stage_ids=self.heuristic["stage_ids"])
         heuristic = self.evaluate(heuristic_plan, "codex_heuristic", f"Codex heuristic: {heuristic_plan['name']}")
+        # Fair non-AI baseline with the models' main lever: sandbag the costliest doorways whose control
+        # water stays below the protection height, until the stock runs out.
+        protectable = sorted(((u, r["fd_id"]) for r, u, d in zip(self.exposure.rows, control_raw["_per_structure_usd"],
+                                                                  control_raw["_per_structure_depth_m"]) if u > 0 and d < DOOR["height_m"]),
+                             reverse=True)
+        greedy_plan = dict(name="Greedy doorway sandbags", drain_ids=[], stage_ids=[],
+                           doorway_fd_ids=[fd for _, fd in protectable[:STOCK // BAGS_PER_STRUCTURE]])
+        greedy = self.evaluate(greedy_plan, "greedy", "Greedy rule: sandbag the costliest protectable doorways")
         log = {"model": model_id, "started": datetime.now(timezone.utc).isoformat(), "parameters": self.p.model_dump(),
                "codex_root": str(CODEX_ROOT), "nsi_source": self.exposure.source, "nsi_retrieved": self.exposure.retrieved,
                "curves_source": damage.CURVES["source"], "costs": COSTS, "unmatched_occtypes": self.exposure.unmatched,
-               "candidates": self.candidates, "control": control, "codex_heuristic": heuristic, "rounds": [],
+               "candidates": self.candidates, "control": control, "codex_heuristic": heuristic, "greedy_heuristic": greedy, "rounds": [],
                "forcing": {k: self.forcing[k] for k in ("model", "model_license", "station", "issued", "horizon_hours",
                                                          "scenarios", "observed", "notes", "sources")} if self.forcing else None}
         self.write(log, key)  # the live page can show the forecast and control before round 1
-        history = [{"run": "No preparation (control)", **self.summary_for_model(control)}]
-        latest = control
+        history = [{"run": "No preparation (control)", **self.summary_for_model(control)},
+                   {"run": "Greedy rule (no AI): sandbag the costliest protectable doorways", **self.summary_for_model(greedy)}]
+        latest = greedy
         for number in range(1, rounds + 1):
             text = self.brief(history, rounds - number, control_scores)
 
@@ -427,8 +448,9 @@ def main():
     parser.add_argument("--run", default=datetime.now().strftime("%Y%m%d-%H%M"))
     parser.add_argument("--shared-scenario", action="store_true", help="use the UI's current sliders instead of Codex defaults")
     parser.add_argument("--forcing", help="TimesFM forcing JSON from loop.forecast; plans are scored on P10/P50/P90")
+    parser.add_argument("--rain-mm-h", type=float, help="rain rate for every scenario (default: Atlas 14 100-yr 1-h, 32 mm/h)")
     args = parser.parse_args()
-    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing)
+    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing, rain_mm_h=args.rain_mm_h)
     judge.run(args.model, args.rounds)
 
 

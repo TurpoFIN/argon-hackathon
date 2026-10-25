@@ -1,0 +1,5 @@
+# Prep loop, on top of the Codex app's requirements.txt (numpy, scipy, pydantic, google-genai ...).
+pillow>=12,<13
+matplotlib>=3.10,<4
+# Video for the model and the page: the ffmpeg binary on PATH.
+# TimesFM forecasting runs in its own venv (see loop/README.md): timesfm[mlx]==3.0.2

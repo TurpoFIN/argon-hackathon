@@ -39,7 +39,11 @@ h2 { font-size:16px; font-weight:500; margin:32px 0 12px; }
 .error { color:var(--fail); }
 footer { margin-top:40px; color:var(--muted); font-size:12px; max-width:1000px; }
 footer a { color:inherit; }
-#live { display:flex; gap:12px; align-items:center; margin:0 0 20px; }
+#live { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; margin:0 0 20px; font-size:13px; }
+#live label { display:flex; gap:6px; align-items:center; color:var(--muted); }
+#live select, #live input[type=number] { height:32px; padding:0 8px; border-radius:6px; border:0; color:var(--fg); background:var(--surface);
+  box-shadow:inset 0 0 0 .5px var(--edge); font:13px var(--font); }
+#live input[type=number] { width:64px; }
 #live[hidden] { display:none; }
 #live button { height:32px; padding:0 14px; border-radius:9999px; border:0; background:var(--fg); color:var(--bg); font:500 13px var(--font); cursor:pointer; }
 #live button:disabled { opacity:.5; cursor:default; }
@@ -69,6 +73,15 @@ footer a { color:inherit; }
 @media (max-width: 640px) { .bar { grid-template-columns:1fr; } .cols { grid-template-columns:1fr; } }
 """
 
+LIVE = """<form id='live' hidden>
+  <label>Storm <select name='source'><option value='2023'>January 2023, TimesFM backtest</option>
+    <option value='today'>Today: TimesFM forecast from the gauge</option><option value='design'>Design storm, no forecast</option></select></label>
+  <label>Rain <input name='rain_mm_h' type='number' min='0' max='150' step='1' value='32' inputmode='numeric'> mm/h</label>
+  <label>Rounds <select name='rounds'><option>2</option><option selected>3</option></select></label>
+  <label><input name='flash' type='checkbox' checked> Flash baseline</label>
+  <button type='submit'>Run live</button><span></span>
+</form>"""
+
 SCRIPT = """
 document.querySelectorAll('.round img').forEach(img => img.addEventListener('click', () => {
   const card = img.closest('.round'); const video = card.querySelector('video');
@@ -84,15 +97,19 @@ async function poll() {
   live.hidden = false;
   const mine = Object.entries(status.running).filter(([, r]) => r === run).map(([m]) => m);
   const busy = Object.keys(status.running).length > 0;
-  live.querySelector('span').textContent = mine.length ? `Running live: ${mine.join(' and ')}. This page updates as each round finishes.` : busy ? 'Another run is in progress.' : '';
+  const names = mine.map(m => m === 'forecast' ? 'TimesFM forecast' : m === 'argon' ? 'Argon' : 'Flash');
+  live.querySelector('span').textContent = mine.length ? `Running live: ${names.join(' and ')}. This page updates as each round finishes.` : busy ? 'Another run is in progress.' : '';
   live.querySelector('button').disabled = busy;
   if (mine.length) setTimeout(() => location.reload(), 8000);
 }
-live.querySelector('button').addEventListener('click', async (event) => {
-  event.target.disabled = true;
-  const response = await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"rounds": 3}' });
+live.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = new FormData(live), button = live.querySelector('button');
+  button.disabled = true;
+  const payload = { source: form.get('source'), rain_mm_h: form.get('rain_mm_h'), rounds: Number(form.get('rounds')), flash: form.get('flash') === 'on' };
+  const response = await fetch('/api/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const body = await response.json();
-  if (body.page) location.href = body.page; else { event.target.disabled = false; alert(body.error || 'Could not start'); }
+  if (body.page) location.href = body.page; else { button.disabled = false; live.querySelector('span').textContent = body.error || 'Could not start'; }
 });
 poll();
 // Crosshair readout on the forecast charts.
@@ -260,11 +277,15 @@ def build(run: Path):
     argon, flash = load(run, "argon"), load(run, "flash")
     reference = argon or flash
     if reference is None:
-        live = "<div id='live' hidden><button type='button'>Run live</button><span></span></div>"
+        live = LIVE
+        failed = run / "forecast.out"
+        note = ""
+        if failed.is_file() and not (run / "forcing.json").is_file() and "Traceback" in failed.read_text():
+            note = f"<p class='error'>TimesFM forecast failed: {html.escape(failed.read_text()[-400:])}</p>"
         page = (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>"
                 f"<title>Storm Prep Loop</title><style>{CSS}</style></head><body><main><h1>Setting up the storm</h1>"
                 f"<p class='lede'>Running the no-preparation control and Codex's baseline before the models' first round "
-                f"(about a minute).</p>{live}</main><script>{SCRIPT}</script></body></html>")
+                f"(about a minute; a fresh TimesFM forecast adds about a minute).</p>{note}{live}</main><script>{SCRIPT}</script></body></html>")
         (run / "index.html").write_text(page)
         return run / "index.html"
     control = reference["control"]
@@ -272,6 +293,9 @@ def build(run: Path):
     kind = "expected damage, " if reference.get("forcing") else ""
     rows = [(f"No preparation", control["ledger"]["total_usd"], "var(--muted)"),
             ("Codex heuristic (drains only)", heuristic["ledger"]["total_usd"], "var(--muted)")]
+    greedy = reference.get("greedy_heuristic")
+    if greedy:
+        rows.append(("Greedy rule, no AI (doorway sandbags)", greedy["ledger"]["total_usd"], "var(--fg)"))
     for log, name, color in ((flash, f"Gemini 3.8 Flash, {kind}best round", "var(--c2)"), (argon, f"Gemini 4 Argon, {kind}best round", "var(--c1)")):
         b = best(log)
         if b:
@@ -295,6 +319,10 @@ def build(run: Path):
                     f"({saved / control['ledger']['total_usd'] * 100:.0f}%) with {a_best['sandbags']['total']:,} sandbags")
         if f_best:
             headline += f"; Flash, with the same storm and stock, cut {usd(control['ledger']['total_usd'] - f_best['ledger']['total_usd'])}"
+        if greedy:
+            gap = greedy["ledger"]["total_usd"] - a_best["ledger"]["total_usd"]
+            headline += (f". That is {usd(gap)} better than the greedy no-AI rule" if gap > 0
+                         else f". The greedy no-AI rule still does {usd(-gap)} better")
     else:
         headline = "Prep-plan loop"
     bay = ("bay held at each TimesFM scenario's forecast peak" if reference.get("forcing")
@@ -312,7 +340,7 @@ def build(run: Path):
             f"<h1>{html.escape(headline)}</h1>"
             f"<p class='lede'>Each model writes a pre-storm plan, the storm simulator runs it, the model watches the rendered result "
             f"and video, names what failed, and revises. Click a map to play that run's storm.</p>"
-            f"<div id='live' hidden><button type='button'>Run live</button><span></span></div>"
+            f"{LIVE}"
             f"<div class='bars'>{bars}</div>{forecast_section(forcing, reference)}"
             f"<div class='cols'>{column(argon, 'argon', 'Gemini 4 Argon')}{column(flash, 'flash', 'Gemini 3.8 Flash (baseline)')}</div>"
             f"<footer>{sources}</footer></main><script>{SCRIPT}</script></body></html>")
