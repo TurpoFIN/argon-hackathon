@@ -24,9 +24,9 @@
   require([
     "esri/layers/GraphicsLayer", "esri/Graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "esri/geometry/Point",
     "esri/symbols/LineSymbol3D", "esri/symbols/PointSymbol3D", "esri/symbols/PolygonSymbol3D",
-    "esri/layers/FeatureLayer"
-  ], async (GraphicsLayer, Graphic, Polyline, Polygon, Point, LineSymbol3D, PointSymbol3D, PolygonSymbol3D, FeatureLayer) => {
-    const { view, map } = await waitScene();
+    "esri/layers/FeatureLayer", "esri/layers/support/SceneFilter", "esri/geometry/support/webMercatorUtils"
+  ], async (GraphicsLayer, Graphic, Polyline, Polygon, Point, LineSymbol3D, PointSymbol3D, PolygonSymbol3D, FeatureLayer, SceneFilter, webMercatorUtils) => {
+    const { view, map, buildings: meshLayer } = await waitScene();
     const SR = { wkid: 4326 };
 
     // ------------------------------------------------------------ symbols (built once, shared)
@@ -77,10 +77,16 @@
       const [, end] = stick(lon, lat, L, bearing, phi, z0);
       return new Point({ longitude: end[0], latitude: end[1], z: Math.max(0.6, end[2]), spatialReference: SR });
     };
+    // Esri outer rings are clockwise; counter-clockwise rings read as holes (a mesh filter then hides everything).
     const ring = (flat) => {
       const r = [];
       for (let i = 0; i < flat.length; i += 2) r.push([flat[i], flat[i + 1]]);
-      return r;
+      let area = 0;
+      for (let i = 0; i < r.length; i++) {
+        const [x0, y0] = r[i], [x1, y1] = r[(i + 1) % r.length];
+        area += x0 * y1 - x1 * y0;
+      }
+      return area > 0 ? r.reverse() : r;
     };
 
     // ------------------------------------------------------------ layers
@@ -104,14 +110,14 @@
       for (const x of times) if (x !== null && tt >= x) s++;
       return s;
     };
-    const animate = (fn) => {
-      const a = { start: performance.now(), fn };
+    const animate = (fn, ms = FALL_MS) => {
+      const a = { start: performance.now(), fn, ms };
       anims.add(a);
       fn(0);
     };
     function tick(now) {
       for (const a of anims) {
-        const u = Math.min(1, (now - a.start) / FALL_MS);
+        const u = Math.min(1, (now - a.start) / a.ms);
         a.fn(u * u);  // gravity-like ease-in
         if (u >= 1) anims.delete(a);
       }
@@ -210,7 +216,76 @@
       map.add(standing);
     }
 
+    // Collapse (DS4): cut the textured building out of the photoreal mesh, drop its mass to a rubble pile and
+    // spill debris chunks downwind. Timing and footprint come from the run; the motion itself is illustrative.
+    const collapsedNow = new Map();
+    function updateMeshFilter() {
+      if (!meshLayer) return;
+      const sr = meshLayer.spatialReference;
+      const geoms = [...collapsedNow.values()].map((poly) => (sr?.isWebMercator ? webMercatorUtils.geographicToWebMercator(poly) : poly));
+      meshLayer.filter = geoms.length ? new SceneFilter({ geometries: geoms, spatialRelationship: "disjoint" }) : null;
+    }
+    const rand = (seed) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    const RUBBLE = [[168, 140, 110], [120, 95, 70], [190, 182, 168], [140, 136, 130], [96, 82, 70]];
+    function collapse(id, flat, h, t4) {
+      const poly = new Polygon({ rings: [ring(flat)], spatialReference: SR });
+      const pts = ring(flat);
+      const [cx, cy] = pts.reduce(([a, b], [x, y]) => [a + x / pts.length, b + y / pts.length], [0, 0]);
+      const k = Math.max(0, run.t.findIndex((x) => x >= t4));
+      const toward = ((run.dir_from[k] ?? 200) + 180) % 360;
+      const pileH = Math.max(1.5, h * 0.2);
+      const mass = new Graphic({ geometry: poly, symbol: null, visible: false });
+      L.buildings.add(mass);
+      const r = rand(id * 7919 + 13);
+      const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      const chunks = [];
+      const n = Math.min(140, Math.max(60, Math.round(pts.length * 8)));
+      const slabH = pileH * 0.45;
+      for (let i = 0; i < n; i++) {
+        const spill = r() < 0.35 ? r() * h * 0.7 : 0;   // a third of the debris spills downwind past the footprint
+        const [lo, la] = offset(x0 + (x1 - x0) * r(), y0 + (y1 - y0) * r(), Math.sin(toward * Math.PI / 180) * spill, Math.cos(toward * Math.PI / 180) * spill);
+        const size = spill ? 0.4 + r() * 1.6 : 0.8 + r() * 3.2;
+        const sym = new PointSymbol3D({ symbolLayers: [{ type: "object", resource: { primitive: r() < 0.7 ? "cube" : "tetrahedron" },
+          width: size * (0.6 + r()), depth: size * (0.3 + r() * 0.5), height: size * (0.2 + r() * 0.4), anchor: "bottom",
+          heading: r() * 360, tilt: (r() - 0.5) * 70, roll: (r() - 0.5) * 70, material: { color: RUBBLE[Math.floor(r() * RUBBLE.length)] } }] });
+        const g = new Graphic({ geometry: new Point({ longitude: lo, latitude: la, z: spill ? 0 : slabH * (0.6 + r() * 0.5), spatialReference: SR }), symbol: sym, visible: false });
+        L.things.add(g);
+        chunks.push(g);
+      }
+      const dust = new Graphic({ geometry: new Point({ longitude: cx, latitude: cy, z: h * 0.4, spatialReference: SR }), symbol: null, visible: false });
+      L.things.add(dust);
+      const massSym = (height) => new PolygonSymbol3D({ symbolLayers: [{ type: "extrude", size: Math.max(0.5, height),
+        material: { color: [150, 132, 112, 1] }, edges: { type: "sketch", color: [70, 60, 50, 0.8], size: 1, extensionLength: 2 } }] });
+      return (down, anim) => {
+        if (!down) {
+          collapsedNow.delete(id); updateMeshFilter();
+          mass.visible = false; dust.visible = false; chunks.forEach((c) => { c.visible = false; });
+          return;
+        }
+        collapsedNow.set(id, poly); updateMeshFilter();
+        mass.visible = true;
+        if (!anim) {
+          mass.symbol = massSym(slabH); dust.visible = false; chunks.forEach((c) => { c.visible = true; });
+          return;
+        }
+        // pancake: the full-height mass drops to the pile, debris lands, a dust cloud rises and thins
+        animate((u) => {
+          mass.symbol = massSym(h - (h - slabH) * u);
+          if (u > 0.6) chunks.forEach((c) => { c.visible = true; });
+        }, 1600);
+        dust.visible = true;
+        animate((u) => {
+          const e = Math.sqrt(u);
+          dust.symbol = new PointSymbol3D({ symbolLayers: [{ type: "object", resource: { primitive: "sphere" }, anchor: "center",
+            width: 8 + 2.2 * h * e, depth: 8 + 2.2 * h * e, height: 6 + 1.2 * h * e, material: { color: [205, 195, 180, 0.55 * (1 - e)] } }] });
+          if (e >= 1) dust.visible = false;
+        }, 5000);
+      };
+    }
+
     function clear() {
+      collapsedNow.clear(); updateMeshFilter();
       group.forEach((l) => l.removeAll());
       items = [];
       anims.clear();
@@ -223,12 +298,14 @@
       ocsLen = d.ocs.map(([lon0, lat0, lon1, lat1]) => Math.hypot((lon1 - lon0) * M_PER_DEG * Math.cos(lat0 * Math.PI / 180), (lat1 - lat0) * M_PER_DEG));
       const hw = d.heights.power_wire, ow = d.heights.ocs_wire;
       // buildings: damage state rises over time
-      for (const [, , dsT, h, flat] of d.buildings) {
+      for (const [id, , dsT, h, flat] of d.buildings) {
         const g = new Graphic({ geometry: new Polygon({ rings: [ring(flat)], spatialReference: SR }), symbol: null, visible: false });
         L.buildings.add(g);
-        items.push({ times: dsT.filter((v) => v !== null), state: 0, apply(s) {
-          g.visible = s > 0;
-          if (s > 0) g.symbol = buildingSym(s, h);
+        const fall = dsT[3] !== null ? collapse(id, flat, h, dsT[3]) : null;
+        items.push({ times: dsT.filter((v) => v !== null), state: 0, apply(s, anim) {
+          g.visible = s > 0 && s < 4;
+          if (g.visible) g.symbol = buildingSym(s, h);
+          if (fall) fall(s >= 4, anim);
         } });
       }
       for (const [, tOut, h, flat] of d.outage) {
@@ -433,6 +510,6 @@
       note.textContent = "Destruction run could not load: run python3 -m sim.destruction_web.";
       console.error(error);
     }
-    window.sfDestruction = { focus, setTime: (v) => setTime(v), play: () => setPlaying(true), load: (id) => fetch("/data/web/destruction_index.json").then((r) => r.json()).then((ix) => load(id, ix)), layers: L, get run() { return run; } };
+    window.sfDestruction = { collapsedNow, focus, setTime: (v) => setTime(v), play: () => setPlaying(true), load: (id) => fetch("/data/web/destruction_index.json").then((r) => r.json()).then((ix) => load(id, ix)), layers: L, get run() { return run; } };
   });
 })();
