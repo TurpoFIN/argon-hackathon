@@ -6,46 +6,99 @@ export type WorkComparison={settings:WorkSettings;profiles:Record<string,{label:
 const names:Record<string,string>={wind:'Wind',flood:'Flooding',trees:'Falling trees',structure:'Structural collapse',power:'Power loss',routes:'Blocked routes'};
 const node=(tag:string,value='',cls='')=>{const n=document.createElement(tag);n.textContent=value;n.className=cls;return n;};
 
+const shortNames:Record<string,string>={
+  'backup-pump':'Connect backup pump', 'fit-barrier':'Fit doorway barrier',
+  'move-contents':'Move vulnerable contents', 'secure-items':'Secure loose items',
+  'latch-windows':'Latch windows', 'clear-inlet':'Clear inlet',
+  'prune-defect':'Prune assessed defect', 'engineered-support':'Install designed support',
+  'sandbag-wall':'Build sandbag barrier', 'clear-route':'Clear access',
+  'install-cordon':'Set authorized closure',
+};
+const effects:Record<string,string>={
+  'backup-pump':'Pump backup during an outage', 'fit-barrier':'Protect one doorway',
+  'move-contents':'Raise up to 10 boxes', 'secure-items':'Secure up to 10 debris sources',
+  'latch-windows':'Close up to 10 openings', 'clear-inlet':'Restore one inlet opening',
+  'prune-defect':'Remove one assessed tree defect', 'engineered-support':'Support the designed load path',
+  'sandbag-wall':'Build one 100-bag segment', 'clear-route':'Remove light route debris',
+  'install-cordon':'Keep people out of the closure',
+};
+
 export function preventiveWorkView(data:WorkComparison,running:boolean,compare:(settings:WorkSettings)=>void,focus:(work:SelectedWork)=>void){
   const root=node('section','','work-comparison');root.id='work-comparison';
-  const style=node('style');style.textContent=`.work-comparison{margin:16px 0}.work-comparison h2{margin:20px 0 10px}.work-comparison h3{font-size:14px;margin:0 0 6px}.work-config{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:8px}.work-config label{margin:0}.work-config-note{font-size:12px;color:var(--muted-foreground);margin:8px 0}.work-run{width:100%;margin:8px 0}.work-baseline,.work-result{border-top:1px solid var(--border);padding:12px 0}.work-plan-row{border-top:1px solid var(--border);padding:14px 0}.work-time{font-size:12px;color:var(--muted-foreground)}.work-output{border-left:2px solid var(--border);padding-left:10px}.work-compare-row{border-top:1px solid var(--border);padding:12px 0}.work-compare-row p{font-size:12px;line-height:1.5;margin:5px 0}.work-compare-row strong{font-weight:500}.work-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.work-columns small{display:block;color:var(--muted-foreground)}.work-source{display:block;margin:6px 0;font-size:12px}.work-evidence{font-size:12px}.work-comparison ul{padding-left:20px;font-size:12px}.work-comparison .work-tag{font-size:12px;color:var(--muted-foreground)}.work-compare-row[data-selected=true]{border-left:2px solid var(--foreground);padding-left:10px}`;root.append(style);
+  const style=node('style');style.textContent=`
+    .work-comparison{margin:12px 0}.work-comparison h2{font-size:15px;margin:12px 0 4px}
+    .work-config{display:grid;grid-template-columns:minmax(0,1fr) 100px;gap:8px}.work-config label{margin:0}
+    .work-comparison .work-config-note{font-size:12px;color:var(--muted-foreground);margin:6px 0}
+    .work-run{width:100%;margin:8px 0}.work-heading{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+    .work-plan-row{border-top:1px solid var(--border);padding:10px 0;display:grid;grid-template-columns:20px minmax(0,1fr);gap:0 6px}
+    .work-number{font-size:12px;color:var(--muted-foreground);padding-top:2px}.work-row-body{min-width:0}
+    .work-row-title{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+    .work-row-title h3{font-size:13px!important;font-weight:500!important;margin:0!important}
+    .work-time{font-size:11px;white-space:nowrap;color:var(--muted-foreground)}
+    .work-comparison .work-location{font-size:12px;margin:2px 0}.work-comparison .work-effect{font-size:11px;color:var(--muted-foreground);margin:2px 0}
+    .work-row-tools{display:flex;gap:12px;align-items:flex-start;margin-top:3px}
+    .work-row-tools>button{border:0!important;padding:0!important;min-height:24px!important;background:none!important;font-size:12px;text-decoration:underline;text-underline-offset:2px;flex:none}
+    .work-comparison .work-why{border:0;padding:0;flex:1;min-width:0}.work-why>summary{font-size:12px;line-height:24px;list-style:none;text-decoration:underline;text-underline-offset:2px}.work-why>summary::-webkit-details-marker{display:none}
+    .work-why[open]>summary{margin-bottom:6px}.work-why p,.work-comparison details p{font-size:12px}
+    .work-comparison details{padding:9px 0}.work-comparison details[open]>summary{margin-bottom:8px}
+    .work-source{display:block;margin:6px 0;font-size:12px}.work-comparison ul{padding-left:18px;font-size:12px}
+    .work-option{border-top:1px solid var(--border);padding:8px 0}.work-option summary{font-size:12px}
+    .work-study{border-top:1px solid var(--border);padding:8px 0}.work-study strong{font-size:12px;font-weight:500}.work-study p{margin:3px 0}
+    .work-vs{border-left:2px solid var(--border);padding-left:8px;margin:8px 0}.work-vs strong{font-weight:500}
+    .work-total{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted-foreground);padding:8px 0;border-top:1px solid var(--border)}
+    @media(max-width:420px){.work-row-title{align-items:flex-start}.work-row-title h3{max-width:210px}.work-time{font-size:10px}}
+  `;root.append(style);
   const settings={...data.settings};
   const config=node('div','','work-config');
-  const label=node('label','Resource package'),profile=document.createElement('select');profile.setAttribute('aria-label','Preventive resource package');
+  const label=node('label','Resources'),profile=document.createElement('select');profile.setAttribute('aria-label','Preventive resource package');
   for(const [id,p]of Object.entries(data.profiles)){const option=document.createElement('option');option.value=id;option.textContent=p.label;profile.append(option);}profile.value=settings.profile;
-  const timeLabel=node('label','Lead time'),time=document.createElement('select');time.setAttribute('aria-label','Preventive lead time');
+  const timeLabel=node('label','Time available'),time=document.createElement('select');time.setAttribute('aria-label','Preventive lead time');
   for(const minutes of [...new Set([30,120,480,settings.minutes])].sort((a,b)=>a-b)){const option=document.createElement('option');option.value=String(minutes);option.textContent=minutes<60?`${minutes} min`:`${minutes/60} hours`;time.append(option);}time.value=String(settings.minutes);
   label.append(profile);timeLabel.append(time);config.append(label,timeLabel);root.append(config);
-  const note=node('p',data.resources.description,'work-config-note');root.append(note);
-  const changed=()=>{settings.profile=profile.value as WorkSettings['profile'];settings.minutes=Number(time.value);note.textContent=data.profiles[settings.profile].description+' Compare again to apply this package.';};profile.onchange=changed;time.onchange=changed;
-  const run=node('button',running?'Argon is comparing physical work…':'Compare preventive work with doing nothing','work-run') as HTMLButtonElement;run.type='button';run.disabled=running;run.onclick=()=>compare(settings);root.append(run);
-  const resourceDetail=document.createElement('details');resourceDetail.append(node('summary','Crew sizes, stock and timing assumptions'),node('p',data.resources.provenance));
-  for(const c of data.resources.crews)resourceDetail.append(node('p',`${c.id.replace('-',' ')} · ${c.people} people`));
-  resourceDetail.append(node('p',Object.entries(data.resources.equipment).map(([k,n])=>`${n} ${data.equipment_names[k]}`).join(' · ')),node('p',data.resources.travel_assumption),node('p','Time ranges include setup plus estimated travel from the scenario staging points. The upper bound is used to schedule; most work rates are planning estimates, not measured local productivity.'));root.append(resourceDetail);
-  const baseline=node('div','','work-baseline');baseline.append(node('h2','Baseline · do nothing'),node('p','0 crew-minutes · no equipment used · no physical protection added'),node('p','Existing conditions remain. Storm losses are not estimated; doing nothing is not assumed to mean damage will occur.','work-config-note'));root.append(baseline);
+  const people=data.resources.crews.reduce((sum,c)=>sum+c.people,0);
+  const note=node('p',`${data.resources.crews.length} crews · ${people} people · assumed available`,'work-config-note');root.append(note);
+  const changed=()=>{settings.profile=profile.value as WorkSettings['profile'];settings.minutes=Number(time.value);note.textContent='Resources changed. Generate a plan to apply.';};profile.onchange=changed;time.onchange=changed;
+  const run=node('button',running?'Argon is comparing…':'Generate plan','work-run') as HTMLButtonElement;run.type='button';run.disabled=running;run.onclick=()=>compare(settings);root.append(run);
   if(data.current&&data.result){
-    root.append(node('h2','Argon’s selected physical work'));
-    if(!data.selected.length)root.append(node('p','No physical package selected with these resources and conditions.'));
-    for(const work of data.selected){const row=node('article','','work-plan-row');row.dataset.workId=work.id;row.append(node('div',`${work.priority}. ${work.assignment} · +${work.start}–${work.finish} min · ${work.people} people`,'work-time'),node('h3',work.label),node('p',work.site.label),node('p','Planned output: '+work.output,'work-output'),node('p',work.why.split(/(?<=[.!?])\s/)[0]),node('p',work.evidence_grade,'work-evidence'));
-      const details=document.createElement('details');details.append(node('summary','Work order, conditions and evidence'));details.append(node('p',work.why),detail(work));row.append(node('p',`${work.travel_minutes} min of this slot is estimated walking travel.`, 'work-time'),details);
-      const map=node('button','Show work at '+work.site.label) as HTMLButtonElement;map.type='button';map.onclick=()=>focus(work);row.append(map);root.append(row);}
-    root.append(node('p',`${data.totals.jobs} work packages · ${data.totals.labor_minutes} planned person-minutes · latest finish +${data.totals.latest_finish} min. Site conditions must be confirmed before work.`, 'work-config-note'));
-    const judgement=document.createElement('details');judgement.append(node('summary','Why this work rather than doing nothing'),node('p',data.result.conclusion),node('p',data.result.why_not_do_nothing),node('p',data.result.remaining_gaps));root.append(judgement);
-  }else root.append(node('p','Compare to have Argon select physical work and an executable crew schedule. The alternatives below already show what fits this resource package.','work-config-note'));
-  if(data.studies.length>1){const studies=document.createElement('details');studies.append(node('summary','What changes with more resources and time'));
-    for(const study of data.studies){const row=node('div','','work-compare-row');row.append(node('strong',`${study.label} · ${study.settings.minutes} min`),node('p',`${study.jobs} scheduled physical packages · ${study.labor_minutes} person-minutes`),node('p',study.work.join('; ')),node('p',study.conclusion));studies.append(row);}root.append(studies);}
-  const comparisons=document.createElement('details');comparisons.open=!data.current;comparisons.append(node('summary',`All ${data.candidates.length} alternatives · benefit, time and feasibility`));
+    const heading=node('div','','work-heading');heading.append(node('h2','Proposed work queue'),node('small',`${data.totals.jobs} jobs`));root.append(heading,node('p','Confirm site conditions before dispatch.','work-config-note'));
+    if(!data.selected.length)root.append(node('p','No work fits these resources and conditions.','work-config-note'));
+    for(const work of data.selected){
+      const row=node('article','','work-plan-row');row.dataset.workId=work.id;
+      const body=node('div','','work-row-body'),title=node('div','','work-row-title');
+      title.append(node('h3',shortNames[work.operation_id]??work.label),node('span',`+${work.start}–${work.finish} min`,'work-time'));
+      body.append(title,node('p',`${work.site.label} · ${work.assignment} (${work.people})`,'work-location'),node('p',effects[work.operation_id]??work.output,'work-effect'));
+      const tools=node('div','','work-row-tools'),map=node('button','Map') as HTMLButtonElement;map.type='button';map.setAttribute('aria-label','Show work at '+work.site.label);map.onclick=()=>focus(work);
+      const why=document.createElement('details');why.className='work-why';why.append(node('summary','Why'),node('p',work.why),comparison(work),detail(work));tools.append(map,why);body.append(tools);row.append(node('span',String(work.priority),'work-number'),body);root.append(row);
+    }
+    const total=node('div','','work-total');total.append(node('span',`Finish +${data.totals.latest_finish} min`),node('span',`${data.totals.labor_minutes} person-min`));root.append(total);
+    const judgement=document.createElement('details');judgement.append(node('summary','Compared with doing nothing'),node('p','No work uses no crew time or stock, and adds no protection. Local damage reduction has not been measured.'),node('p',data.result.conclusion),node('p',data.result.why_not_do_nothing),node('p',data.result.remaining_gaps));root.append(judgement);
+  }else root.append(node('p','Generate a plan to rank work against doing nothing.','work-config-note'));
+  const resourceDetail=document.createElement('details');resourceDetail.append(node('summary','Crews, equipment & assumptions'),node('p',data.resources.description),node('p',data.resources.provenance));
+  for(const c of data.resources.crews)resourceDetail.append(node('p',`${c.id.replace('-',' ')} · ${c.people} people`));
+  resourceDetail.append(node('p',Object.entries(data.resources.equipment).map(([k,n])=>`${n} ${data.equipment_names[k]}`).join(' · ')),node('p',data.resources.travel_assumption),node('p','Slots include setup and estimated travel. Scheduling uses the upper time bound; most rates are planning estimates, not measured local productivity.'));root.append(resourceDetail);
+  if(data.studies.length>1){
+    const studies=document.createElement('details');studies.append(node('summary','Compare resource scenarios'));
+    for(const study of data.studies){const row=node('details','','work-study') as HTMLDetailsElement;row.append(node('summary',`${study.label} · ${study.settings.minutes} min · ${study.jobs} jobs`),node('p',study.work.join('; ')),node('p',`${study.labor_minutes} person-minutes`),node('p',study.conclusion));studies.append(row);}root.append(studies);
+  }
+  const comparisons=document.createElement('details');comparisons.append(node('summary',`All six hazards · ${data.candidates.length} work options`));
   const selectedIds=new Set(data.selected.map(s=>s.id));
-  for(const work of data.candidates){const row=node('article','','work-compare-row');row.dataset.selected=String(selectedIds.has(work.id));row.dataset.operation=work.operation_id;
-    row.append(node('div',`${names[work.hazard]} · ${selectedIds.has(work.id)?'Selected':work.feasibility.fits?'Fits resources and upper time bound':'Does not fit / prerequisite missing'}`,'work-tag'),node('h3',work.label),node('p',work.site.label),node('p',`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min ${Object.keys(work.feasibility.travel_by_crew).length?'from the nearest qualified crew, including estimated travel/setup':'on-site work/setup; no qualified crew to route'}`));
-    row.append(node('p',equipment(work)));
-    if(work.feasibility.reasons.length)row.append(node('p',work.feasibility.reasons.join('. ')+'.'));
-    const columns=node('div','','work-columns'),none=node('div'),done=node('div');none.append(node('small','Doing nothing'),node('p',work.without));done.append(node('small','Completing this work'),node('p',work.with));columns.append(none,done);row.append(columns,node('strong',work.evidence_grade),node('p',work.evidence));
-    const details=document.createElement('details');details.append(node('summary','Sources, work scope and conditions'),detail(work));row.append(details);comparisons.append(row);}
-  root.append(comparisons,node('p',data.interpretation,'work-config-note'));
-  if(data.current&&data.result){const receipt=document.createElement('details');receipt.append(node('summary','Comparison provenance'),node('p',`${data.result.model} · ${new Date(data.result.generated_at).toLocaleString()}`),node('small',data.result.result_sha256.slice(0,16)));root.append(receipt);}
+  for(const hazard of Object.keys(names)){
+    const group=document.createElement('details');group.append(node('summary',names[hazard]));
+    for(const work of data.candidates.filter(w=>w.hazard===hazard)){
+      const row=node('details','','work-option') as HTMLDetailsElement;row.dataset.selected=String(selectedIds.has(work.id));row.dataset.operation=work.operation_id;
+      row.append(node('summary',`${shortNames[work.operation_id]??work.label} · ${work.site.label}`),node('p',selectedIds.has(work.id)?'Selected':work.feasibility.fits?'Fits this resource and time scenario':'Needs resources or prerequisites'),node('p',`${work.people}-person ${work.role} crew · ${work.feasibility.minimum_total}–${work.feasibility.maximum_total} min including setup${Object.keys(work.feasibility.travel_by_crew).length?' and estimated travel':''}`));
+      if(work.feasibility.reasons.length)row.append(node('p',work.feasibility.reasons.join('. ')+'.'));
+      row.append(comparison(work),detail(work));group.append(row);
+    }comparisons.append(group);
+  }root.append(comparisons);
+  const evidence=document.createElement('details');evidence.append(node('summary','Evidence & limits'),node('p',data.interpretation));
+  if(data.current&&data.result)evidence.append(node('p',`${data.result.model} · ${new Date(data.result.generated_at).toLocaleString()}`),node('small',data.result.result_sha256.slice(0,16)));root.append(evidence);
   return root;
   function equipment(work:WorkCandidate){return Object.entries(work.equipment).map(([k,n])=>`${n} ${data.equipment_names[k]}`).join(' · ')||'No special equipment; owner access required';}
-  function detail(work:WorkCandidate){const result=node('div');result.append(node('p',work.output),node('p',equipment(work)),node('p',work.time_basis),node('p',work.site.basis));const list=node('ul');for(const condition of work.conditions)list.append(node('li',condition));result.append(list,node('p',work.evidence));
-    for(const id of work.source_ids){const source=data.sources.find(s=>s.id===id);if(!source)continue;const a=node('a',source.title+' ↗','work-source') as HTMLAnchorElement;a.href=source.url;a.target='_blank';a.rel='noreferrer';result.append(a);if(source.locator)result.append(node('small',source.locator));}return result;}
+  function comparison(work:WorkCandidate){const block=node('div','','work-vs');block.append(node('strong','Doing nothing'),node('p',work.without),node('strong','With this work'),node('p',work.with),node('strong',work.evidence_grade));return block;}
+  function detail(work:WorkCandidate){
+    const result=node('div');result.append(node('p',work.output),node('p',equipment(work)),node('p',`${work.minimum_minutes}–${work.maximum_minutes} min on site. ${work.time_basis}`),node('p',work.site.basis));
+    const list=node('ul');for(const condition of work.conditions)list.append(node('li',condition));result.append(list,node('p',work.evidence));
+    for(const id of work.source_ids){const source=data.sources.find(s=>s.id===id);if(!source)continue;const a=node('a',source.title+' ↗','work-source') as HTMLAnchorElement;a.href=source.url;a.target='_blank';a.rel='noreferrer';result.append(a);if(source.locator)result.append(node('small',source.locator));}return result;
+  }
 }
