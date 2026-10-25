@@ -387,6 +387,20 @@ def run_storm(storm_name: str, plan_code: str | None = None, label: str = "run",
         "injuries are reported (expected_injuries) but not priced"]
     rt["damage"] = time.time() - t
 
+    # ---- 6b. above-ground destruction (sim/destruction.py): structures, power poles and lines, Muni wire,
+    # streetlights, signals, shelters, blocked roads, trees into buildings, outages; added to the ledger
+    t = time.time()
+    dres = None
+    try:
+        from sim import destruction as destr
+        dres = destr.run_destruction(st, plan=ed if has_plan else None, wind=wf, water=wres,
+                                     tree_result={"trees": tres.trees, "strikes": tres.strikes},
+                                     buildings=ed.buildings, trees=tree_list, cars=car_list)
+        destr.merge_ledger(led, dres)
+    except Exception as e:
+        notes.append(f"destruction failed: {type(e).__name__}: {e}")
+    rt["destruction"] = time.time() - t
+
     # ---- 7. plan cost (+ response lines measured by the people sim) and BCA
     t = time.time()
     if has_plan:
@@ -425,6 +439,8 @@ def run_storm(storm_name: str, plan_code: str | None = None, label: str = "run",
     trees_mod.export_web(tres, fr, car_frames=car_frames)
     wf.write_wind_slice(fr / "wind_slice.f32")
     people.write_people(pres, str(fr))
+    if dres is not None:
+        destr.write_web(dres, str(fr))
     (fr / "damage.json").write_text(json.dumps(_jsonable({"by_building": led["by_building"], "total_usd": led["total_usd"],
                                                           "by_cause": led["by_cause"]}), separators=(",", ":")))
     nfr = int(dman["n_frames"])
@@ -440,7 +456,8 @@ def run_storm(storm_name: str, plan_code: str | None = None, label: str = "run",
                   "max_depth": "max_depth.u16", "inlets": "inlets_state.json", "trees": "trees.json",
                   "debris": "debris.f32", "debris_meta": "debris.json", "debris_flight": "debris_flight.f32",
                   "inlet_clog": "inlet_clog.json", "cars": "cars.f32", "wind": "wind_slice.f32",
-                  "people": "people.f32", "people_meta": "people.json", "damage": "damage.json"},
+                  "people": "people.f32", "people_meta": "people.json", "damage": "damage.json",
+                  "destruction": "destruction.json"},
         "layouts": {"depth": "n_frames x ny x nx uint16 mm (8 m)", "velocity": "n_frames x ny x nx x 2 int16 mm/s",
                     "saturation": "n_frames x ny x nx uint8 (0..255)", "cars": "n_frames x n_cars x 4 f32 (x, y, z, yaw) UTM",
                     "debris": "n_frames x n_debris x 3 f32 UTM", "wind": "ny x nx x 2 f32 (u, v) amplification at 10 m",

@@ -21,6 +21,10 @@
     check();
   });
 
+  // Hosts load the ArcGIS AMD loader at different times (the web/ app injects it at runtime): wait for it.
+  const boot = () => (window.require && window.sfScene?.view ? start() : setTimeout(boot, 200));
+  boot();
+  function start() {
   require([
     "esri/layers/GraphicsLayer", "esri/Graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "esri/geometry/Point",
     "esri/symbols/LineSymbol3D", "esri/symbols/PointSymbol3D", "esri/symbols/PolygonSymbol3D",
@@ -575,4 +579,5 @@
     }
     window.sfDestruction = { collapsedNow, focus, setTime: (v) => setTime(v), play: () => setPlaying(true), load: (id) => fetch("/data/web/destruction_index.json").then((r) => r.json()).then((ix) => load(id, ix)), layers: L, get run() { return run; } };
   });
+  }
 })();

@@ -458,6 +458,15 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         return city.sample(maxd, px, py)
 
     k_peak = int(np.argmax(W.gust))
+    if water is not None and _g(water, "max_dv") is None and _g(water, "depth") is not None and _g(water, "u") is not None:
+        dep = np.asarray(_g(water, "depth"), np.float32)   # full sim/water.py WaterResult (sim/run.py): summarise it here
+        dvf = dep * np.sqrt(np.asarray(_g(water, "u"), np.float32) ** 2 + np.asarray(_g(water, "v"), np.float32) ** 2)
+        water = WaterSummary({"t_frames": np.asarray(_g(water, "t_frames"), float), "max_depth": dep.max(0),
+                              "max_speed": np.asarray(_g(water, "max_speed"), np.float32), "max_dv": dvf.max(0),
+                              "k_max_depth": dep.argmax(0).astype(np.int16), "k_max_dv": dvf.argmax(0).astype(np.int16),
+                              "k_flood_peak": int(np.argmax(dep.reshape(len(dep), -1).sum(1)))})
+        maxd = water.max_depth.astype(float)
+        del dep, dvf
     w_t = _g(water, "t_frames")
     to_storm_k = (lambda kw: np.clip(np.searchsorted(t, np.asarray(w_t, float)[np.asarray(kw)], "left"), 0, nf - 1)) if w_t is not None else None
     k_kmax = _g(water, "k_max_depth")

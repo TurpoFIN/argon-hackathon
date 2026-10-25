@@ -1,0 +1,30 @@
+/* Destruction playback panel. Colours fall back to the panel tokens in style.css. */
+.destruction {
+  position: fixed; left: 16px; bottom: 32px; z-index: 3; width: 320px; box-sizing: border-box; padding: 10px 12px;
+  background: var(--panel-bg, #070707); color: var(--panel-fg, #eee); border: 1px solid var(--panel-edge, rgba(0, 0, 0, .45));
+  border-radius: 6px; box-shadow: var(--panel-shadow, none); font: 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.destruction header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.destruction strong { font-size: 13px; font-weight: 600; }
+.destruction select { min-width: 0; flex: 1; max-width: 220px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--panel-ring, #555); border-radius: 4px; padding: 2px 4px; }
+.destruction select option { color: #111; }
+.destruction-row { display: flex; align-items: center; gap: 8px; }
+.destruction-row input { flex: 1; min-width: 0; accent-color: #ff2d55; }
+.destruction button { font: inherit; color: inherit; background: transparent; border: 1px solid var(--panel-ring, #555); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+.destruction button:hover { background: rgba(255, 255, 255, .08); }
+.destruction :focus-visible { outline: 1px solid var(--panel-ring, #a4a4a4); outline-offset: 2px; }
+.destruction-play { width: 30px; }
+.destruction-clock { min-width: 128px; text-align: right; font-variant-numeric: tabular-nums; color: var(--panel-muted, #a4a4a4); }
+.destruction-stats { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; margin: 8px 0; }
+.destruction-stats dt { color: var(--panel-muted, #a4a4a4); }
+.destruction-stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.destruction-cams { display: flex; gap: 6px; }
+.destruction-feed-head { color: var(--panel-muted, #a4a4a4); margin-top: 2px; }
+.destruction-feed { list-style: none; margin: 4px 0 8px; padding: 0; max-height: 132px; overflow: auto; }
+.destruction-feed li button { display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid transparent; border-radius: 0; padding: 2px 6px; font-variant-numeric: tabular-nums; }
+.destruction-feed li.block button { border-left-color: #ff2d55; }
+.destruction-feed li.strike button { border-left-color: #f644b9; }
+.destruction-feed li.none { color: var(--panel-muted, #a4a4a4); padding: 2px 6px; }
+.destruction-note { margin: 6px 0 0; color: var(--panel-muted, #a4a4a4); font-size: 11px; }
+body.cinema .destruction { bottom: calc(var(--cinema-bar, 0px) + 12px); }
+@media (max-width: 520px) { .destruction { left: 8px; right: 8px; width: auto; bottom: 8px; } }
