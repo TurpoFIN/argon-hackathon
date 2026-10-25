@@ -36,3 +36,4 @@
 .shell-storm #hud .brand { top: 84px; }.shell-storm #hud .topc { top: 82px; }.shell-storm #hud .kpis { top: 82px; }.shell-storm #hud .banner { top: 208px; }
 @media (max-width: 900px) { .storm-live-chip { left: 50%; font-size: 9px; white-space: nowrap; } }
 .compare-headline { display: inline-block; color: #e6f6fb; font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.eop-report { overflow-x: auto; } .eop-report table { width: 100%; max-width: 100%; border-collapse: collapse; font-size: 11px; table-layout: auto; } .eop-report td, .eop-report th { color: #19313d !important; opacity: 1 !important; background: transparent; padding: 5px 6px; border-bottom: 1px solid #d3e0e0; vertical-align: top; } .eop-report th { color: #147f98 !important; font: 9px 'JetBrains Mono',monospace; text-transform: uppercase; }
