@@ -146,17 +146,19 @@ def ensure_video(run_dir: Path, log=None) -> Path | None:
         return None
 
 
-def baseline(storm: str, log=None) -> tuple[Path, dict]:
-    """No-plan run for this storm (cached in runs/_baselines.json)."""
+def baseline(storm: str, log=None, max_duration_s: float | None = None, threads: int | None = None,
+             render: bool = False) -> tuple[Path, dict]:
+    """No-plan run for this storm (cached, including any duration trim)."""
     with _baseline_lock:
         idx_p = RUNS / "_baselines.json"
         idx = json.loads(idx_p.read_text()) if idx_p.exists() else {}
         _, is_mock = get_run_storm()
-        key = f"{storm}{'-mock' if is_mock else ''}"
+        duration_tag = f"-max{int(max_duration_s)}" if max_duration_s else ""
+        key = f"{storm}{duration_tag}{'-mock' if is_mock else ''}"
         if key in idx and (RUNS / idx[key] / "result.json").exists():
             rd = RUNS / idx[key]
             return rd, load_result(rd)
-        if not is_mock:  # reuse the newest finished real no-plan run of this storm (e.g. from the lead's pipeline)
+        if not is_mock and not max_duration_s:  # reuse the newest finished full real baseline
             cands = []
             for rp in RUNS.glob("*/result.json"):
                 try:
@@ -173,11 +175,23 @@ def baseline(storm: str, log=None) -> tuple[Path, dict]:
                 return rd, load_result(rd)
         if log:
             log("status", status=f"running no-plan baseline for {storm}{' (MOCK sim)' if is_mock else ''}")
-        rd = call_run_storm(storm, None, f"baseline {storm}", None)
+        if max_duration_s and not is_mock:
+            fn, _ = get_run_storm()
+            import inspect
+            params = inspect.signature(fn).parameters
+            kw = {"storm_name": storm, "plan_code": None, "label": f"baseline {storm} max {int(max_duration_s)}s",
+                  "render": bool(render), "max_duration_s": float(max_duration_s)}
+            if threads and "threads" in params:
+                kw["threads"] = int(threads)
+            kw = {k: v for k, v in kw.items() if k in params}
+            rd = _resolve_run_dir(fn(**kw))
+        else:
+            rd = call_run_storm(storm, None, f"baseline {storm}", None)
         idx[key] = rd.name
         RUNS.mkdir(exist_ok=True)
         idx_p.write_text(json.dumps(idx, indent=1))
-        ensure_video(rd, log)
+        if render:
+            ensure_video(rd, log)
         return rd, load_result(rd)
 
 

@@ -162,7 +162,7 @@ function renderTop() {
   const label = { running: 'Running', completed: 'Completed', failed: 'Failed', awaiting_approval: 'Awaiting planner approval', approved: 'Approved by planner', rejected: 'Rejected by planner', interrupted: 'Interrupted' }[S.status] || S.status;
   $('#status').innerHTML = `<span class="pill ${esc(S.status)}"><span class="dot"></span>${esc(label)}
       <span class="muted">· gen ${S.generation ?? 0}/${genTotal()}${stage ? ' · ' + esc(stage) : ''}</span></span>
-    ${cfg.mock_sim ? '<span class="badge mock" title="The real storm simulator was not available; candidates were scored by the mock bathtub model">Mock sim</span>' : ''}`;
+    ${cfg.mock_sim ? '<span class="badge mock" title="The real storm simulator was not available; candidates were scored by the mock bathtub model">MOCK sim</span>' : '<span class="badge real" title="Candidates were scored by sim.run with the real storm physics">REAL sim</span>'}`;
   const nAll = D.cands.length, nOk = D.scored.length;
   $('#kpis').innerHTML = `
     <div class="kpi big"><span class="k">Best net benefit</span><span class="v">${D.best ? money(D.best.score.net_benefit_usd, { sign: true }) : '—'}${D.best ? `<small>${esc(D.best.id)} · BCR ${num(D.best.score.bcr, 2)}</small>` : ''}</span></div>
@@ -720,6 +720,15 @@ async function loadJobs() {
   if (jobId) sel.value = jobId;
   return list;
 }
+async function demoJob() {
+  if (FIXTURE) return null;
+  try {
+    const r = await fetch('/runs/evolve/DEMO_JOB', { cache: 'no-store' });
+    if (!r.ok) return null;
+    const id = (await r.text()).trim();
+    return /^evolve-[A-Za-z0-9_-]+$/.test(id) ? id : null;
+  } catch { return null; }
+}
 $('#jobPicker').addEventListener('change', (e) => {
   if (!e.target.value) return;
   const u = new URL(location.href); u.searchParams.set('job', e.target.value); u.searchParams.delete('cand'); location.href = u;
@@ -795,7 +804,8 @@ setInterval(() => { if (S && S.status === 'running') renderTop(); }, 1000);
   const list = await loadJobs();
   if (!FIXTURE && !jobId) {
     if (!list.length) { showEmpty('No evolution runs yet.'); return; }
-    jobId = list[0].id;
+    const preferred = await demoJob();
+    jobId = list.some((j) => j.id === preferred) ? preferred : list[0].id;
     $('#jobPicker').value = jobId;
   }
   poll();

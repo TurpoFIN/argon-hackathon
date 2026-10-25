@@ -241,6 +241,14 @@ def band_edges(budget: float) -> list[list[float]]:
     return [[0, 0.2 * budget], [0.2 * budget, 0.5 * budget], [0.5 * budget, 0.8 * budget], [0.8 * budget, budget]]
 
 
+def score_invalid_reason(score: dict, baseline_damage_usd: float) -> str | None:
+    """Reject impossible headline numbers caused by mismatched baseline windows."""
+    if baseline_damage_usd > 0 and (score.get("net_benefit_usd") or 0) > baseline_damage_usd:
+        return (f"net benefit ${score['net_benefit_usd']:,.0f} exceeds no-plan damage "
+                f"${baseline_damage_usd:,.0f}; likely mismatched or truncated baseline")
+    return None
+
+
 # ----------------------------------------------------------------------------- evaluation (worker processes)
 def estimate_cost(code: str, timeout: float = 120) -> dict:
     """Sandboxed dry run (no network, no secrets): the locked cost planner prices the plan without simulating."""
@@ -269,7 +277,8 @@ def estimate_cost(code: str, timeout: float = 120) -> dict:
             "by_category": d.get("by_category") or {}, "stdout": r.get("stdout")}
 
 
-def simulate(storm: str, code: str, label: str, budget: float) -> dict:
+def simulate(storm: str, code: str, label: str, budget: float, max_duration_s: float | None = None,
+             sim_threads: int = 4) -> dict:
     """Sandbox apply -> storm sim -> summary vs. the cached no-plan baseline. No video (rendered later for elites)."""
     import traceback
     from server.sandbox import run_plan
@@ -278,15 +287,17 @@ def simulate(storm: str, code: str, label: str, budget: float) -> dict:
     sb = run_plan(code, out_dir=plan_dir, timeout=180)
     if not sb.get("ok"):
         return {"ok": False, "stage": "plan", "error": (sb.get("error") or "plan failed")[-2000:], "stdout": sb.get("stdout")}
-    base_dir, base = runner.baseline(storm)
+    base_dir, base = runner.baseline(storm, max_duration_s=max_duration_s, threads=sim_threads, render=False)
     try:
         import inspect
         fn, _ = runner.get_run_storm()
         params = inspect.signature(fn).parameters
         if "render" in params and "storm_name" in params:  # real sim: skip the video, size threads to the pool
-            kw = {"render": False}
+            kw = {"render": False, "water_cache": True}
             if "threads" in params:
-                kw["threads"] = int(os.environ.get("EVOLVE_SIM_THREADS", "16"))
+                kw["threads"] = int(sim_threads)
+            if max_duration_s and "max_duration_s" in params:
+                kw["max_duration_s"] = float(max_duration_s)
             rd = runner._resolve_run_dir(fn(storm_name=storm, plan_code=code, label=label, plan_dir=str(plan_dir), **kw))
         else:
             rd = runner.call_run_storm(storm, code, label, str(plan_dir))
@@ -371,12 +382,17 @@ class Evolver:
                  population: int = 8, mutator_model: str = MUTATOR, architect_model: str = ARCHITECT,
                  sim_workers: int = 4, llm_workers: int = 8, max_minutes: float = 40, use_llm: bool = True,
                  import_seeds: bool = True, thinking_architect: str = "high", thinking_mutator: str = "medium",
-                 seed: int = 0, client=None):
+                 seed: int = 0, client=None, max_duration_s: float | None = None,
+                 sim_threads: int = 4):
         self.job, self.storm, self.budget = job, storm, float(budget)
         self.generations, self.population = int(generations), max(3, int(population))
         self.mutator_model, self.architect_model = mutator_model, architect_model
         self.sim_workers, self.llm_workers = max(1, int(sim_workers)), max(1, int(llm_workers))
         self.max_minutes, self.use_llm, self.import_seeds = float(max_minutes), bool(use_llm), bool(import_seeds)
+        self.max_duration_s = float(max_duration_s) if max_duration_s else None
+        # Keep the Evolve pool below the shared box budget even when a caller
+        # forgets to size both knobs together.
+        self.sim_threads = max(1, min(int(sim_threads), max(1, 24 // self.sim_workers)))
         self.thinking_architect, self.thinking_mutator = thinking_architect, thinking_mutator
         self.rng = random.Random(f"{storm}-{seed}")
         self.client = client
@@ -403,7 +419,9 @@ class Evolver:
             "config": {"storm": storm, "budget_usd": self.budget, "generations": self.generations,
                        "population": self.population, "mutator_model": mutator_model if use_llm else None,
                        "architect_model": architect_model if use_llm else None, "sim_workers": self.sim_workers,
-                       "max_minutes": self.max_minutes, "mock_sim": runner.get_run_storm()[1], "use_llm": self.use_llm},
+                       "max_minutes": self.max_minutes, "max_duration_s": self.max_duration_s,
+                       "sim_threads": self.sim_threads, "mock_sim": runner.get_run_storm()[1],
+                       "sim_mode": "MOCK" if runner.get_run_storm()[1] else "REAL", "use_llm": self.use_llm},
             "baseline": None, "generation": 0, "stage": "seeding", "candidates": [], "generations": [],
             "archive": {"strategies": STRATEGIES, "strategy_labels": STRATEGY_LABELS,
                         "cost_bands": band_edges(self.budget), "cells": {}},
@@ -665,6 +683,8 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
             if local_video:
                 media["video"] = runner_rel(local_video)
             media["images"] = [runner_rel(p) for p in local_images]
+            if media["video"]:
+                self.update(cid, video_url=media["video"])
             bundles.append({"cand": cid, "candidate": self.cand_brief(cid), "summary": self.summaries.get(cid) or {},
                            "media": media, "video_path": local_video if i == 0 else None,
                            "image_paths": local_images})
@@ -812,7 +832,8 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         with self.sim_slots:
             sid = self.span_start("sim", "sim", cid)
             try:
-                fut = self.pool.submit(simulate, self.storm, code, f"evolve {self.job.id} {cid}", self.budget)
+                fut = self.pool.submit(simulate, self.storm, code, f"evolve {self.job.id} {cid}", self.budget,
+                                       self.max_duration_s, self.sim_threads)
                 r = fut.result(timeout=60 * 30)
             except Exception as e:
                 r = {"ok": False, "stage": "sim", "error": f"{type(e).__name__}: {e}"}
@@ -838,7 +859,12 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                  "expected_fatalities": (ppl.get("expected_fatalities") or {}).get("now")}
         with self.lock:
             self.summaries[cid] = s
-        status = "scored" if score["within_budget"] else "over_budget"
+        baseline_damage = float(s.get("baseline_damage_usd") or 0)
+        invalid_reason = score_invalid_reason(score, baseline_damage)
+        status = "invalid" if invalid_reason else ("scored" if score["within_budget"] else "over_budget")
+        if invalid_reason:
+            score["invalid"] = True
+            score["invalid_reason"] = invalid_reason
         par = self.cands.get((self.cands[cid].get("parents") or [None])[0] or "")
         pnet = ((par or {}).get("score") or {}).get("net_benefit_usd")
         improved = (score["net_benefit_usd"] or 0) > pnet + 1 if pnet is not None and status == "scored" else None
@@ -846,6 +872,10 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                     by_cause={k: v.get("now") for k, v in (s.get("by_cause") or {}).items()},
                     cost_by_strategy=by_strat, strategy=strat, cost_band=cost_band(score["plan_cost_usd"] or 0, self.budget),
                     t_done=round(time.time(), 2))
+        if invalid_reason:
+            self.log("reject", f"{cid}: {invalid_reason}")
+            self.save(True)
+            return
         with self.lock:
             new_cell = self.insert_archive(cid)
             prev = self.state.get("best_id")
@@ -1185,19 +1215,9 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
                  "n_scored": len(self.scored(False)), "wall_clock_s": round(time.time() - self.t0, 1),
                  "usage": self.state["usage"], "state_url": runner_rel(self.dir / "state.json")}
         if b:
-            # replay videos for the best and the archive elites (top 4) so the UI can play them
-            self.log("video", "rendering replay videos for the best plan and the top archive elites")
-            top = [b["id"]] + [e for e in sorted(set(self.cells.values()), key=lambda e: -self.cands[e]["score"]["net_benefit_usd"])
-                               if e != b["id"]][:3]
-            futs = {cid: self.pool.submit(render_video, self.cands[cid]["run_id"]) for cid in top if self.cands[cid].get("run_id")}
-            for cid, f in futs.items():
-                try:
-                    v = f.result(timeout=600)
-                except Exception as e:
-                    v = None
-                    self.log("video", f"{cid}: video failed: {e}")
-                if v:
-                    self.update(cid, video_url=runner_rel(v))
+            # Watch renders the best and one contrasting elite during each
+            # generation. Do not spend the demo's remaining wall clock rendering
+            # unrelated archive candidates here.
             code = self.codes[b["id"]]
             (self.dir / "best.plan.py").write_text(code)
             (REPO / "runs" / "_jobs").mkdir(parents=True, exist_ok=True)
@@ -1226,8 +1246,10 @@ Spend only where it pays back: a measure that costs more than the damage it avoi
         self.emit("evolve_start", config=self.state["config"], state_url=runner_rel(self.dir / "state.json"))
         self.save(True)
         try:
-            self.base_dir, base = runner.baseline(self.storm, log=lambda t, **k: self.emit(t, **k))
-            bvid = runner.ensure_video(self.base_dir)
+            self.base_dir, base = runner.baseline(self.storm, log=lambda t, **k: self.emit(t, **k),
+                                                  max_duration_s=self.max_duration_s, threads=self.sim_threads,
+                                                  render=False)
+            bvid = runner.ensure_video(self.base_dir) if self.max_duration_s is None else None
             bs = runner.summarize(base, None)
             with self.lock:
                 self.state["baseline"] = {"run_id": self.base_dir.name, "damage_usd": bs.get("damage_total_usd"),
@@ -1269,7 +1291,8 @@ def runner_rel(p) -> str | None:
 
 def evolve_job(job: Job, cfg: dict) -> dict:
     keys = ("storm", "budget", "generations", "population", "mutator_model", "architect_model", "sim_workers",
-            "llm_workers", "max_minutes", "use_llm", "import_seeds", "thinking_architect", "thinking_mutator", "seed")
+            "llm_workers", "max_minutes", "use_llm", "import_seeds", "thinking_architect", "thinking_mutator",
+            "seed", "max_duration_s", "sim_threads")
     kw = {k: cfg[k] for k in keys if cfg.get(k) is not None}
     if cfg.get("budget_usd") is not None:
         kw["budget"] = cfg["budget_usd"]
@@ -1303,6 +1326,9 @@ def main():
     ap.add_argument("--architect", default=ARCHITECT)
     ap.add_argument("--sim-workers", type=int, default=4)
     ap.add_argument("--max-minutes", type=float, default=40)
+    ap.add_argument("--max-duration-s", type=float, default=None,
+                    help="truncate the real storm consistently for a fast demo (baseline is cached by duration)")
+    ap.add_argument("--sim-threads", type=int, default=4, help="Numba threads per candidate; keep workers*threads <= box budget")
     ap.add_argument("--no-llm", action="store_true", help="seeds + numeric tweaks only (no API calls)")
     ap.add_argument("--no-import", action="store_true", help="don't seed from earlier optimizer plans")
     a = ap.parse_args()
@@ -1316,7 +1342,8 @@ def main():
         return ev
     job.emit = emit
     res = Evolver(job, a.storm, a.budget, a.generations, a.population, a.mutator, a.architect, a.sim_workers,
-                  max_minutes=a.max_minutes, use_llm=not a.no_llm, import_seeds=not a.no_import).run()
+                  max_minutes=a.max_minutes, use_llm=not a.no_llm, import_seeds=not a.no_import,
+                  max_duration_s=a.max_duration_s, sim_threads=a.sim_threads).run()
     print(json.dumps(res, indent=1, default=str))
     print("state:", OUT / job.id / "state.json")
 

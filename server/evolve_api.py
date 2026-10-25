@@ -34,6 +34,8 @@ class EvolveReq(BaseModel):
     mutator_model: str = "gemini-3.8-flash"
     architect_model: str = "gemini-4-argon"
     sim_workers: int = 4
+    sim_threads: int = 4
+    max_duration_s: float | None = 1800
     max_minutes: float = 40
     use_llm: bool = True
 
