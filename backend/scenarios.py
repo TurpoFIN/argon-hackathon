@@ -12,7 +12,8 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .simulation import Budget, advance_water, potential_wind
 from .coupled import World
-from . import argon
+from . import argon, footage, coastal
+from .preparedness import study
 from typing import Literal
 
 DATA = Path(__file__).resolve().parents[1] / "data"
@@ -32,6 +33,7 @@ class Parameters(BaseModel):
     debris_kg: float = Field(default=600, ge=0, le=2000)
     clearing_crews: int = Field(default=2, ge=0, le=4)
     response_mode: Literal['argon', 'baseline'] = 'argon'
+    coastal_case: Literal['manual','lower','central','upper'] = 'manual'
 
     @model_validator(mode="after")
     def valid_gust(self):
@@ -51,7 +53,8 @@ class SupersededCalculation(Exception):
     """The slider moved again; discard this calculation without publishing it."""
 
 
-def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: False):
+def create_world(parameters: Parameters, should_cancel=lambda: False):
+    """Build the same public-data initial world for interactive and matched studies."""
     def check_cancelled():
         if should_cancel():
             raise SupersededCalculation()
@@ -75,47 +78,44 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
         except Exception as error:
             perception = {"status": "failed", "reason": f"Perception failed ({type(error).__name__})", "zones": []}
     check_cancelled()
-    world = World(DATA,p,z,walls,ocean,lon,lat,u,v,perception)
     tide_base = source["tide_base_navd88_m"]
-    h = np.zeros_like(z)
-    h[ocean] = np.maximum(tide_base-z[ocean], 0)
-    budget = Budget(initial_m3=float(h.sum()*dx**2))
-    frames, metrics = [], []
-    for step in range(3601):
-        if step % 60 == 0:
-            check_cancelled()
-        if step % 30 == 0:
-            world.snapshot(step)
-        if step % 120 == 0:
-            frames.append(h.astype("float32").copy())
-            land_depth = h[~ocean & ~walls]
-            metrics.append({"time_seconds": step, "max_depth_m": float(land_depth.max()),
-                "flooded_area_m2": int((land_depth > 0.05).sum())*dx**2,
-                "water_volume_m3": float(land_depth.sum()*dx**2)})
-        if step == 3600:
-            break
-        if step % 5 == 0:
-            world.step(step,h)
-            drains = world.rates()
-        tide = tide_base + min(step/1800, 1)*p.coastal_rise_m
-        advance_water(h, z, walls, ocean, rain, drains, tide, dx, 1, budget, p.roughness)
-    residual = float(h.sum()*dx**2) - budget.initial_m3 - budget.rain_m3 + budget.drained_m3 - budget.coastal_exchange_m3
-    if abs(residual) > 0.01 or not np.isfinite(h).all():
-        raise ArithmeticError("Scenario failed the water-budget check")
+    evidence = footage.load_evidence()
+    pilot = coastal.load_pilot() if p.coastal_case != 'manual' else None
+    if p.coastal_case != 'manual' and pilot is None:
+        raise ValueError('Coastal pilot unavailable. Run python -m scripts.prepare_coastal or select the manual boundary.')
+    check_cancelled()
+    world = World(DATA,p,z,walls,ocean,lon,lat,u,v,perception,
+                  evidence=evidence, dynamics={'rain':rain,'tide_base':tide_base,'coastal':pilot,'coastal_case':p.coastal_case}, check_cancelled=check_cancelled)
+    return world, source
+
+
+def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: False, previous=None):
+    world, source = create_world(parameters, should_cancel)
+    p = parameters
+    lon, lat, z = world.lon, world.lat, world.z
+    with np.load(DATA / 'model-inputs.npz') as arrays:
+        height = arrays['height']
+    u, v, ocean = world.u, world.v, world.ocean
+    dx = world.cell
+    pilot = world.dynamics.get('coastal')
+    experiment = study(world, previous)
+    world = experiment['world']
+    frames, metrics = experiment['flood'], experiment['frame_metrics']
+    residual = experiment['result']['mass_balance_error_m3']
     destination.mkdir(parents=True, exist_ok=False)
     np.stack([lon, lat, z, height, u, v, ocean.astype(float)]).astype("float32").tofile(destination / "grid.bin")
     np.stack(frames).tofile(destination / "flood.bin")
     (destination / "world.json").write_text(json.dumps(world.export(), separators=(',', ':')))
-    source.update({"parameters": p.model_dump(), "generated_at": datetime.now(timezone.utc).isoformat(),
+    source.update({"parameters": p.model_dump(), "engine_version": "advance-preparedness-coastal-v2", "generated_at": datetime.now(timezone.utc).isoformat(),
         "rainfall_mm_per_hour": p.rain_mm_h, "frame_metrics": metrics, "world_file": "world.json",
         "wind": {**source["wind"], "mean_mps": p.wind_mps, "gust_mps": p.gust_mps, "from_deg": p.wind_from_deg},
-        "metrics": {**source["metrics"], "wet_land_cells": int(((h > .05) & ~ocean & ~walls).sum()),
-            "max_land_depth_m": float(h[~ocean & ~walls].max()), "water_budget": vars(budget),
-            "final_volume_m3": float(h.sum()*dx**2), "mass_balance_error_m3": residual},
+        "metrics": {**source["metrics"], "wet_land_cells": int(metrics[-1]["flooded_area_m2"] / dx**2),
+            "max_land_depth_m": metrics[-1]["max_depth_m"], "water_budget": experiment["water_budget"],
+            "final_volume_m3": experiment["final_volume_m3"], "mass_balance_error_m3": residual},
         "assumptions": [
             "User-configured compound scenario, not a forecast or historical replay.",
             f"Uniform {p.rain_mm_h:g} mm/h rain; runoff coefficient {p.runoff_coefficient:g}; Manning roughness {p.roughness:g}.",
-            f"Added coastal rise {p.coastal_rise_m:g} m ramps over 30 minutes above observed 2.368 m NAVD88 baseline.",
+            (f"Added coastal rise {p.coastal_rise_m:g} m ramps over 30 minutes above the selected TimesFM/NOAA historical coastal trace." if pilot else f"Added coastal rise {p.coastal_rise_m:g} m ramps over 30 minutes above observed 2.368 m NAVD88 baseline."),
             f"Assumed drain capacity {p.drain_capacity_lps:g} L/s; initial {p.blockage_pct:g}% blockage evolves with debris and clearing; no connected sewer network.",
             "Wind is diagnostic 2-D potential flow. Gust envelope and rooftop blend are illustrative; no structural damage prediction.",
             *source["assumptions"][-3:]]})
@@ -185,7 +185,18 @@ class ScenarioStore:
             identity = uuid.uuid4().hex[:12]
             folder = DATA / "scenarios" / identity
             try:
-                calculate(parameters, folder, lambda: version != self._request_version)
+                previous = None
+                prior_folder = DATA if self.state['scenario_id']=='baseline' else DATA/'scenarios'/self.state['scenario_id']
+                prior_world = prior_folder/'world.json'
+                if prior_world.exists():
+                    prior = json.loads(prior_world.read_text())
+                    if prior.get('preparedness') and prior.get('plans'):
+                        last = prior['plans'][-1]
+                        # Prior actions help revision, but scores from different weather /
+                        # boundaries are not comparable to this experiment's outcomes.
+                        previous = {k:last[k] for k in ('selected_plan','drain_ids','stage_ids','evidence_ids')}
+                        previous['comparison_scope']='Prior actions only; not scored under the current conditions.'
+                calculate(parameters, folder, lambda: version != self._request_version, previous)
                 with self.lock:
                     if version != self._request_version:
                         # Never publish an intermediate result after newer edits.
