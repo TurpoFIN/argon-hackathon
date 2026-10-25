@@ -29,7 +29,8 @@
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="evolution">Evolution</button>
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="evolution">Evolution</button>
     <button class="tab" data-tab="agents">Agents</button>
     <button class="tab" data-tab="architecture">Architecture</button>
     <div class="legend" id="legend"></div>
@@ -37,7 +38,23 @@
 
   <main class="layout">
     <section class="content">
-      <div class="view" id="view-evolution">
+      <div class="view" id="view-overview">
+        <div class="ov">
+          <div class="ov-head">
+            <p class="ov-lede">Gemini writes city storm plans as code, a deterministic storm simulation scores every one, and the best plans breed the next generation.</p>
+            <div class="ov-stats" id="ovStats"></div>
+          </div>
+          <div class="ov-body">
+            <div class="ov-card ov-loop"><div class="ov-h">The loop</div><div id="ovLoop" class="ov-svg"></div></div>
+            <div class="ov-card ov-chart"><div class="ov-h">Best plan so far, by generation</div><div id="ovChart" class="ov-svg"></div></div>
+          </div>
+          <div class="ov-foot">
+            <span class="ov-links"><a href="#" data-go="agents">See every agent →</a><a href="#" data-go="evolution">See every plan →</a></span>
+            <a class="ov-credit" href="https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/" target="_blank" rel="noopener">Method after AlphaEvolve (Google DeepMind, 2025)</a>
+          </div>
+        </div>
+      </div>
+      <div class="view hidden" id="view-evolution">
         <div class="grid-evo">
           <div class="card span2" id="card-main">
             <div class="card-h"><h2>Net benefit per candidate</h2><span class="hint">damage avoided − plan cost, within the $<span id="budgetHint">50</span>M budget · line = best so far</span></div>

@@ -591,3 +591,48 @@ video { width: 100%; max-height: 74vh; border-radius: 8px; background: #000; dis
 body { grid-template-columns: minmax(0, 1fr); }
 .tree-leg { justify-content: flex-start; padding-left: 4px; }
 @media (max-width: 1400px) { .agent .state { font-size: 0; gap: 0; } .agent .state i { width: 7px; height: 7px; } }
+
+/* ---------- overview (pitch view) ---------- */
+body.is-overview .layout { grid-template-columns: minmax(0, 1fr); }
+body.is-overview #detail { display: none; }
+.ov { display: flex; flex-direction: column; gap: 18px; min-height: calc(100vh - 190px); }
+.ov-head { display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 8px 4px 0; }
+.ov-lede { margin: 0; max-width: 760px; font-size: 26px; line-height: 1.35; font-weight: 520; color: #e6f2fb; letter-spacing: -0.01em; }
+.ov-stats { display: flex; align-items: center; gap: 36px; flex: none; }
+.ov-big { display: flex; flex-direction: column; gap: 4px; }
+.ov-big .v { font-size: 52px; font-weight: 720; color: var(--good); line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ov-big.alt .v { color: var(--accent); }
+.ov-big .k { font-size: 13px; color: var(--dim); line-height: 1.35; }
+.ov-small { display: grid; grid-template-columns: auto auto; gap: 4px 10px; font-size: 14px; color: var(--dim); align-items: baseline; }
+.ov-small b { font-size: 22px; color: var(--text, #cfe3f2); font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
+.ov-small b:nth-of-type(n) { grid-column: 1; }
+.ov-body { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 18px; flex: 1; min-height: 520px; }
+.ov-card { border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, rgba(14, 24, 36, 0.75), rgba(8, 14, 22, 0.6)); padding: 18px 20px; display: flex; flex-direction: column; min-width: 0; }
+.ov-h { font-size: 15px; font-weight: 600; color: var(--dim); letter-spacing: 0.02em; margin-bottom: 6px; }
+.ov-svg { flex: 1; min-height: 0; position: relative; }
+.ov-svg svg { width: 100%; height: 100%; display: block; }
+.ov-t { font-size: 20px; font-weight: 650; fill: #e6f2fb; }
+.ov-s { font-size: 15px; fill: rgba(207, 227, 242, 0.72); }
+.ov-n { font-size: 15px; font-weight: 750; fill: #061018; }
+.ov-ctr { font-size: 15px; fill: rgba(207, 227, 242, 0.45); }
+.ov-ctr.b { font-size: 22px; font-weight: 650; fill: rgba(207, 227, 242, 0.7); }
+.ov-side-k { font-size: 12px; letter-spacing: 0.12em; fill: rgba(207, 227, 242, 0.4); font-weight: 600; }
+.ov-side { font-size: 15px; fill: rgba(207, 227, 242, 0.75); }
+.ov-side-k.r, .ov-side.r { text-anchor: end; }
+.ov-node.on rect { animation: ovPulse 1.6s ease-in-out infinite; }
+@keyframes ovPulse { 50% { stroke-opacity: 0.55; } }
+.ov-ax { font-size: 15px; fill: rgba(207, 227, 242, 0.55); font-variant-numeric: tabular-nums; }
+.ov-val { font-size: 17px; font-weight: 650; fill: rgba(207, 227, 242, 0.85); font-variant-numeric: tabular-nums; }
+.ov-val.last { font-size: 22px; fill: var(--good); }
+.ov-foot { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 0 4px 4px; }
+.ov-links { display: flex; gap: 28px; }
+.ov-links a { color: var(--accent); text-decoration: none; font-weight: 550; }
+.ov-links a:hover { text-decoration: underline; }
+.ov-credit { color: var(--faint); text-decoration: none; font-size: 12.5px; }
+.ov-credit:hover { color: var(--dim); }
+@media (max-width: 1400px) {
+  .ov-lede { font-size: 20px; max-width: 560px; }
+  .ov-big .v { font-size: 38px; }
+  .ov-stats { gap: 24px; }
+  .ov-body { min-height: 430px; }
+}

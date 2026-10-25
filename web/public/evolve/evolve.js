@@ -25,7 +25,7 @@ const PENDING = new Set(['writing', 'checking', 'simulating']);
 let S = null;            // current state
 let jobId = q.get('job');
 let selId = q.get('cand');
-let tab = ['architecture', 'agents'].includes(q.get('tab')) ? q.get('tab') : 'evolution';
+let tab = ['architecture', 'agents', 'evolution'].includes(q.get('tab')) ? q.get('tab') : 'overview';
 let treeMode = q.get('tree') === 'pareto' ? 'pareto' : 'tree';
 let pollTimer = null;
 const seen = new Set();  // candidate ids already drawn (for pop-in animation)
@@ -674,6 +674,8 @@ function select(id) {
 function setTab(t) {
   tab = t;
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === t));
+  $('#view-overview').classList.toggle('hidden', t !== 'overview');
+  document.body.classList.toggle('is-overview', t === 'overview');
   $('#view-evolution').classList.toggle('hidden', t !== 'evolution');
   $('#view-architecture').classList.toggle('hidden', t !== 'architecture');
   $('#view-agents').classList.toggle('hidden', t !== 'agents');
@@ -688,7 +690,8 @@ function renderAll() {
   D = derive(S);
   if (!selId && D.best) selId = D.best.id;
   renderTop();
-  if (tab === 'evolution') { renderMain(); renderTreeCard(); renderArchive(); renderBoard(); renderGens(); }
+  if (tab === 'overview') renderOverview();
+  else if (tab === 'evolution') { renderMain(); renderTreeCard(); renderArchive(); renderBoard(); renderGens(); }
   else if (tab === 'agents') renderAgents();
   else renderArch();
   const c = selId && D.byId.get(selId);
@@ -787,7 +790,7 @@ setInterval(() => { if (S && S.status === 'running') renderTop(); }, 1000);
 
 (async function boot() {
   renderLegend();
-  if (tab !== 'evolution') setTab(tab);
+  setTab(tab);
   const list = await loadJobs();
   if (!FIXTURE && !jobId) {
     if (!list.length) { showEmpty('No evolution runs yet.'); return; }
@@ -1164,4 +1167,113 @@ function renderCalib() {
     <table class="cm"><thead><tr><th></th><th>beat parent</th><th>did not</th></tr></thead><tbody>
       ${P.map((p) => `<tr><th>predicted ${p}</th>${td(p, 1)}${td(p, 0)}</tr>`).join('')}</tbody></table>
     <div class="faint cnote">Gemini 3.5 Flash-Lite reads each diff and the parent's ledger and predicts the outcome in a second, before the minutes-long storm run. Green cells are correct calls.</div></div>`;
+}
+
+// ---------------------------------------------------------------- overview (AlphaEvolve-style explainer)
+document.querySelectorAll('[data-go]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); setTab(a.dataset.go); }));
+function renderOverview() {
+  const gens = [...new Set(D.cands.map((c) => c.gen))].sort((a, b) => a - b);
+  const seeds = D.scored.filter((c) => c.gen === 0);
+  const seedBest = seeds.length ? Math.max(...seeds.map((c) => c.score.net_benefit_usd)) : null;
+  const best = D.best ? D.best.score.net_benefit_usd : null;
+  const ratio = best && seedBest > 0 ? best / seedBest : null;
+  const nAgents = (S.agents || []).length || 11;
+  $('#ovStats').innerHTML = `
+    <div class="ov-big"><span class="v">${best != null ? money(best, { sign: true }) : '—'}</span><span class="k">best net benefit<br>(damage avoided − cost)</span></div>
+    <div class="ov-big alt"><span class="v">${ratio ? '×' + ratio.toFixed(ratio < 10 ? 2 : 1) : '—'}</span><span class="k">better than the<br>best first plan</span></div>
+    <div class="ov-small"><b>${D.cands.length}</b> plans tried<b>${Math.max(0, gens.length - 1)}</b> generations<b>${nAgents}</b> agents</div>`;
+  renderOvLoop();
+  renderOvChart(gens, seedBest);
+}
+function renderOvLoop() {
+  const box = $('#ovLoop');
+  box.innerHTML = '';
+  const W = 1000, H = 520, cx = 500, cy = 262, R = 168;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+  box.appendChild(svg);
+  const defs = el('defs', {}, svg);
+  const mk = el('marker', { id: 'ovArrow', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+  el('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'rgba(207,227,242,.55)' }, mk);
+  const glow = el('filter', { id: 'ovGlow', x: '-30%', y: '-30%', width: '160%', height: '160%' }, defs);
+  el('feGaussianBlur', { stdDeviation: 6, result: 'b' }, glow);
+  const fm = el('feMerge', {}, glow); el('feMergeNode', { in: 'b' }, fm); el('feMergeNode', { in: 'SourceGraphic' }, fm);
+  const running = S.status === 'running';
+  const cnt = archCounts();
+  const st = S.stage;
+  const boxes = [
+    { n: 1, t: 'Prompt sampler', s: ['picks a parent plan +', 'inspirations from the database'], x: cx, y: cy - R, c: '#5fe1ff', on: running && st === 'mutating' && cnt.flash === 0 && cnt.argon === 0 },
+    { n: 2, t: 'LLM ensemble', s: ['Gemini 4 Argon directs,', '6 Gemini 3.8 Flash specialists', 'write code diffs'], x: cx + R * 1.55, y: cy, c: '#b48cff', on: running && (cnt.argon + cnt.flash + cnt.review > 0 || st === 'architect' || st === 'seeding') },
+    { n: 3, t: 'Evaluators', s: ['sandbox · cited cost planner', 'storm sim: flood, wind,', 'trees, people'], x: cx, y: cy + R, c: '#ffb54a', on: running && cnt.check + cnt.sim > 0 },
+    { n: 4, t: 'Program database', s: ['keeps the best plan per', 'strategy and budget band'], x: cx - R * 1.55, y: cy, c: '#5dff9d', on: running && st === 'selecting' },
+  ];
+  // ring path (ellipse) for the travelling pulse
+  const rx = R * 1.55, ry = R;
+  const ring = `M ${cx} ${cy - ry} A ${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx} ${cy - ry}`;
+  el('path', { d: ring, fill: 'none', stroke: 'rgba(95,225,255,.10)', 'stroke-width': 2 }, svg);
+  // arrows between boxes along the ring (quarter arcs, trimmed)
+  const P = (deg) => [cx + rx * Math.cos(deg * Math.PI / 180), cy + ry * Math.sin(deg * Math.PI / 180)];
+  const arcs = [[-90, 0], [0, 90], [90, 180], [180, 270]].map(([a, b]) => {
+    const [x1, y1] = P(a + 34), [x2, y2] = P(b - 30);
+    return `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
+  });
+  arcs.forEach((d) => el('path', { d, fill: 'none', stroke: 'rgba(207,227,242,.45)', 'stroke-width': 2, 'marker-end': 'url(#ovArrow)' }, svg));
+  const pulse = el('circle', { r: 6, fill: '#5fe1ff', filter: 'url(#ovGlow)', class: 'ov-pulse' }, svg);
+  const am = el('animateMotion', { dur: running ? '6s' : '10s', repeatCount: 'indefinite', path: ring }, pulse);
+  void am;
+  // centre label
+  const ctr = el('text', { x: cx, y: cy - 6, 'text-anchor': 'middle', class: 'ov-ctr' }, svg); ctr.textContent = 'repeat every';
+  const ctr2 = el('text', { x: cx, y: cy + 22, 'text-anchor': 'middle', class: 'ov-ctr b' }, svg); ctr2.textContent = 'generation';
+  boxes.forEach((b) => {
+    const w = 300, hh = 74 + b.s.length * 21;
+    const g = el('g', { class: 'ov-node' + (b.on ? ' on' : '') }, svg);
+    el('rect', { x: b.x - w / 2, y: b.y - hh / 2, width: w, height: hh, rx: 16, fill: 'rgba(10,18,28,.96)', stroke: b.c, 'stroke-opacity': b.on ? 1 : 0.55, 'stroke-width': b.on ? 2.5 : 1.5, filter: b.on ? 'url(#ovGlow)' : null }, g);
+    el('circle', { cx: b.x - w / 2 + 24, cy: b.y - hh / 2 + 26, r: 13, fill: b.c }, g);
+    const nn = el('text', { x: b.x - w / 2 + 24, y: b.y - hh / 2 + 31, 'text-anchor': 'middle', class: 'ov-n' }, g); nn.textContent = b.n;
+    const tt = el('text', { x: b.x - w / 2 + 46, y: b.y - hh / 2 + 32, class: 'ov-t' }, g); tt.textContent = b.t;
+    b.s.forEach((line, i) => { const s = el('text', { x: b.x - w / 2 + 20, y: b.y - hh / 2 + 62 + i * 21, class: 'ov-s' }, g); s.textContent = line; });
+  });
+  // inputs (left) and output (right) as side notes
+  const side = (x, y, lines, cls) => { lines.forEach((l, i) => { const t = el('text', { x, y: y + i * 22, class: cls }, svg); t.textContent = l; }); };
+  const budget = money(S.config?.budget_usd || 50e6, { dp: 0 });
+  side(14, 34, ['INPUTS'], 'ov-side-k');
+  side(14, 60, [`Problem: storm + ${budget} budget`, 'Evaluator: the locked StormSim', 'Initial plans'], 'ov-side');
+  side(W - 14, 34, ['OUTPUT'], 'ov-side-k r');
+  side(W - 14, 60, ['Best plan →', 'planner approval'], 'ov-side r');
+}
+function renderOvChart(gens, seedBest) {
+  const box = $('#ovChart');
+  const { svg, W, H } = svgIn(box);
+  const pts = [];
+  let run = null;
+  gens.forEach((g) => {
+    const v = D.scored.filter((c) => c.gen === g).map((c) => c.score.net_benefit_usd);
+    if (v.length) run = run == null ? Math.max(...v) : Math.max(run, ...v);
+    if (run != null) pts.push({ g, v: run });
+  });
+  if (!pts.length) { const t = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = 'waiting for the first scored plans…'; return; }
+  const m = { l: 92, r: 40, t: 40, b: 56 };
+  const lo = Math.min(0, ...pts.map((p) => p.v)), hi = Math.max(...pts.map((p) => p.v)) * 1.12 || 1;
+  const gMax = Math.max(1, pts[pts.length - 1].g);
+  const x = (g) => m.l + (W - m.l - m.r) * (g / gMax);
+  const y = (v) => H - m.b - (H - m.t - m.b) * ((v - lo) / (hi - lo));
+  for (let i = 0; i <= 3; i++) {
+    const v = lo + (hi - lo) * i / 3;
+    el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'rgba(95,225,255,.08)' }, svg);
+    const t = el('text', { x: m.l - 14, y: y(v) + 5, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = money(v);
+  }
+  pts.forEach((p) => { const t = el('text', { x: x(p.g), y: H - m.b + 32, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = p.g === 0 ? 'first plans' : 'gen ' + p.g; });
+  let d = `M ${x(pts[0].g)} ${y(pts[0].v)}`;
+  pts.slice(1).forEach((p) => { d += ` H ${x(p.g)} V ${y(p.v)}`; });
+  const area = d + ` V ${y(lo)} H ${x(pts[0].g)} Z`;
+  el('path', { d: area, fill: 'rgba(93,255,157,.07)' }, svg);
+  el('path', { d, fill: 'none', stroke: '#5dff9d', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, svg);
+  if (seedBest != null) {
+    el('line', { x1: m.l, x2: W - m.r, y1: y(seedBest), y2: y(seedBest), stroke: 'rgba(207,227,242,.35)', 'stroke-dasharray': '5 6' }, svg);
+    const t = el('text', { x: W - m.r, y: y(seedBest) + 22, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = 'best first plan ' + money(seedBest);
+  }
+  pts.forEach((p, i) => {
+    el('circle', { cx: x(p.g), cy: y(p.v), r: i === pts.length - 1 ? 9 : 6, fill: i === pts.length - 1 ? '#5dff9d' : '#0a121c', stroke: '#5dff9d', 'stroke-width': 3 }, svg);
+    const t = el('text', { x: x(p.g), y: y(p.v) - 18, 'text-anchor': i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle', class: 'ov-val' + (i === pts.length - 1 ? ' last' : '') }, svg);
+    t.textContent = money(p.v, { sign: true });
+  });
 }
