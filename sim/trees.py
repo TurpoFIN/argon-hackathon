@@ -8,13 +8,13 @@ Peltola et al. 1999 Can. J. For. Res. 29:647)
 * Crown drag with reconfiguration (Vogel 1989; de Langre 2008):
       F = 1/2 rho Cd0 A_crown U^2 (U/U0)^-b      (U > U0),   A_crown = pi/4 * crown_d * 0.6 H
 * Snap:   F (h_c - 1.3) > MOR * pi d^3/32 * eta,   eta = 1 - (r/R)^4 for trees with decay (Kane & Ryan 2004)
-* Load factor 1.3 = dynamic gust/sway amplification (Gardiner et al. 2008).
-* Uproot: F h_c > Creg * stem_mass * (1 - 0.4 s(t)), Creg = 160 N m/kg (inside Nicoll's 100-200 range,
+* Load factor 1.3 = dynamic gust/sway amplification (Gardiner et al. 2008). In-situ stem strength
+  = 0.45 x clear-wood green MOR, calibrated so sound trees snap at a median 42 m/s (Virot et al. 2016).
+* Uproot: F h_c > Creg * stem_mass * (1 - 0.4 s(t)), Creg = 120 N m/kg (inside Nicoll's 100-200 range,
   checked on the 31.12.2022 replay; see calibration_check in the params file). Saplings (DBH < 10 cm) excluded.   (Nicoll et al. 2006; Kamimura et al. 2012),
   s(t) = soil saturation at the tree cell from sim/water.py.
 * Cross-check (Virot et al. 2016 PRE 93:023001): critical snapping speed of sound trees ~42 m/s,
-  nearly size independent; `virot_check()` reports the inventory distribution (ours: median 78 m/s, i.e. our
-  stem-strength model is conservative and failures are dominated by uprooting on wet soil / decayed stems).
+  nearly size independent; `virot_check()` reports the inventory distribution (median 42 m/s by calibration).
 * Failure time: first crossing of M/M_crit = 1 (linear in time between frames). Fall direction = local
   wind direction + N(0, 15 deg) (seeded from storm name + plan hash). Fall: rigid rod pivoting at the base
   (uproot) or at 1.3 m (snap) under gravity + residual wind torque -> angle keyframes (~2-4 s).
@@ -114,7 +114,7 @@ def tree_arrays(trees: list, P: dict) -> TreeArrays:
     decayed = u1 < P["snap_decay_prevalence"]
     rr = 0.3 + (P["snap_decay_rr_max"] - 0.3) * u2
     eta = np.where(decayed, 1.0 - rr ** 4, 1.0) * np.where(braced, P["brace_strength_factor"], 1.0)
-    m_snap = mor * np.pi * D ** 3 / 32 * eta
+    m_snap = P.get("stem_strength_ratio", 1.0) * mor * np.pi * D ** 3 / 32 * eta
     # saplings (DBH < min) are staked/flexible: they bend or lean rather than snap/uproot -> not failed here
     sap = D < P.get("tree_min_dbh_m", 0.0)
     mass = P["wood_density_green"] * P["stem_form_factor"] * np.pi / 4 * D ** 2 * H
@@ -153,10 +153,11 @@ def virot_check(trees=None, P=None) -> dict:
     sound = ta.m_snap / ta.eta
     uc = critical_speed(sound[big], np.maximum(ta.hc - 1.3, 0.5)[big], ta.area[big], P)
     ucr = critical_speed(ta.m_anchor_dry[big], ta.hc[big], ta.area[big], P)
+    ucs = critical_speed(ta.m_anchor_dry[big] * (1 - P["uproot_sat_reduction"]), ta.hc[big], ta.area[big], P)
     q = lambda a: [round(float(v), 1) for v in np.percentile(a, [10, 50, 90])]
     # size dependence: correlation of Uc with height
     r = float(np.corrcoef(np.log(ta.H[big]), np.log(uc))[0, 1])
-    return {"n": int(big.sum()), "snap_ucrit_p10_50_90": q(uc), "uproot_dry_ucrit_p10_50_90": q(ucr),
+    return {"n": int(big.sum()), "snap_ucrit_p10_50_90": q(uc), "uproot_dry_ucrit_p10_50_90": q(ucr), "uproot_saturated_ucrit_p10_50_90": q(ucs),
             "corr_log_uc_log_h": round(r, 3), "virot_2016_ms": 42.0}
 
 

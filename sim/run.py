@@ -158,7 +158,7 @@ def _water_key(storm, phash: str) -> str:
     return h.hexdigest()[:16]
 
 
-WATER_CACHE = RUNS / "_cache"
+WATER_CACHE = Path(os.environ.get("STORMSIM_WATER_CACHE") or (RUNS / "_cache"))
 
 
 def _run_water_cached(water, wgrid, st, ed, phash, threads, verbose, notes, use_cache=True):

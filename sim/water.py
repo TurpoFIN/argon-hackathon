@@ -100,7 +100,7 @@ SOURCES = [
 @dataclass
 class WaterParams:
     scheme: str = "inertial"      # "inertial" (Bates 2010 / de Almeida 2012) or "hll" (full SWE, Audusse 2004)
-    alpha: float = 0.7            # CFL coefficient (Bates 2010)
+    alpha: float = 0.6            # CFL coefficient (Bates 2010; 0.7 unstable in 2D, validation B1)
     cfl_hll: float = 0.45         # Courant number of the 2D first-order Godunov scheme (<= 0.5)
     hvel: float = 1e-3            # HLL: below this depth velocity is zero (wet/dry)
     umax: float = 10.0            # HLL: velocity cap, m/s
