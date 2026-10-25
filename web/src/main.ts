@@ -156,8 +156,10 @@ async function main() {
   const CAP_GAP = 0.034, CAP_LEN = 0.036;
   let slots: CaptionSlot[] = [];
   const phasesFor = (v: RunVisual | undefined): Phase[] => {
-    const s = v ? statsOf(visuals[noneIdx] || v) : null; const tp = s ? s.t[s.peakF] : tEnd / 2;
-    const p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000);
+    // storm peak = strongest rain + gust in the forcing
+    let tp = tEnd / 2;
+    if (base) { let bv = -1; const mr = Math.max(1, ...base.rain), mg = Math.max(1, ...base.gust); base.t.forEach((tt, i) => { const x = base.rain[i] / mr + base.gust[i] / mg; if (x > bv) { bv = x; tp = tt; } }); }
+    let p0 = Math.max(1800, tp - 3000), p1 = Math.min(tEnd - 1800, tp + 3000); if (p1 - p0 < 2400) p0 = Math.max(600, p1 - 3600);
     const plan = v && !isNoneV(v);
     return [
       { u0: 0, u1: PREP_U, label: 'PREP  −72 h → −1 h', sub: plan ? 'Gemini’s plan deploys' : 'no plan · nothing deployed', cls: 'prep' },
@@ -332,7 +334,7 @@ async function main() {
     if (walker.active) setWalk(false);
     if (isNoneV(visuals[active]) || compare) setView('plan');
     syncInspector(); const items = [...insp.items].sort((a, b) => a.o.t_s - b.o.t_s);
-    if (!items.length) { tourToken = 0; return; }
+    if (!items.length) { capOverride = { key: 'notour', time: '', text: 'This run has no plan objects to show', color: '#ff9d7a' }; await sleep(2500); capOverride = null; tourToken = 0; hud.setCtl(walker.active, !!dirToken, false); return; }
     // steps: majors one by one, minor items batched per category
     type Step = { its: InspItem[] };
     const steps: Step[] = []; const minor = new Map<string, InspItem[]>();
@@ -593,7 +595,7 @@ async function main() {
       if (mouse && !walker.active && !insp.pinned) { const it = pickAt(mouse.x, mouse.y); if (it !== insp.hovered) { insp.hovered = it; insp.show(it); } }
       else if (!mouse && insp.hovered && !insp.pinned) { insp.hovered = null; insp.show(null); }
     }
-    if (t > 600 && !shotMode && !dirToken) hud.hideBanner();
+    if ((t > 600 || tourToken) && !shotMode) hud.hideBanner();
     document.body.classList.toggle('agent-open', !!panel?.isOpen());
   };
 
