@@ -204,6 +204,7 @@ a tree is hazardous or quantify the benefit of pruning it.
 
 | Hazard and consequence chain | Before-storm choices worth testing | Outcome and essential evidence |
 |---|---|---|
+| Wind uplift/lateral load, breached-envelope pressure, flood forces or foundation scour → connection/member/foundation failure → partial or total structural collapse | Inspect documented structural defects; complete engineer-specified bracing/anchoring where feasible; dismantle or secure rated temporary structures; clear exclusion areas before onset; schedule permanent retrofits separately | Collapse state and footprint, debris, people exposed and severed routes/functions; structural system, load path, connection/capacity data, condition, foundation/soil and asset-specific loading |
 | Gusts and direction → loose objects, failed glazing/roof components → impacts and further debris | Secure/remove identified loose objects; close operable windows; repair/remove documented defective components; restrict exposure where repair cannot finish | Exposed person-minutes and struck assets; mapped objects, facade orientation/height, condition, repair procedure, wind uncertainty and people/route data |
 | Rain/antecedent wetness + wind → tree/branch failure → strikes and blocked access | Qualified targeted tree work; move parked vehicles; alter a walking route or pre-storm staging site | Conditional strikes, route availability and detour time; tree inventory, condition/root defects, soil state, potential fall geometry and accessible street graph |
 | Wind-damaged opening + driving rain → interior wetting → contents loss and downtime | Secure vulnerable openings; relocate exposed contents; protect critical rooms | Interior water and asset/site downtime; opening condition/area, first-floor level, rain direction, actual contents and vulnerability data |
@@ -224,6 +225,53 @@ facade pressures. Use validated wind/load methods or clearly labeled sensitivity
 ranges appropriate to the asset class; do not extrapolate a generic residential
 fragility to downtown curtain walls. Some uncertainty can only be reduced with
 condition evidence, not a more expensive fluid solver.
+
+### Structural collapse is a separate, explicit failure mode
+
+The requested scope includes roofs, load-bearing walls and whole-building
+stability, as well as scaffolds, canopies and other temporary structures. Glass
+or cladding loss is not itself a building collapse, but an opening can change
+internal pressure and structural demand. Failures may remain local or propagate
+when a load-carrying connection/member or foundation support is lost.
+
+[PNNL's continuous-load-path guidance](https://basc.pnnl.gov/resource-guides/continuous-load-path-provided-connections-roof-through-wall-foundation)
+explains the roof-to-wall-to-foundation transfer needed to resist wind. It is
+residential guidance, not a calibrated collapse model for an SF high-rise.
+[FEMA's Coastal Construction Manual](https://www.fema.gov/sites/default/files/2020-08/fema55_voli_combined.pdf)
+also identifies undermining by erosion/scour and failed load paths as structural
+failure mechanisms. [SafeWork NSW's construction guidance](https://www.safework.nsw.gov.au/hazards-a-z/high-winds-in-construction)
+specifically includes scaffold collapse and structure/equipment-specific wind
+limits. These sources establish mechanisms and preparation requirements; they
+do not establish which mapped SF structure will collapse in this scenario.
+
+Represent distinct states: intact, nonstructural damage, primary
+connection/member failure, and partial/total collapse. Determine transitions
+from asset-specific load/capacity and condition information, or explicitly
+conditional sensitivity scenarios when information is missing. Never infer a
+collapse threshold from building height alone or assign every building the same
+wind-speed trigger. Wave impact, dynamic structural response and scour are not
+outputs of the current surface-water or 2D wind solvers.
+
+Candidate actions include completed, engineer-specified connection repair or
+temporary bracing/anchoring; safe dismantling of temporary structures; and
+pre-storm exclusion/relocation when stabilizing work cannot be completed.
+Authority, appropriate expertise, equipment limits and feasible lead time must
+be explicit. Evacuation reduces exposure; it does not strengthen the structure.
+Major retrofits belong to the capital-investment horizon.
+
+A collapse event must update debris generation, affected neighboring assets,
+the water-flow obstruction and the pedestrian/vehicle graph, with one shared
+state for both views. The planner cannot quietly delete a building, grant a
+generic "reinforcement" damage discount, or omit people inside the structure.
+Acceptance cases must include a stable structure, a known weak connection,
+wind-plus-flood compound demand, and an exclusion plan that leaves structural
+failure unchanged while reducing exposure. These are required tests for the
+future structural module, not results already obtained by this audit.
+The actual Argon structural review is retained as `structural_addendum` in the
+same evidence file; rerun that review with `--structures` without repeating the
+five wind/water trials. Its crane/scaffold examples are candidate action
+families, not universal procedures: any operating configuration, dismantling
+sequence or temporary support must follow the asset-specific engineered method.
 
 ### Make the action budget physically credible
 

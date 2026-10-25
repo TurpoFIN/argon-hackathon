@@ -45,6 +45,15 @@ class RefinedDesign(BaseModel):
     unresolved_inputs: list[str] = Field(min_length=2, max_length=6)
 
 
+class StructuralReview(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    mechanisms: list[str] = Field(min_length=3, max_length=5)
+    feasible_actions_and_horizons: list[str] = Field(min_length=3, max_length=5)
+    required_inputs: list[str] = Field(min_length=3, max_length=5)
+    acceptance_tests: list[str] = Field(min_length=3, max_length=5)
+    limitations: str
+
+
 SOURCES = [
     {'url': 'https://www.weather.gov/mob/wind_mitigation',
      'fact': 'NWS identifies pre-storm tree maintenance, removing loose objects, protecting windows, securing doors and maintaining roofs. This is action evidence, not a quantified effectiveness model.'},
@@ -101,6 +110,35 @@ def refine():
     path.write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps({'refined_design': report['argon_refined_design'],
                       'receipt': report['argon_refinement_receipt']}, indent=2), flush=True)
+
+
+def review_structures():
+    """Incorporate the user's explicit structural-collapse requirement."""
+    path = ROOT / 'evidence/wind-scope-audit.json'
+    report = json.loads(path.read_text())
+    sources = [
+        'https://basc.pnnl.gov/resource-guides/continuous-load-path-provided-connections-roof-through-wall-foundation',
+        'https://www.fema.gov/sites/default/files/2020-08/fema55_voli_combined.pdf',
+        'https://www.safework.nsw.gov.au/hazards-a-z/high-winds-in-construction',
+    ]
+    prompt = (
+        'The user explicitly adds: "And structures to collapse" to the advance-preparedness scope. '
+        'Review this requirement concisely. Cover roofs, load-bearing walls, partial/total building collapse and temporary structures, '
+        'not just glazing. Established source mechanisms: PNNL continuous roof-wall-foundation load paths; FEMA P55 erosion/scour '
+        'undermining and wind load-path failure; SafeWork NSW scaffold collapse and structure/equipment-specific wind limits. '
+        'These source summaries establish mechanisms, not collapse predictions for an SF high-rise. '
+        'Couple wind suction/lateral loads, internal pressure after an opening, flood forces and loss of support. '
+        'Keep nonstructural damage separate. Define required condition/capacity evidence, feasible preventive actions and lead times, '
+        'shared debris/flow/access consequences and falsification tests. No invented probabilities, wind cutoffs, '
+        'damage discounts, or assumption that the current wind/water solver provides structural response, waves or scour. '
+        'A sound structure need not fail. Exclusion/relocation reduces exposure, never physical collapse. '
+        'This is a design addendum, not an implemented structural model.\n' + json.dumps({'sources': sources}))
+    result, receipt = argon.generate(StructuralReview, prompt, thinking='medium', max_tokens=2800, timeout=120)
+    report['structural_addendum'] = {'user_requirement': 'Include structures collapsing',
+        'sources': sources, 'review': result.model_dump(),
+        'receipt': {'model': argon.MODEL, **receipt}, 'runtime_implemented': False}
+    path.write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps(report['structural_addendum'], indent=2), flush=True)
 
 
 def main():
@@ -170,7 +208,9 @@ def main():
 if __name__ == '__main__':
     if sys.argv[1:] == ['--refine']:
         refine()
+    elif sys.argv[1:] == ['--structures']:
+        review_structures()
     elif not sys.argv[1:]:
         main()
     else:
-        raise SystemExit('usage: audit_wind_scope.py [--refine]')
+        raise SystemExit('usage: audit_wind_scope.py [--refine | --structures]')

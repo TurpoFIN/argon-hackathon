@@ -283,5 +283,44 @@
     "model": "gemini-4-argon",
     "result_sha256": "a73d58a63eced5f2f15c2748f2bd065635fb34eb70acf36ab2f2d92ac7613567",
     "generated_at": "2026-10-25T21:13:11.857039+00:00"
+  },
+  "structural_addendum": {
+    "user_requirement": "Include structures collapsing",
+    "sources": [
+      "https://basc.pnnl.gov/resource-guides/continuous-load-path-provided-connections-roof-through-wall-foundation",
+      "https://www.fema.gov/sites/default/files/2020-08/fema55_voli_combined.pdf",
+      "https://www.safework.nsw.gov.au/hazards-a-z/high-winds-in-construction"
+    ],
+    "review": {
+      "mechanisms": [
+        "Wind-induced roof-to-wall-to-foundation load-path failure (PNNL/FEMA P55): External wind suction and lateral loads, amplified by sudden internal pressurization following an envelope/glazing breach, exceed connection capacities, triggering roof uplift or load-bearing wall failure while tracking nonstructural cladding/glazing damage separately.",
+        "Hydrodynamic and foundation undermining collapse (FEMA P55): Flood velocity forces, wave action, hydrostatic pressures, and localized erosion or scour degrade foundation bearing capacity and lateral support, leading to partial or total structural collapse.",
+        "Temporary structure and equipment instability (SafeWork NSW): Scaffolds, formwork, hoarding, and cranes experience overturning or buckling when local wind gusts exceed structure-specific and state-of-erection operational design limits.",
+        "Coupled cascade and shared corridor consequences: Structural collapse generates large debris fields that physically impact adjacent assets, dam or redirect floodwater flow paths, and sever emergency access and evacuation routes."
+      ],
+      "feasible_actions_and_horizons": [
+        "Long-horizon capital retrofits (Months to Years): Upgrade roof-to-wall-to-foundation connection continuity (ties, anchors), reinforce load-bearing lateral systems, and install deep foundations or scour protection.",
+        "Short-term forecast preparedness (24 to 72 Hours): Dismantle scaffold containment sheeting, lower crane booms, install temporary structural bracing/shoring on vulnerable walls or incomplete frames, and secure envelope openings to prevent internal pressurization.",
+        "Immediate pre-impact response (2 to 24 Hours): Establish collapse exclusion zones, relocate occupants and movable assets, and reroute access corridors; these operational actions strictly reduce human/asset exposure and never reduce the physical likelihood of structural collapse."
+      ],
+      "required_inputs": [
+        "As-built structural engineering records: Continuous load-path connection capacities, roof uplift resistance, lateral force-resisting system specs, and foundation depth/bearing profiles.",
+        "Current structural condition evidence: Inspection logs detailing corrosion, prior fatigue, wood rot, unreinforced masonry vulnerabilities, or incomplete construction stages.",
+        "Temporary structure registries: Specific manufacturer and engineer-of-record wind speed operational and structural limits for all on-site scaffolds, shoring, and cranes.",
+        "Coupled hazard solver extensions: External models or boundary inputs providing wave loading, local scour depth, envelope breach states (for internal pressure jumps), and dynamic structural demand, which the baseline wind/water solver does not compute."
+      ],
+      "acceptance_tests": [
+        "Sound structure survival test: Verify that code-compliant, well-maintained structures (e.g., engineered high-rises) exhibit zero collapse under loads within their design capacity, confirming the system does not hallucinate failures from mechanism summaries alone.",
+        "Exposure vs. structural state separation test: Verify that triggering evacuation or exclusion zones reduces only human/movable-asset exposure metrics while leaving the physical structural collapse state completely unchanged.",
+        "Coupled cascade falsification test: Verify that an envelope breach immediately updates internal pressure demand on the roof/wall load path, and that a triggered structural collapse updates downstream debris blockage, flood flow redirection, and access availability while remaining distinct from nonstructural glazing damage."
+      ],
+      "limitations": "This is a design addendum defining required model interfaces, not an implemented structural mechanics solver. The current wind and water solvers do not compute structural response, wave forces, or foundation scour. Cited sources (PNNL, FEMA P55, SafeWork NSW) establish general failure mechanisms and operational principles, not collapse predictions, probabilities, wind speed cutoffs, or mitigation damage discounts for specific San Francisco high-rises or site assets."
+    },
+    "receipt": {
+      "model": "gemini-4-argon",
+      "result_sha256": "ed8769707f7e98f944c553b138b98499ddfd414769107776d07b0ab13f50d0bd",
+      "generated_at": "2026-10-25T21:14:21.245863+00:00"
+    },
+    "runtime_implemented": false
   }
 }
