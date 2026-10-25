@@ -1,0 +1,23 @@
+{
+ "sandbag_stock": {
+  "bags": 25000,
+  "source": "Scenario assumption for this benchmark (not a city figure). Every model gets the same stock."
+ },
+ "levee_bags_per_100_ft": {
+  "1": 600,
+  "source": "USACE sandbag levee guidance, 1 ft high pyramid levee: 600 bags per 100 linear feet (USACE Northwestern Division pamphlet as reproduced by Carbon Cliff IL, https://carboncliff.gov/documents/212/Sandbagging_Techniques_Pamphlet.pdf; USACE Alaska District brochure, https://juneau.org/wp-content/uploads/2024/10/ACOE-EOC_Sandbag_brochure.pdf). Retrieved 2026-10-25."
+ },
+ "height_scaling": {
+  "rule": "bags per length x (height_ft)^2",
+  "source": "Assumption: a pyramid levee's base widens with height, so cross-section and bag count scale with height squared from the 1 ft figure."
+ },
+ "doorway_protection": {
+  "height_m": 0.6,
+  "doorways_per_structure": 2,
+  "doorway_width_m": 1.5,
+  "source": "Assumption: two 1.5 m doorways per structure sandbagged 2 ft high, priced with the levee rule. Water against the building below 0.6 m causes no damage; above it, the full depth-damage curve applies."
+ },
+ "placement_labor": {
+  "source": "Assumption: separate contractor crews place sandbags before the storm; the two drain crews keep their 30-minute budget."
+ }
+}
