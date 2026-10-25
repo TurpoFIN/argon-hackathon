@@ -381,16 +381,17 @@
       }
       if (ocsStatic.length) L.things.add(new Graphic({ geometry: new Polyline({ paths: ocsStatic, hasZ: true, spatialReference: SR }), symbol: S.ocs }));
       // streetlights: topple (wind / tree) or go dark (outage / flooded base)
-      for (const [lon, lat, h, tf, dir, tDark, flooded] of d.lights) {
-        const darkT = flooded ? d.t[d.gust.indexOf(Math.max(...d.gust))] : tDark;
+      for (const [lon, lat, h, tf, dir, tDark, flooded, tFloodL] of d.lights) {
+        const tFl = flooded ? (tFloodL ?? d.t[d.gust.indexOf(Math.max(...d.gust))]) : null;
+        const darkT = [tDark, tFl].filter((v) => v !== null).sort((a, b) => a - b)[0] ?? null;
         toppler({ lon, lat, len: h, tFail: tf, bearing: dir, symUp: S.lightPole, symDown: S.lightDown, head: true,
                   headUp: S.lampOn, headDown: S.lampOff, extraTimes: darkT !== null ? [darkT] : [],
                   headFor: (tt, fallen) => (fallen || (darkT !== null && tt >= darkT) ? S.lampOff : S.lampOn) });
       }
       // traffic signals: heads torn / mast down / dark / flooded cabinet
       const peakT = d.t[d.gust.indexOf(Math.max(...d.gust))];
-      for (const [lon, lat, tHead, tStruct, tDark, flooded] of d.signals) {
-        const tFlood = flooded ? peakT : null;
+      for (const [lon, lat, tHead, tStruct, tDark, flooded, tFloodS] of d.signals) {
+        const tFlood = flooded ? (tFloodS ?? peakT) : null;
         const headFor = (tt) => (tHead !== null && tt >= tHead ? S.sigBad : (tFlood !== null && tt >= tFlood ? S.sigFlood
           : (tDark !== null && tt >= tDark ? S.sigDark : S.sigOk)));
         toppler({ lon, lat, len: d.heights.signal, tFail: tStruct, bearing: 0, symUp: S.sigPole, symDown: S.sigPoleDown, head: true,
@@ -521,7 +522,7 @@
       setPlaying(false);
       const d = await (await fetch(entry.file)).json();
       await build(d);
-      note.textContent = `${d.title}. Wind: ${d.wind_source}. Engine: sim/destruction.py.`;
+      note.textContent = `${d.title}. Wind: ${d.wind_source}. Water: ${d.water_source ?? "none"}. Engine: sim/destruction.py.`;
     }
 
     play.addEventListener("click", () => setPlaying(!playing));

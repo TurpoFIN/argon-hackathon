@@ -54,8 +54,8 @@ def _flat(ring):
 def export(storm, title, res=None, fallback=False):
     P = params()
     if res is None:
-        wf, trees_out = (None, None) if fallback else physics_inputs(storm)[:2]
-        res = run_destruction(storm, wind=wf, tree_result=trees_out)
+        wf, trees_out, _, ws = (None, None, None, None) if fallback else physics_inputs(storm)
+        res = run_destruction(storm, wind=wf, tree_result=trees_out, water=ws)
     grid = os.path.join(P_ROOT, "data", "grid")
     assets = json.load(open(os.path.join(grid, "assets.json")))
     bl = {int(b["id"]): b for b in json.load(open(os.path.join(grid, "buildings.json")))}
@@ -94,12 +94,13 @@ def export(storm, title, res=None, fallback=False):
         k = s.get("t")
         ev = [e for e in res["events"] if e["kind"] == "streetlight" and e["id"] == i] if k is not None else []
         lights.append([*_ll(a["x"], a["y"]), sl["high_mast_height_m"] if a.get("high_mast") else sl["height_m"], tn(k),
-                       ev[0].get("fall_dir_deg") if ev else None, tn(s.get("dark_t")), bool(s.get("flooded", False))])
+                       ev[0].get("fall_dir_deg") if ev else None, tn(s.get("dark_t")), bool(s.get("flooded", False)), tn(s.get("flood_t"))])
     ss = {s["id"]: s for s in res["signals"]}
     signals = []
     for i, a in enumerate(assets["signals"]):
         s = ss.get(i, {})
-        signals.append([*_ll(a["x"], a["y"]), tn(s.get("head_t")), tn(s.get("struct_t")), tn(s.get("dark_t")), bool(s.get("flooded", False))])
+        signals.append([*_ll(a["x"], a["y"]), tn(s.get("head_t")), tn(s.get("struct_t")), tn(s.get("dark_t")), bool(s.get("flooded", False)),
+                        tn(s.get("flood_t"))])
     sh = {s["id"]: s["t"] for s in res["shelters"]}
     shelters = [[*_ll(a["x"], a["y"]), tn(sh.get(i))] for i, a in enumerate(assets["shelters"])]
     tr = []
@@ -127,6 +128,7 @@ def export(storm, title, res=None, fallback=False):
         "gust": [round(float(v), 2) for v in storm.gust_ms], "dir_from": [round(float(v), 1) for v in np.asarray(storm.wind_dir_t)],
         "summary": S, "ledger_total_usd": res["ledger"]["total_usd"], "by_cause": res["ledger"]["by_cause"],
         "customers_t": res["outage"]["customers_t"], "timeline": res["timeline"], "wind_source": res["wind_source"],
+        "water_source": "sim/water.py (soil saturation to trees.py, depth x velocity to flood collapse)" if not fallback else "none",
         "heights": {"power_wire": P["power_span"]["wire_height_m"], "pole": P["power_pole"]["height_m"],
                     "ocs_wire": P["ocs"]["wire_height_m"], "signal": P["signal"]["height_m"]},
         "buildings": buildings, "outage": outage, "poles": poles, "spans": spans, "ocs": ocs, "lights": lights,

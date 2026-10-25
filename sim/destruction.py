@@ -458,6 +458,16 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         return city.sample(maxd, px, py)
 
     k_peak = int(np.argmax(W.gust))
+    w_t = _g(water, "t_frames")
+    to_storm_k = (lambda kw: np.clip(np.searchsorted(t, np.asarray(w_t, float)[np.asarray(kw)], "left"), 0, nf - 1)) if w_t is not None else None
+    k_kmax = _g(water, "k_max_depth")
+    k_flood = int(to_storm_k(int(_g(water, "k_flood_peak")))) if (to_storm_k is not None and _g(water, "k_flood_peak") is not None) else k_peak
+
+    def flood_k(px, py):
+        """Storm frame the water peaks at each point (the gust peak when the water run has no timing)."""
+        if k_kmax is None or to_storm_k is None or len(px) == 0:
+            return np.full(len(px), k_peak)
+        return to_storm_k(city.sample(k_kmax, px, py))
 
     nb = len(buildings)
     bx = np.array([b["x"] for b in buildings], float)
@@ -482,7 +492,8 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     vmax = vmax if vmax is not None else _g(water, "max_velocity")
     if maxd is not None and vmax is not None:
         from sim.damage import _bldg_adjacent_depth
-        dv = _bldg_adjacent_depth(city.bldg_id, maxd * np.asarray(vmax, float), nb)
+        mdv = _g(water, "max_dv")   # per-frame max of depth x speed (max depth x max speed overstates it)
+        dv = _bldg_adjacent_depth(city.bldg_id, np.asarray(mdv, float) if mdv is not None else maxd * np.asarray(vmax, float), nb)
         vv = _bldg_adjacent_depth(city.bldg_id, np.asarray(vmax, float), nb)
         coll = (vv >= bp["flood_collapse_v_ms"]) & (dv >= bp["flood_collapse_dv_m2s"])
         part = ~coll & (dv >= bp["flood_partial_dv_m2s"])
@@ -491,7 +502,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
             ds[up] = lvl
             ds_cause[up] = "flood"
             for j in range(lvl):
-                ds_k[up & (ds_k[:, j] < 0), j] = k_peak
+                ds_k[up & (ds_k[:, j] < 0), j] = k_flood
         notes.append(f"flood structural: {int(coll.sum())} collapse, {int(part.sum())} partial (d*v)")
     elif water is not None:
         notes.append("flood structural damage skipped: water result has no velocities (max_speed)")
@@ -698,6 +709,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     l_cause = np.where(l_k < 0, "", np.where(l_k == l_wk, "wind", "tree"))
     l_dark = dark_near(lx, ly)
     l_flood = depth_at(lx, ly) >= sl["flood_dark_depth_m"]
+    l_flood_k = np.where(l_flood, flood_k(lx, ly), -1)
     for i in range(len(lights)):
         ev(l_k[i], "streetlight", i, lx[i], ly[i], l_cause[i], fall_dir_deg=round(float(W.toward(l_k[i])), 1) if l_k[i] >= 0 else None)
 
@@ -708,11 +720,13 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     g_tk, g_td = tree_hits_points(gx, gy)
     g_dark = dark_near(gx, gy)
     g_flood = depth_at(gx, gy) >= sg["cabinet_flood_depth_m"]
+    g_flood_k = np.where(g_flood, flood_k(gx, gy), -1)
     sig_state = []
     for i in range(len(sigs)):
         struct_k = min([k for k in (s_wk[i], g_tk[i] if g_td[i] >= heavy_dbh else -1) if k >= 0], default=-1)
         head_k = min([k for k in (h_wk[i], g_tk[i]) if k >= 0], default=-1)
-        st = {"head_k": int(head_k), "struct_k": int(struct_k), "dark_k": int(g_dark[i]), "flooded": bool(g_flood[i])}
+        st = {"head_k": int(head_k), "struct_k": int(struct_k), "dark_k": int(g_dark[i]), "flooded": bool(g_flood[i]),
+              "flood_k": int(g_flood_k[i])}
         sig_state.append(st)
         if struct_k >= 0:
             ev(struct_k, "signal", i, gx[i], gy[i], "tree" if struct_k == g_tk[i] else "wind", what="mast arm down")
@@ -721,7 +735,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         if g_dark[i] >= 0:
             ev(g_dark[i], "signal_dark", i, gx[i], gy[i], "outage")
         if g_flood[i]:
-            ev(k_peak, "signal_dark", i, gx[i], gy[i], "flooded cabinet")
+            ev(int(g_flood_k[i]), "signal_dark", i, gx[i], gy[i], "flooded cabinet")
 
     shel = assets["shelters"]
     sh_wk, hx, hy = wind_points("shelters", shel, P["shelter"]["median_gust_ms"], P["shelter"]["beta"], 2.5)
@@ -975,11 +989,13 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         "ocs_spans": [{"id": int(i), "t": float(t[o_k[i]]), "tree_id": int(o_by[i]), "street": ocs[i]["street"]} for i in np.nonzero(o_k >= 0)[0]],
         "ocs_out": [{"id": int(i), "t": float(t[o_out[i]])} for i in np.nonzero(o_out >= 0)[0]],
         "streetlights": [{"id": int(i), "t": float(t[l_k[i]]) if l_k[i] >= 0 else None, "cause": l_cause[i] or None,
-                          "dark_t": float(t[l_dark[i]]) if l_dark[i] >= 0 else None, "flooded": bool(l_flood[i])}
+                          "dark_t": float(t[l_dark[i]]) if l_dark[i] >= 0 else None, "flooded": bool(l_flood[i]),
+                          "flood_t": float(t[l_flood_k[i]]) if l_flood_k[i] >= 0 else None}
                          for i in range(len(lights)) if l_k[i] >= 0 or l_dark[i] >= 0 or l_flood[i]],
         "signals": [dict(id=i, head_t=float(t[s["head_k"]]) if s["head_k"] >= 0 else None,
                          struct_t=float(t[s["struct_k"]]) if s["struct_k"] >= 0 else None,
-                         dark_t=float(t[s["dark_k"]]) if s["dark_k"] >= 0 else None, flooded=s["flooded"])
+                         dark_t=float(t[s["dark_k"]]) if s["dark_k"] >= 0 else None, flooded=s["flooded"],
+                         flood_t=float(t[s["flood_k"]]) if s["flood_k"] >= 0 else None)
                     for i, s in enumerate(sig_state) if s["head_k"] >= 0 or s["struct_k"] >= 0 or s["dark_k"] >= 0 or s["flooded"]],
         "shelters": [{"id": int(i), "t": float(t[sh_k[i]])} for i in np.nonzero(sh_k >= 0)[0]],
         "masts": [{"id": int(i), "t": float(t[m_k[i]])} for i in np.nonzero(m_k >= 0)[0]],
@@ -998,14 +1014,57 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     }
 
 
-def physics_inputs(storm, fast=True, verbose=False):
-    """The team's physics for a storm: LBM wind field (sim/wind.py, cached .npz; 16 m lattice when fast) and tree
-    failures with fall directions and strikes (sim/trees.py). Returns (wind_field, {trees, strikes}, tree_summary)."""
+class WaterSummary:
+    """What the destruction engine and trees.py need from a sim/water.py run, small enough to cache on disk."""
+
+    def __init__(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
+
+
+def water_inputs(storm, verbose=False):
+    """Run sim/water.py for the storm's rain and tide (gusts do not change it, so x1.6 / x2.2 what-ifs share the
+    base storm's run) and cache what destruction needs in runs/destruction_water_<storm>.npz:
+    max depth, max speed, max depth x speed (per frame, not max x max), the frames they peak at, the frame of peak
+    flood volume, and soil saturation at every street tree resampled to the storm frames (for sim/trees.py)."""
+    from sim import water as water_mod
+    from sim.trees import _resample_frames
+    base = storm.name.split("_x")[0]
+    path = os.path.join(ROOT, "runs", f"destruction_water_{base}.npz")
+    if not os.path.exists(path):
+        from sim.storm import load_storm
+        st0 = load_storm(base)
+        wg = water_mod.load_grid()
+        wr = water_mod.run_water(wg, st0, verbose=verbose)
+        sp = np.sqrt(wr.u.astype(np.float32) ** 2 + wr.v.astype(np.float32) ** 2)
+        dv = wr.depth * sp
+        trees = _load("trees.json")
+        tix = np.array([int(t["ix"]) for t in trees]); tiy = np.array([int(t["iy"]) for t in trees])
+        sat = _resample_frames(wr.t_frames, np.asarray(st0.t, float), wr.saturation)[:, tiy, tix].astype(np.float32)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        np.savez_compressed(path, t_frames=np.asarray(wr.t_frames, float), max_depth=wr.max_depth.astype(np.float32),
+                            max_speed=wr.max_speed.astype(np.float32), max_dv=dv.max(0).astype(np.float32),
+                            k_max_depth=wr.depth.argmax(0).astype(np.int16), k_max_dv=dv.argmax(0).astype(np.int16),
+                            k_flood_peak=np.int16(np.argmax(wr.depth.reshape(len(wr.t_frames), -1).sum(1))),
+                            sat_trees=sat, mass_error_pct=np.float32(wr.mass_error_pct), runtime_s=np.float32(wr.runtime_s))
+    z = np.load(path)
+    return WaterSummary({k: z[k] for k in z.files})
+
+
+def physics_inputs(storm, fast=True, water=True, verbose=False):
+    """The team's physics for a storm: LBM wind field (sim/wind.py, cached .npz; 16 m lattice when fast), water
+    (sim/water.py via water_inputs, cached) and tree failures with fall directions and strikes (sim/trees.py, soil
+    saturation from the water run). Returns (wind_field, {trees, strikes}, tree_summary, water_summary or None)."""
     from sim import trees as trees_mod
     from sim.wind import get_wind
     wf = get_wind(storm.wind_dir_deg, fast=fast, verbose=verbose)
-    res = trees_mod.run_trees(storm, wf, verbose=verbose)
-    return wf, {"trees": res.trees, "strikes": res.strikes}, res.summary
+    ws = water_inputs(storm, verbose=verbose) if water else None
+    sat = ws.sat_trees if ws is not None else None
+    if sat is not None and sat.shape[0] != len(storm.t):
+        from sim.trees import _resample_frames
+        sat = _resample_frames(ws.t_frames, np.asarray(storm.t, float), sat)
+    res = trees_mod.run_trees(storm, wf, saturation=sat, verbose=verbose)
+    return wf, {"trees": res.trees, "strikes": res.strikes}, res.summary, ws
 
 
 def merge_ledger(ledger, result):
@@ -1068,10 +1127,10 @@ if __name__ == "__main__":
     if a.gust_scale != 1.0:
         st = scaled_storm(st, a.gust_scale)
     t0 = time.time()
-    wf = trees_out = None
+    wf = trees_out = ws = None
     if not a.fallback:
-        wf, trees_out, _ = physics_inputs(st)
-    res = run_destruction(st, wind=wf, tree_result=trees_out)
+        wf, trees_out, _, ws = physics_inputs(st)
+    res = run_destruction(st, wind=wf, tree_result=trees_out, water=ws)
     out = a.out or os.path.join(ROOT, "runs", f"destruction_{st.name}")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "destruction_result.json"), "w") as fh:

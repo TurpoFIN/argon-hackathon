@@ -127,13 +127,14 @@ def test_physics_path_uses_lbm_field_and_trees_py():
     snapped = int(round(5.0 * round(st.wind_dir_deg / 5.0))) % 360
     if not glob.glob(os.path.join(ROOT, "data", "grid", f"wind_{snapped:03d}_*.npz")):
         return   # no cached field on this machine (a fresh solve takes minutes): nothing to check
-    wf, trees_out, _ = D.physics_inputs(st)
-    r = D.run_destruction(st, wind=wf, tree_result=trees_out)
+    have_water = os.path.exists(os.path.join(ROOT, "runs", "destruction_water_elnino_ar_2026.npz"))
+    wf, trees_out, _, ws = D.physics_inputs(st, water=have_water)
+    r = D.run_destruction(st, wind=wf, tree_result=trees_out, water=ws)
     assert r["wind_source"].startswith("sim/wind.py LBM field")
     failed = {t["id"] for t in trees_out["trees"] if t["fail_t"] is not None}
     assert {t["id"] for t in r["trees"]} == failed
     assert all(t["source"] == "sim/trees.py" for t in r["trees"])
-    assert D.result_hash(r) == D.result_hash(D.run_destruction(st, wind=wf, tree_result=trees_out))
+    assert D.result_hash(r) == D.result_hash(D.run_destruction(st, wind=wf, tree_result=trees_out, water=ws))
 
 
 def test_incidents_road_blocks_and_tree_strikes():
