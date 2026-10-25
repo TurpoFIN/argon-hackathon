@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-25T21:19:04.140901+00:00",
+  "bbox": [
+    -122.406,
+    37.786,
+    -122.386,
+    37.808
+  ],
+  "coverage": {
+    "buildings": 1568,
+    "trees": 4098,
+    "trees_without_usable_dbh": 262,
+    "roads": 607,
+    "distribution_feeders": 77,
+    "transmission_lines": 3,
+    "substations": 6,
+    "overhead_lines": 0,
+    "unknown_installation": 77
+  },
+  "sources": [
+    {
+      "name": "DataSF building footprints",
+      "url": "https://data.sf.gov/resource/ynuv-fyni.json?%24select=sf16_bldgid%2Chgt_median_m%2Cgnd_min_m%2Cshape&%24where=intersects%28shape%2C%27POLYGON%28%28-122.406+37.786%2C-122.386+37.786%2C-122.386+37.808%2C-122.406+37.808%2C-122.406+37.786%29%29%27%29&%24limit=15000",
+      "basis": "Mapped geometry and older measured height; structural condition is not recorded."
+    },
+    {
+      "url": "https://data.sfgov.org/resource/tkzw-k3nq.json?%24where=latitude+between+37.786+and+37.808+and+longitude+between+-122.406+and+-122.386&%24select=treeid%2Cspecies%2Cmapdbh%2Clatitude%2Clongitude%2Clegalstatus%2Cdata_as_of&%24limit=10000",
+      "file": "trees.json",
+      "sha256": "2e8fd1934b7dee9e339d223df884864b76c725f21c4c0831a1c2ee2dd0c12b02",
+      "name": "DataSF street trees"
+    },
+    {
+      "url": "https://data.sfgov.org/resource/3psu-pn9h.json?%24where=active+%3D+true+AND+intersects%28line%2C%27POLYGON%28%28-122.406+37.786%2C-122.386+37.786%2C-122.386+37.808%2C-122.406+37.808%2C-122.406+37.786%29%29%27%29&%24select=cnn%2Cstreetname%2Cline%2Cf_node_cnn%2Ct_node_cnn&%24limit=10000",
+      "file": "streets.json",
+      "sha256": "8e160aeb072d4d55c93a9ae21dbf24e8882f500327b0f48eeec81d0a08252e7d",
+      "name": "DataSF active street centerlines"
+    },
+    {
+      "url": "https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer/2/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CSubstation%2CFeederID%2CFeeder_Name%2CNominal_Voltage%2CLast_Update_On_Map&resultRecordCount=2000",
+      "file": "pge-feeders.geojson",
+      "sha256": "b402481579016866bd972c3a232d5adf598e6cd43e74c72b495ae06cbd25b1ff",
+      "name": "PG&E GRIP distribution feeders"
+    },
+    {
+      "url": "https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CName%2CType%2CkV%2COwner%2CStatus&resultRecordCount=2000",
+      "file": "cec-lines.geojson",
+      "sha256": "bb570395b9a2b1b53ca26f5b2bcfde549a7eaf398ad58fb94cb490d7363c1243",
+      "name": "CEC transmission lines"
+    },
+    {
+      "url": "https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer/0/query?f=geojson&where=1%3D1&geometry=-122.406%2C37.786%2C-122.386%2C37.808&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=OBJECTID%2CSubstationName%2CSubstationID%2CVoltage_kV&resultRecordCount=2000",
+      "file": "pge-substations.geojson",
+      "sha256": "92a22135d561a5bc9239356decd6fe1d59f590dd238ae438091fc318bf1dd991",
+      "name": "PG&E GRIP substations"
+    }
+  ],
+  "assets_sha256": "d817c3271f02696cbc3d9d2aba423a17934066c99cd370cf6ddbdccef60a84cf"
+}

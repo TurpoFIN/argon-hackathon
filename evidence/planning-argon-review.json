@@ -1,0 +1,144 @@
+{
+  "review": {
+    "order": [
+      "wind",
+      "flood",
+      "trees",
+      "routes",
+      "power",
+      "structure"
+    ],
+    "reasons": {
+      "wind": "historical_incident",
+      "trees": "historical_incident",
+      "flood": "historical_incident",
+      "routes": "dependency",
+      "power": "dependency",
+      "structure": "inspection_gap"
+    },
+    "result_sha256": "ddd9ef1dbe576733cc3a9408dcd24c461c9171c31d650ea9c56e4ef4e01cbbaa",
+    "generated_at": "2026-10-25T21:41:37.528156+00:00",
+    "fingerprint": "a4721944b878be96870fa2deb97b40a6c2204ae5708accd0a195792aa174bfec",
+    "model": "gemini-4-argon"
+  },
+  "weather": {
+    "rain_mm_h": 85.0,
+    "wind_mps": 20.0,
+    "gust_mps": 28.0,
+    "wind_from_deg": 168.0,
+    "coastal_rise_m": 0.5,
+    "drain_capacity_lps": 12.0,
+    "blockage_pct": 20.0,
+    "runoff_coefficient": 0.9,
+    "roughness": 0.035,
+    "debris_kg": 600.0,
+    "clearing_crews": 2,
+    "response_mode": "argon",
+    "coastal_case": "central"
+  },
+  "plan": {
+    "resources": {
+      "lead_minutes": null,
+      "general": null,
+      "arborist": null,
+      "building": null,
+      "electrician": null,
+      "traffic": null
+    },
+    "tasks": {
+      "wind": {
+        "site_id": "glass-0",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      },
+      "trees": {
+        "site_id": "report-16291635",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      },
+      "structure": {
+        "site_id": "glass-0",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      },
+      "flood": {
+        "site_id": "report-16239820",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      },
+      "power": {
+        "site_id": "glass-0",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      },
+      "routes": {
+        "site_id": "report-16291635",
+        "condition": "unchecked",
+        "note": "",
+        "minutes": null,
+        "prerequisites_confirmed": false
+      }
+    }
+  },
+  "rows": [
+    {
+      "hazard": "wind",
+      "role": "building",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    },
+    {
+      "hazard": "flood",
+      "role": "general",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    },
+    {
+      "hazard": "trees",
+      "role": "arborist",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    },
+    {
+      "hazard": "routes",
+      "role": "traffic",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    },
+    {
+      "hazard": "power",
+      "role": "electrician",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    },
+    {
+      "hazard": "structure",
+      "role": "building",
+      "mode": "inspect",
+      "status": "Unscheduled: enter time before the storm",
+      "start": null,
+      "finish": null
+    }
+  ],
+  "no_local_effect_size_inferred": true
+}

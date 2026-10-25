@@ -1,0 +1,12 @@
+{
+  "signature": "47ab200b26719a2b",
+  "plans": 9,
+  "capacity_cases_per_plan": 3,
+  "total_paired_cases": 27,
+  "control_matches_committed_core": true,
+  "all_work_budgets_satisfied": true,
+  "all_water_budgets_below_01_m3": true,
+  "replay_frames_per_plan": 31,
+  "replay_bytes_per_plan": 3711320,
+  "tool_call_id": "call_512472"
+}
