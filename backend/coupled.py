@@ -126,11 +126,12 @@ class World:
                 result = self.planner(clean, [{"id":c["id"],"state":c["state"]} for c in self.crews], seconds)
                 self.priority = result["drain_ids"]; self.priority_source = "argon"
                 self.planner_status = "Argon response plan applied"
-                self.plans.append({"time_seconds":seconds, **result})
+                self.plans.append({"time_seconds":seconds, "candidates":clean, **result})
                 self.event(seconds, "argon_plan", reason=result["reason"])
             except Exception as error:
-                self.planner_status = f"Argon request failed ({type(error).__name__}); baseline policy active"
-                self.event(seconds, "planner_unavailable", reason=self.planner_status)
+                self.planner_status = ('Argon previous plan retained; replanning unavailable' if self.plans else 'Argon unavailable; baseline policy active')
+                details = [{"field":list(e['loc']),"type":e['type'],"message":e['msg']} for e in error.errors(include_input=False,include_url=False)] if hasattr(error,'errors') else []
+                self.event(seconds, "planner_unavailable", reason=self.planner_status,error_type=type(error).__name__,validation_errors=details)
         priority = {identity:i for i,identity in enumerate(self.priority)}
         choices.sort(key=lambda d:(priority.get(d["id"],1000),-d["score"]))
         for crew in self.crews:

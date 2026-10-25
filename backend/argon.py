@@ -68,7 +68,7 @@ class Perception(BaseModel):
 class DispatchPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
     drain_ids: list[str] = Field(max_length=16)
-    reason: str = Field(min_length=1, max_length=400)
+    reason: str = Field(min_length=1, max_length=4000)
 
 
 def generate(schema, prompt, image=None):
@@ -147,7 +147,7 @@ def plan(candidates, crews, seconds):
         "You are the response planner in a hypothetical storm simulation. Rank the supplied drain IDs "
         "for clearing by the available walking crews. Prefer blocked inlets with nearby flooding, "
         "but account for travel distance and do not assign a drain already being serviced. "
-        "Return only IDs supplied here, each at most once. Python checks dry-land reachability, "
+        "Return only IDs supplied here, each at most once, with a concise reason (under 300 characters). Python checks dry-land reachability, "
         "travel time, flooding limits, and work duration. You cannot teleport crews or change physics. "
         "All drain capacities, debris masses, and crew resources are explicit scenario assumptions. "
         "Use only the numerical evidence supplied, not claims of real current flooding.\n"

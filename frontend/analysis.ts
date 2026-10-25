@@ -203,7 +203,7 @@ async function receive(next:ScenarioState):Promise<void> {
     $('#source-counts').textContent=`${(manifest.metrics as unknown as {building_records:number}).building_records.toLocaleString()} building records · ${(manifest.metrics as unknown as {drain_records:number}).drain_records.toLocaleString()} drain records · ${manifest.grid.cell_m} m terrain grid.`;
     document.documentElement.dataset.scenarioId=loadedId;
     document.documentElement.dataset.rainMmH=String(manifest.rainfall_mm_per_hour);
-    $('#engine-status').textContent=world?(world.planner_status.includes('unavailable')||world.planner_status.includes('failed')?'Argon not connected · baseline response':world.planner_status):'Coupled simulation will start on the next parameter change.';
+    $('#engine-status').textContent=world?(world.plans.length?world.planner_status:world.planner_status.includes('unavailable')?'Argon not connected · baseline response':world.planner_status):'Coupled simulation will start on the next parameter change.';
     $('#perception-status').textContent=world?`${world.source_mode}. ${world.perception.status==='ready'?`${world.perception.zones?.length??0} candidate zones from georeferenced imagery. ${world.perception.limitation??''}`:world.perception.reason??'Perception disabled.'}`:'Public GIS assets loaded.';
     $('#world-details').textContent=world?world.assumptions.join(' '):'';
     $('#play').removeAttribute('disabled');

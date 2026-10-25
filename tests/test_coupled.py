@@ -96,5 +96,16 @@ class CoupledTests(unittest.TestCase):
         self.assertEqual(world.crews[0]['path'],[(3,3)])
         self.assertEqual(world.events[-1]['planner'],'argon')
 
+    def test_failed_replan_retains_valid_priority_and_reports_it(self):
+        world=self.world();world.p.response_mode='argon';world.clog[0]=3.
+        world.crews=[{'id':'crew','x':2.,'y':3.,'target':None,'path':[],'progress':0.,'state':'idle','source':'baseline'}]
+        world.priority=['real-fixture-1'];world.plans=[{'drain_ids':world.priority}]
+        def fail(*args):raise ValueError('invalid planner output')
+        world.planner=fail
+        with patch('backend.argon.api_key',return_value='test'):world.dispatch(1800,self.zero)
+        self.assertIn('previous plan retained',world.planner_status)
+        self.assertEqual(world.crews[0]['source'],'argon')
+        self.assertEqual(world.events[0]['error_type'],'ValueError')
+
 
 if __name__=='__main__':unittest.main()
