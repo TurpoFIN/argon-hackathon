@@ -167,7 +167,11 @@ class WindModel:
         tb = P["tall_building_speedup"]
         r = int(round(tb["radius_m"] / city.dx))
         self._tall = maximum_filter(city.bldg_h.astype(np.float32), size=2 * r + 1, mode="nearest")
-        self.source = "sim/wind.py field" if wind is not None else "ASCE 7 exposure-B profile x tall-building proxy (no LBM field passed)"
+        if wind is not None:
+            self.source = (f"sim/wind.py LBM field ({_g(wind, 'dx', 0):.0f} m lattice, {_g(wind, 'wind_dir_deg', 0):.0f} deg)"
+                           if hasattr(wind, "wind_at") else "wind field passed in")
+        else:
+            self.source = "ASCE 7 exposure-B profile x tall-building proxy (no LBM field passed)"
 
     def _kz(self, z, exp):
         e = self.P["wind_profile"][exp]
@@ -185,9 +189,12 @@ class WindModel:
             if hasattr(w, "speedup"):
                 return np.asarray(w.speedup(x, y, z), float)
             if hasattr(w, "wind_at"):
-                v = np.asarray(w.wind_at(x, y, z), float)
-                uref = float(_g(w, "u_ref") or _g(w, "U_ref"))
-                return np.linalg.norm(v.reshape(len(x), -1)[:, :3], axis=1) / uref
+                v = np.nan_to_num(np.asarray(w.wind_at(x, y, np.ascontiguousarray(z)), float))
+                uref = _g(w, "u_ref") or _g(w, "U_ref")
+                if v.ndim == 1 and uref is None:
+                    # sim/wind.py WindField: speed amplification vs the 10 m inflow, U = gust(t) x A (as sim/trees.py)
+                    return v
+                return np.linalg.norm(v.reshape(len(x), -1)[:, :3], axis=1) / float(uref)
         f = self.profile(z)
         if street:
             tb = self.P["tall_building_speedup"]
@@ -657,7 +664,7 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     Hb = np.maximum(np.array([float(b.get("height_m") or 3.0) for b in buildings]), 3.0)
     ub = _rng(seed, "buildings").random(nb)
     capb = med * np.exp(beta * ndtri(np.clip(ub, 1e-9, 1 - 1e-9)))[:, None]
-    Vb = W.V(W.factor(bx, by_, Hb, street=False))
+    Vb = W.V(W.factor(bx, by_, Hb + (2.0 if wind is not None else 0.0), street=False))   # LBM: sample just above the roof
     ds_k = np.stack([_first(Vb >= capb[:, j:j + 1]) for j in range(4)], axis=1)   # frame each DS is reached
     ds = (ds_k >= 0).sum(1)
     ds_cause = np.where(ds > 0, "wind", "").astype(object)
@@ -851,6 +858,16 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
     }
 
 
+def physics_inputs(storm, fast=True, verbose=False):
+    """The team's physics for a storm: LBM wind field (sim/wind.py, cached .npz; 16 m lattice when fast) and tree
+    failures with fall directions (sim/trees.py). Returns (wind_field, tree_records, tree_summary)."""
+    from sim import trees as trees_mod
+    from sim.wind import get_wind
+    wf = get_wind(storm.wind_dir_deg, fast=fast, verbose=verbose)
+    res = trees_mod.run_trees(storm, wf, verbose=verbose)
+    return wf, res.trees, res.summary
+
+
 def merge_ledger(ledger, result):
     """Add the destruction ledger to a sim/damage.py ledger (in place) and return it. No double counting:
     damage.py prices tree strikes on cars/buildings, flood depth-damage and pressure glazing; this adds what it
@@ -905,12 +922,16 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=None)
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--gust-scale", type=float, default=1.0, help="what-if: multiply the storm's gusts (stress test)")
+    ap.add_argument("--fallback", action="store_true", help="skip sim/wind.py + sim/trees.py; use the built-in proxies")
     a = ap.parse_args()
     st = load_storm(a.storm)
     if a.gust_scale != 1.0:
         st = scaled_storm(st, a.gust_scale)
     t0 = time.time()
-    res = run_destruction(st)
+    wf = trees_out = None
+    if not a.fallback:
+        wf, trees_out, _ = physics_inputs(st)
+    res = run_destruction(st, wind=wf, tree_result=trees_out)
     out = a.out or os.path.join(ROOT, "runs", f"destruction_{st.name}")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "destruction_result.json"), "w") as fh:

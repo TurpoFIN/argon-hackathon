@@ -13,7 +13,7 @@ import os
 import numpy as np
 
 from sim.assets import utm10_to_lonlat
-from sim.destruction import P_ROOT, run_destruction, scaled_storm, params
+from sim.destruction import P_ROOT, physics_inputs, run_destruction, scaled_storm, params
 
 OUT = os.path.join(P_ROOT, "data", "web")
 SCENARIOS = [("elnino_ar_2026", 1.0, "El Niño atmospheric river 2026 (as forecast)"),
@@ -52,7 +52,9 @@ def _flat(ring):
 
 def export(storm, title, res=None):
     P = params()
-    res = res or run_destruction(storm)
+    if res is None:
+        wf, trees_out, _ = physics_inputs(storm)
+        res = run_destruction(storm, wind=wf, tree_result=trees_out)
     grid = os.path.join(P_ROOT, "data", "grid")
     assets = json.load(open(os.path.join(grid, "assets.json")))
     bl = {int(b["id"]): b for b in json.load(open(os.path.join(grid, "buildings.json")))}

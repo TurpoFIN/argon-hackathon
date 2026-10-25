@@ -57,6 +57,15 @@
       if (!dsSym.has(k)) dsSym.set(k, extrude(DS_COLORS[ds], 0.42, Math.round(h) + 0.8));
       return dsSym.get(k);
     };
+    // Collapsed buildings keep a red ghost of their original volume so they stand out from afar; the rubble
+    // shows through it.
+    const ghostSym = new Map();
+    const collapsedSym = (h) => {
+      const k = Math.round(h);
+      if (!ghostSym.has(k)) ghostSym.set(k, new PolygonSymbol3D({ symbolLayers: [{ type: "extrude", size: k + 0.8,
+        material: { color: [232, 20, 60, 0.16] }, edges: { type: "solid", color: [255, 30, 60, 1], size: 2 } }] }));
+      return ghostSym.get(k);
+    };
     const outSym = new Map();
     const outageSym = (h) => {
       const k = Math.round(h);
@@ -303,8 +312,8 @@
         L.buildings.add(g);
         const fall = dsT[3] !== null ? collapse(id, flat, h, dsT[3]) : null;
         items.push({ times: dsT.filter((v) => v !== null), state: 0, apply(s, anim) {
-          g.visible = s > 0 && s < 4;
-          if (g.visible) g.symbol = buildingSym(s, h);
+          g.visible = s > 0;
+          if (g.visible) g.symbol = s >= 4 ? collapsedSym(h) : buildingSym(s, h);
           if (fall) fall(s >= 4, anim);
         } });
       }

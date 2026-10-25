@@ -118,3 +118,19 @@ def test_every_priced_line_has_a_source():
     for line in r["ledger"]["lines"]:
         if line["usd"] > 0:
             assert line["source"] and not line["source"].startswith("unpriced"), line
+
+
+def test_physics_path_uses_lbm_field_and_trees_py():
+    """With the team's cached LBM field, wind comes from sim/wind.py and tree failures from sim/trees.py."""
+    import glob
+    st = load_storm("elnino_ar_2026")
+    snapped = int(round(5.0 * round(st.wind_dir_deg / 5.0))) % 360
+    if not glob.glob(os.path.join(ROOT, "data", "grid", f"wind_{snapped:03d}_*.npz")):
+        return   # no cached field on this machine (a fresh solve takes minutes): nothing to check
+    wf, trees_out, _ = D.physics_inputs(st)
+    r = D.run_destruction(st, wind=wf, tree_result=trees_out)
+    assert r["wind_source"].startswith("sim/wind.py LBM field")
+    failed = {t["id"] for t in trees_out if t["fail_t"] is not None}
+    assert {t["id"] for t in r["trees"]} == failed
+    assert all(t["source"] == "sim/trees.py" for t in r["trees"])
+    assert D.result_hash(r) == D.result_hash(D.run_destruction(st, wind=wf, tree_result=trees_out))
