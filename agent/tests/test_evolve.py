@@ -47,6 +47,11 @@ def test_strategy_and_bands():
     assert [ev.cost_band(x, 50e6) for x in (1e6, 12e6, 30e6, 45e6)] == [0, 1, 2, 3]
 
 
+def test_real_score_sanity_guard():
+    assert ev.score_invalid_reason({"net_benefit_usd": 101}, 100)
+    assert ev.score_invalid_reason({"net_benefit_usd": 99}, 100) is None
+
+
 def test_tweak_sites():
     sites = ev.Evolver.tweak_sites(PARENT)
     keys = sorted(k for _, _, k in sites)
