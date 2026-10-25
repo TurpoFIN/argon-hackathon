@@ -105,6 +105,22 @@ def prepare():
         lines.append(dict(id='C'+str(prop['OBJECTID']),feeder=None,name=prop.get('Name'),substation=None,
             installation={'OH':'overhead','UG':'underground','UW':'underwater'}.get(prop.get('Type'),'unknown'),
             voltage_kv=prop.get('kV'),geometry=mapping(geom),source='CEC'))
+    transmission_count=len(lines)-sum(l['source']=='PG&E GRIP' for l in lines)
+    bbox=','.join(map(str,(BBOX[1],BBOX[0],BBOX[3],BBOX[2])))
+    query=f'[out:json];(way["power"~"^(line|minor_line)$"]({bbox});node["power"~"^(pole|tower)$"]({bbox});way["trolley_wire"="yes"]({bbox});way["railway"~"^(tram|light_rail)$"]["electrified"="contact_line"]({bbox}););out body;>;out skel qt;'
+    osm,src=fetch('osm-overhead.json','https://overpass-api.de/api/interpreter?'+urllib.parse.urlencode({'data':query}))
+    src['name']='OpenStreetMap overhead conductors';src['license']='© OpenStreetMap contributors, ODbL';sources.append(src)
+    nodes={e['id']:[e['lon'],e['lat']] for e in osm['elements'] if e['type']=='node' and 'lon' in e}
+    for e in osm['elements']:
+        if e['type']!='way':continue
+        tags=e.get('tags',{})
+        if tags.get('power') in ('line','minor_line'):kind='power'
+        elif tags.get('trolley_wire')=='yes' or (tags.get('railway') in ('tram','light_rail') and tags.get('electrified')=='contact_line'):kind='trolley'
+        else:continue
+        coordinates=[nodes[n] for n in e['nodes'] if n in nodes]
+        if len(coordinates)!=len(e['nodes']) or len(coordinates)<2:raise ValueError('Incomplete OSM conductor geometry')
+        lines.append(dict(id='OSM'+str(e['id']),installation='overhead',kind=kind,
+            geometry=mapping(LineString(coordinates)),source='© OpenStreetMap contributors, ODbL'))
     rows,src=arc('pge-substations.geojson',PGE+'/0','OBJECTID,SubstationName,SubstationID,Voltage_kV');src['name']='PG&E GRIP substations';sources.append(src)
     stations=[]
     for f in rows:
@@ -122,7 +138,9 @@ def prepare():
     result=dict(version=1,generated_at=datetime.now(timezone.utc).isoformat(),bbox=BBOX,
         buildings=bldgs,trees=trees,roads=roads,power_lines=lines,substations=stations,sources=sources,
         coverage=dict(buildings=len(bldgs),trees=len(trees),trees_without_usable_dbh=missing,roads=len(roads),
-                      distribution_feeders=len(pgelines),transmission_lines=len(lines)-len(pgelines),substations=len(stations),
+                      distribution_feeders=len(pgelines),transmission_lines=transmission_count,substations=len(stations),
+                      overhead_power_lines=sum(l['installation']=='overhead' and l.get('kind','power')=='power' for l in lines),
+                      trolley_wire_ways=sum(l.get('kind')=='trolley' for l in lines),
                       overhead_lines=sum(l['installation']=='overhead' for l in lines),unknown_installation=sum(l['installation']=='unknown' for l in lines)))
     (FOLDER/'assets.json').write_text(json.dumps(result,separators=(',',':')))
     print(json.dumps(result['coverage'],indent=2),flush=True)

@@ -2,6 +2,7 @@ import type {Constructor, Manifest, Parameters, ScenarioState, WorldData} from '
 import {followState,loadResult,request,timeAt} from './session';
 import {worldLayer,frameAt} from './world';
 import {riskView} from './risk';
+import {destructionLayer,type Destruction} from './destruction';
 
 type Field='flood'|'wind'|'rain';
 interface Map2D {
@@ -16,13 +17,14 @@ document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)'
 let state:ScenarioState,manifest:Manifest,grid:Float32Array,flood:Float32Array,loadedId='';
 let field:Field='flood',dirty=false,view:Map2D,count=0,nx=0,ny=0,selectedCell=0;
 let GeoPoint:Constructor;
+let destruction:Awaited<ReturnType<typeof destructionLayer>>;
 const form=$<HTMLFormElement>('#parameters'),fields=$<HTMLFieldSetElement>('#parameter-fields');
 const banner=$<HTMLParagraphElement>('#run-status'),canvas=$<HTMLCanvasElement>('#field'),ctx=canvas.getContext('2d')!;
 const raster=document.createElement('canvas'),rctx=raster.getContext('2d')!;
 let redrawRaster=true,lastFrame=-1,lastDraw=0;
 let world:WorldData|undefined,assets:Awaited<ReturnType<typeof worldLayer>>;
 let risk:Awaited<ReturnType<typeof riskView>>|undefined,baseFlood:Float32Array;
-let editVersion=0,sending=false,sendAgain=false;
+let editVersion=0,sending=false,sendAgain=false,resultVersion=0;
 let updateTimer:ReturnType<typeof setTimeout>|undefined;
 
 function showError(error:unknown):void {banner.textContent=error instanceof Error?error.message:String(error);banner.dataset.error='true';}
@@ -181,6 +183,7 @@ function draw():void {
   $('#probe').textContent=`${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)} · ${inspected}`;
   document.documentElement.dataset.analysisFrame=String(frame);
   assets?.draw(seconds);
+  destruction?.draw(seconds);
   risk?.draw(seconds);
   if(world){
     const current=frameAt(world,seconds),event=world.events.filter(e=>e.time_seconds<=seconds).at(-1);
@@ -193,7 +196,13 @@ async function receive(next:ScenarioState):Promise<void> {
   if(state&&(next.request_version??0)<(state.request_version??0))return;
   state=next;labelState(next);
   if(loadedId!==next.scenario_id){
-    const data=await loadResult(next.scenario_id);manifest=data.manifest;grid=data.grid;flood=data.flood;baseFlood=data.flood;world=data.world;assets?.set(world);loadedId=next.scenario_id;
+    const version=++resultVersion;
+    destruction?.set(undefined);
+    const destructionData=fetch(`/api/results/${next.scenario_id}/destruction.json`).then(r=>r.ok?r.json() as Promise<Destruction>:undefined).catch(()=>undefined);
+    const [data,damage]=await Promise.all([loadResult(next.scenario_id),destructionData]);
+    if(version!==resultVersion)return;
+    manifest=data.manifest;grid=data.grid;flood=data.flood;baseFlood=data.flood;world=data.world;assets?.set(world);loadedId=next.scenario_id;
+    destruction?.set(damage);
     nx=manifest.grid.nx;ny=manifest.grid.ny;count=nx*ny;
     if(grid.length!==count*7||flood.length!==count*manifest.times_seconds.length)throw new Error('Scenario data dimensions do not match');
     raster.width=nx;raster.height=ny;
@@ -220,6 +229,7 @@ async function main():Promise<void> {
   GeoPoint=Point;
   const map=new Map({basemap:new Basemap({baseLayers:[new TileLayer({url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer'})],referenceLayers:[new TileLayer({url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer'})]})});
   assets=await worldLayer(map as {add(layer:unknown):void},false);
+  destruction=await destructionLayer(map as {add(layer:unknown):void});
   view=new View({container:'map',map,center:[-122.396,37.797],zoom:15.2,rotation:0,ui:{components:['attribution','zoom']},constraints:{rotationEnabled:false,minZoom:13,maxZoom:20},popupEnabled:false});
   await Promise.all([view.when(),receive(await request<ScenarioState>('/api/state'))]);
   risk=await riskView($('#map-wrap'),map as {add(layer:unknown):void},value=>{flood=value??baseFlood;redrawRaster=true;lastFrame=-1;});

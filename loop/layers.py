@@ -8,6 +8,18 @@ import sys
 from pathlib import Path
 
 from .judge import OUT, Judge
+from backend import multihazard, risk_assets
+
+
+class DestructionJudge(Judge):
+    def write_layers(self, label, plan, drawn, sim, ledger, runs):
+        super().write_layers(label, plan, drawn, sim, ledger, runs)
+        model = multihazard.Model(risk_assets.load(), sim["world"])
+        payload = multihazard.destruction(model, sim["flood"], [m["time_seconds"] for m in sim["frame_metrics"]])
+        payload["label"] = label
+        text = json.dumps(payload, separators=(",", ":"))
+        (self.run_dir / f"{label}_destruction.json").write_text(text)
+        (self.run_dir / "destruction.json").write_text(text)
 
 
 def forcing_file(folder: Path, log):
@@ -23,7 +35,7 @@ def main():
     folder = Path(sys.argv[1]).resolve()
     key = folder.name
     log = json.loads((folder / f"{key}.json").read_text())
-    judge = Judge(folder, forcing=forcing_file(folder, log), rain_mm_h=log["parameters"]["rain_mm_h"], mode=log.get("mode", "doorways"))
+    judge = DestructionJudge(folder, forcing=forcing_file(folder, log), rain_mm_h=log["parameters"]["rain_mm_h"], mode=log.get("mode", "doorways"))
     plans = {"control": log["control"]["plan"]}
     if log.get("greedy_heuristic"):
         plans["greedy"] = log["greedy_heuristic"]["plan"]

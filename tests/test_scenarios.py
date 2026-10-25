@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 from pydantic import ValidationError
 from backend.scenarios import Parameters, PlaybackUpdate
-from backend import scenarios
+from backend import scenarios, preparedness
 
 
 class ParameterTests(unittest.TestCase):
@@ -34,7 +34,7 @@ class LiveQueueTests(unittest.TestCase):
     def test_latest_edit_wins_and_keeps_playback(self):
         started,release=threading.Event(),threading.Event()
         calls=[]
-        def calculate(parameters,folder,should_cancel):
+        def calculate(parameters,folder,should_cancel,previous=None):
             calls.append(parameters.rain_mm_h)
             if len(calls)==1:
                 started.set();self.assertTrue(release.wait(3))
@@ -61,7 +61,7 @@ class LiveQueueTests(unittest.TestCase):
 
     def test_return_to_current_values_discards_inflight_result(self):
         started,release=threading.Event(),threading.Event()
-        def calculate(parameters,folder,should_cancel):
+        def calculate(parameters,folder,should_cancel,previous=None):
             started.set();release.wait(3);folder.mkdir(parents=True)
         with tempfile.TemporaryDirectory() as temp,patch.object(scenarios,'DATA',Path(temp)),patch.object(scenarios,'calculate',calculate):
             Path(temp,'model-inputs.npz').touch();store=scenarios.ScenarioStore()
@@ -76,7 +76,7 @@ class LiveQueueTests(unittest.TestCase):
 
     def test_failure_of_superseded_run_does_not_replace_latest(self):
         started,release=threading.Event(),threading.Event()
-        def calculate(parameters,folder,should_cancel):
+        def calculate(parameters,folder,should_cancel,previous=None):
             if parameters.rain_mm_h==50:
                 started.set();release.wait(3);raise RuntimeError('superseded failure')
             folder.mkdir(parents=True)
@@ -99,15 +99,25 @@ class LiveQueueTests(unittest.TestCase):
                 buildings=zeros.astype(bool),ocean=zeros.astype(bool),runoff_weights=np.ones((4,4)),
                 drain_counts=zeros,lon=zeros,lat=zeros)
             Path(temp,'manifest.json').write_text(json.dumps({'grid':{'cell_m':12},'tide_base_navd88_m':2.368}))
+            # Use the real prepared-world simulation; cancellation belongs to
+            # preparedness.advance_water after the first 60 water steps.
+            import test_coupled
+            fixture=test_coupled.CoupledTests()
+            fixture.setUp()
+            self.addCleanup(fixture.doCleanups)
+            world=fixture.world(debris_kg=0)
+            world.dynamics={'rain':np.zeros_like(world.z),'tide_base':-10}
             calls=0
-            advance=scenarios.advance_water
+            def check_cancelled():
+                if calls>0:raise scenarios.SupersededCalculation()
+            world.check_cancelled=check_cancelled
+            advance=preparedness.advance_water
             def step(*args,**kwargs):
                 nonlocal calls
                 calls+=1
                 return advance(*args,**kwargs)
             folder=Path(temp,'cancelled')
-            with patch.object(scenarios,'World') as world,patch.object(scenarios,'advance_water',step),self.assertRaises(scenarios.SupersededCalculation):
-                world.return_value.rates.return_value=zeros
+            with patch.object(scenarios,'create_world',return_value=(world,{})),patch.object(preparedness,'advance_water',step),self.assertRaises(scenarios.SupersededCalculation):
                 scenarios.calculate(Parameters(response_mode='baseline'),folder,lambda:calls>0)
             self.assertEqual(calls,60)
             self.assertFalse(folder.exists())

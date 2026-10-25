@@ -12,7 +12,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .simulation import Budget, advance_water, potential_wind
 from .coupled import World
-from . import argon, footage, coastal
+from . import argon, footage, coastal, multihazard, risk_assets
 from .preparedness import study
 from typing import Literal
 
@@ -119,6 +119,12 @@ def calculate(parameters: Parameters, destination: Path, should_cancel=lambda: F
             f"Assumed drain capacity {p.drain_capacity_lps:g} L/s; initial {p.blockage_pct:g}% blockage evolves with debris and clearing; no connected sewer network.",
             "Wind is diagnostic 2-D potential flow. Gust envelope and rooftop blend are illustrative; no structural damage prediction.",
             *source["assumptions"][-3:]]})
+    try:
+        model=multihazard.Model(risk_assets.load(),world)
+        destruction=multihazard.destruction(model,frames,[m['time_seconds'] for m in metrics])
+        (destination / 'destruction.json').write_text(json.dumps(destruction,separators=(',',':')))
+    except Exception as error:
+        source['destruction_error']=f'{type(error).__name__}: {error}'
     (destination / "manifest.json").write_text(json.dumps(source, indent=2))
 
 
