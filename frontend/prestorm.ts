@@ -70,6 +70,7 @@ html[data-map-comparison=before] .plan-pin-line{background:#70757b}html[data-map
 
 export async function planningView(_host:HTMLElement,map:{add(layer:unknown):void},onFlood:(value:Float32Array|undefined)=>void){
   document.body.classList.add('planning-mode');document.title='Embarcadero · Pre-storm plan';
+  if(!document.documentElement.dataset.theme)document.documentElement.dataset.theme=getComputedStyle(document.documentElement).colorScheme.includes('dark')?'dark':'light';
   const style=document.createElement('style');style.textContent=css;document.head.append(style);
   document.querySelector('.app-header .muted')?.replaceChildren(document.createTextNode('Pre-storm planning'));
   for(const [href,label,title] of [['/','3D','Three-dimensional storm view'],['/analysis','Map','Plan and map view']]){const nav=document.querySelector<HTMLAnchorElement>(`nav a[href="${href}"]`);if(nav){nav.textContent=label;nav.title=title;nav.setAttribute('aria-label',title);}}
