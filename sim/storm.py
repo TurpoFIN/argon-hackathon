@@ -235,7 +235,7 @@ def _forecast_live(dt=300.0):
               description="Live forcing from NOAA CO-OPS 9414290 and NWS MTR gridpoint; design rain is used only below the documented floor.",
               stats={"forecast_peak_tide_m_navd": round(float(tide.max()), 3),
                      "forecast_peak_gust_ms": round(float(gust.max()), 3),
-                     "forecast_qpf_mm": round(float(rain_forecast.sum()), 3),
+                     "forecast_qpf_mm": round(float(rain_forecast.sum() * dt / 3600.0), 3),
                      "assumed_rain_mm": round(float(scale.sum() * dt / 3600.0), 3),
                      "rain_scale_applied": bool(np.any(scale > rain_rate + 1e-6)),
                      "forecast_model": payload.get("model", "NOAA persistence fallback")},
