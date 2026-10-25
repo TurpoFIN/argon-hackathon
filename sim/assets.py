@@ -47,6 +47,28 @@ def lonlat_to_utm10(lon, lat):
     return x, y
 
 
+def utm10_to_lonlat(x, y):
+    """UTM zone 10N (EPSG:32610) -> WGS84, Snyder 1987 inverse series (inverse of lonlat_to_utm10)."""
+    a, f, k0 = 6378137.0, 1 / 298.257223563, 0.9996
+    e2 = f * (2 - f)
+    ep2 = e2 / (1 - e2)
+    e1 = (1 - math.sqrt(1 - e2)) / (1 + math.sqrt(1 - e2))
+    M = y / k0
+    mu = M / (a * (1 - e2 / 4 - 3 * e2 ** 2 / 64 - 5 * e2 ** 3 / 256))
+    p1 = (mu + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * math.sin(2 * mu) + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * math.sin(4 * mu)
+          + (151 * e1 ** 3 / 96) * math.sin(6 * mu) + (1097 * e1 ** 4 / 512) * math.sin(8 * mu))
+    s, c = math.sin(p1), math.cos(p1)
+    C1 = ep2 * c * c
+    T1 = math.tan(p1) ** 2
+    N1 = a / math.sqrt(1 - e2 * s * s)
+    R1 = a * (1 - e2) / (1 - e2 * s * s) ** 1.5
+    D = (x - 500000.0) / (N1 * k0)
+    lat = p1 - (N1 * math.tan(p1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * ep2) * D ** 4 / 24
+                                           + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * ep2 - 3 * C1 * C1) * D ** 6 / 720)
+    lon = (D - (1 + 2 * T1 + C1) * D ** 3 / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * ep2 + 24 * T1 * T1) * D ** 5 / 120) / c
+    return math.degrees(lon) - 123.0, math.degrees(lat)
+
+
 def _meta():
     return json.load(open(os.path.join(ROOT, "data", "grid", "meta.json")))
 

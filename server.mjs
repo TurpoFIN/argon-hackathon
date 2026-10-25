@@ -5,12 +5,15 @@ import { dirname, resolve, extname, sep } from "node:path";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 5173);
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
+const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
+const files = ["index.html", "style.css", "scene.js", "destruction-layer.js", "destruction.css"];
+// Destruction runs exported by sim/destruction_web.py.
+const destructionData = /^data\/web\/destruction_[a-z0-9_.]+\.json$/;
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, "http://localhost").pathname);
     const path = resolve(root, `.${pathname === "/" ? "/index.html" : pathname}`);
-    if (!path.startsWith(root + sep) || !["index.html", "style.css", "scene.js"].includes(path.slice(root.length + 1))) {
+    if (!path.startsWith(root + sep) || !(files.includes(path.slice(root.length + 1)) || destructionData.test(path.slice(root.length + 1)))) {
       response.writeHead(404).end();
       return;
     }

@@ -35,7 +35,7 @@ import numpy as np
 from scipy.ndimage import maximum_filter
 from scipy.special import ndtri
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = P_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REF = os.path.join(ROOT, "data", "reference")
 GRID = os.path.join(ROOT, "data", "grid")
 RHO_AIR = 1.225
@@ -843,7 +843,8 @@ def run_destruction(storm, plan=None, wind=None, water=None, tree_result=None, a
         "cars_hit": [{"id": c, "t": float(t[v[0]]), "by": v[1], "by_id": v[2]} for c, v in sorted(car_hit.items())],
         "debris": debris,
         "outage": {"customers_out": customers_out, "customer_hours": round(customer_hours, 1), "customers_t": cust_t,
-                   "buildings_out": [int(bid[i]) for i in np.nonzero(out_b)[0]]},
+                   "buildings_out": [int(bid[i]) for i in np.nonzero(out_b)[0]],
+                   "buildings_out_t": [[int(bid[i]), float(t[line_k[b_line[i]]])] for i in np.nonzero(out_b)[0]]},
         "timeline": cum,
         "events": events,
         "notes": notes,
