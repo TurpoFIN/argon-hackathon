@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
-from agent.action_plan import build_action_plan, make_eop, render_eop_html, write_eop
+from agent.action_plan import (build_action_plan, make_eop, render_eop_html, write_eop,
+                               _resolve_tournament_baseline, _resolve_tournament_winner)
 from sim.city_api import exec_plan
 from sim.costs import price_plan
 
@@ -68,3 +70,14 @@ def test_eop_summary_contains_top_ten_actions():
     assert 1 <= len(doc["top_actions"]) <= 10
     assert doc["summary"]["top_action_count"] == len(doc["top_actions"])
     assert "One-page dispatch summary" in render_eop_html(doc)
+
+
+def test_tournament_resolves_argon_provenance_and_current_baseline():
+    tournament = json.loads((Path(__file__).parents[2] / "evidence" / "tournament.json").read_text())
+    record, plan_path, result = _resolve_tournament_winner(Path(__file__).parents[2], tournament)
+    assert record["model"] == "gemini-4-argon"
+    assert result["plan_hash"] == "bedaff24e8cc5c06"
+    assert plan_path.name == "plan_code.py"
+    baseline, meta = _resolve_tournament_baseline(Path(__file__).parents[2], tournament, "elnino_ar_2026", result["run_id"])
+    assert round(baseline["total_usd"]) == 258_483_456
+    assert meta["mock"] is False

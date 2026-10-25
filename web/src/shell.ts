@@ -238,6 +238,11 @@ export function mountProductShell(): void {
           try { const eop = JSON.parse(eopText); planState.report = String(eop.html || eop.report || eop.content || ''); }
           catch { planState.report = eopText; }
         }
+      } else {
+        // The tournament EOP is a tracked, verified fixture so the closing
+        // demo step remains executable even before a live evolve job exists.
+        const fixture = await getJson('/api/eop/argon');
+        if (fixture) planState.report = String(fixture.html || fixture.report || fixture.content || '');
       }
       planState.approved = true; render();
     }
@@ -248,10 +253,11 @@ export function mountProductShell(): void {
   render();
 
   void (async () => {
-    const [rawForecast, rawAlerts, tournament, jobs] = await Promise.all([getJson('/api/forecast'), getJson('/api/alerts'), getJson('/api/tournament'), getJson('/api/jobs')]);
+    const [rawForecast, rawAlerts, tournament, jobs, fixtureEop] = await Promise.all([getJson('/api/forecast'), getJson('/api/alerts'), getJson('/api/tournament'), getJson('/api/jobs'), getJson('/api/eop/argon')]);
     forecast = normalizeForecast(rawForecast); alerts = alertFrom(rawAlerts); compareData = compareRows(tournament || await getJson('/api/leaderboard'));
     const candidates = Array.isArray(jobs) ? jobs : [];
     planState.job = candidates.find((j: any) => ['awaiting_approval', 'completed', 'running'].includes(j.status)) || null;
+    if (fixtureEop && !planState.job) planState.report = String(fixtureEop.html || fixtureEop.report || fixtureEop.content || '');
     render();
   })();
 }
