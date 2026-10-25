@@ -5,11 +5,13 @@ import { TileFrame } from './geo';
 import { LocalFrame, RunVisual, Wind, makeWaterGeometry, shared, treeGeoms } from './storm';
 import { createArcgis, type ArcgisBase, type ShotCam } from './arcgis';
 import { createStylized, makeRain, type Stylized } from './stylized';
-import { Hud, usd, type Phase } from './hud';
+import { Hud, usd, type Phase, type Kpi } from './hud';
 import { computeStats, buildStory, layoutCaptions, statAt, treesDownAt, fmtT, type RunStats, type StoryEvent, type CaptionSlot } from './story';
 import { Inspector, catOf, nameOf, reasonOf, CATS, type InspItem } from './inspector';
 import { TYPE_COLORS } from './plan';
 import { Walker } from './nav';
+import { loadLearning, renderLearning, renderBench } from './learn';
+import { buildSteps, renderStep, type Step } from './steps';
 import { createAgentPanel } from './agentPanel';
 import { cloudDeck, rainCurtains, spray, WindowLights, StormAudio, windDir, skyDome } from './fx';
 
@@ -25,6 +27,7 @@ const container = document.getElementById('scene')!;
 
 interface Shot { lon: number; lat: number; dist: number; heading: number; tilt: number; compare?: boolean }
 const SHOTS: Record<string, Shot> = {
+  hero: { lon: -122.4040, lat: 37.7760, dist: 4300, heading: 225, tilt: 62 },
   overview: { lon: -122.4060, lat: 37.7770, dist: 4600, heading: 245, tilt: 71 },
   basin: { lon: -122.4150, lat: 37.7640, dist: 1000, heading: 300, tilt: 72 },
   canyon: { lon: -122.4010, lat: 37.7890, dist: 700, heading: 225, tilt: 73 },
@@ -69,7 +72,9 @@ async function main() {
 
   // ---- runs ----
   setLoading('loading storm runs');
-  const infos = pickRuns(await listRuns(), q);
+  const allowSynth = q.get('src') === 'synth';
+  const infos = pickRuns(await listRuns(), q).filter((r) => allowSynth || !r.base.startsWith('synth'));
+  if (infos.some((r) => r.base.startsWith('synth'))) { const w = document.createElement('div'); w.className = 'sample'; w.textContent = 'SAMPLE DATA'; document.body.append(w); }
   const settled = await Promise.allSettled(infos.map(loadRun));
   settled.forEach((r, i) => { if (r.status === 'rejected') console.warn('run failed', infos[i].run_id, String(r.reason)); });
   const runs: Run[] = settled.filter((r) => r.status === 'fulfilled').map((r) => (r as PromiseFulfilledResult<Run>).value);
@@ -171,8 +176,10 @@ async function main() {
   const phaseName = (tt: number) => { const ph = phasesFor(visuals[active]); const u = uOf(tt); return tt < 0 ? 'PREP' : (ph.find((p) => u >= p.u0 && u <= p.u1)?.label || 'AFTERMATH'); };
   const refreshStory = () => {
     const v = compare ? visuals[planIdx] : visuals[active]; if (!v) return;
-    slots = layoutCaptions(storyOf(v), uOf, CAP_GAP, 0.07);
-    hud.setTimelineStatic(phasesFor(v), storyOf(v).filter((e) => e.marker).map((e) => ({ u: uOf(e.t), label: e.marker!, color: e.color })));
+    const ess = storyOf(v).filter((e) => ['landfall', 'flood', 'peak', 'end'].includes(e.kind) || (e.kind === 'shelter' && !isNoneV(v)));
+    const sh = ess.filter((e) => e.kind === 'shelter').slice(0, 1); const keep = ess.filter((e) => e.kind !== 'shelter').concat(sh).sort((a, b) => a.t - b.t).slice(0, 5);
+    slots = []; void keep; void layoutCaptions;
+    hud.setTimelineStatic(phasesFor(v), []);
   };
 
   // ---- plan inspector ----
@@ -191,19 +198,19 @@ async function main() {
   const syncInspector = () => {
     const v = compare ? visuals[planIdx] : visuals[active];
     if (!v || v === inspFor) return; inspFor = v;
-    insp.setItems(isNoneV(v) ? [] : itemsFor(v), (v.run.info.label || 'Gemini').toUpperCase(), v.run.info.plan_cost_usd);
+    insp.setItems(isNoneV(v) ? [] : itemsFor(v).sort((a, b) => (b.o.cost_usd || 0) - (a.o.cost_usd || 0)).slice(0, 8), (v.run.info.label || 'Gemini').toUpperCase(), v.run.info.plan_cost_usd);
   };
   let focusId: string | null = null;
   const setFocus = (it: InspItem | null) => {
     focusId = it ? it.o.id : null; insp.pin(it);
-    for (const v of visuals) { v.plan.setHighlight(!!it); (v.plan as any).focus?.(focusId); } // plan.ts may expose focus(id|null) for per-object highlight
+    for (const v of visuals) v.plan.highlightObject?.(focusId);
   };
   const flyTo = (it: InspItem, ms = 1800) => {
     let ext = 0; for (const p of it.o.coords) ext = Math.max(ext, Math.hypot(p[0] - it.pos.x, p[1] - it.pos.y));
     const [lon, lat] = tile.localToLonLat(it.pos.x, it.pos.y);
     goCustom({ lon, lat, dist: Math.max(380, Math.min(2600, ext * 2.4 + 300)), heading: 330, tilt: 62 }, ms);
   };
-  insp.onPick = (it) => { stopAuto(); if (walker.active) setWalk(false); setFocus(it); flyTo(it); };
+  insp.onPick = (it) => { setFocus(insp.pinned === it ? null : it); };
   insp.onClose = () => setFocus(null);
   insp.onTour = () => runTour();
 
@@ -256,9 +263,8 @@ async function main() {
     }
   };
   const goShot = (name: string, instant = false) => {
-    const s = SHOTS[name]; if (!s) return; if (walker.active) setWalk(false);
-    if (s.compare && visuals.length > 1) { compare = true; refreshStory(); }
-    goCustom(s, 3200, instant, !s.compare);
+    const s = SHOTS[shotMode ? name : 'hero'] || SHOTS.hero; if (walker.active) setWalk(false);
+    goCustom(s, 3200, instant, false);
   };
   container.addEventListener('pointerdown', () => { orbit = null; camAnim = null; });
   container.addEventListener('wheel', () => { orbit = null; camAnim = null; }, { passive: true });
@@ -310,146 +316,159 @@ async function main() {
     }
   };
 
-  // ---- view switching ----
-  const setView = (r: 'none' | 'plan' | 'cmp') => {
-    if (r === 'cmp') compare = visuals.length > 1;
-    else { compare = false; active = r === 'none' ? noneIdx : planIdx; }
+
+  // ---- stages: 1 no plan · 2 Gemini's plan (+ briefing) · 3 how Argon learned ----
+  let stage: 'none' | 'plan' | 'learn' = 'none';
+  const sidePanel = document.createElement('div'); sidePanel.className = 'brief hidden'; hud.root.append(sidePanel);
+  const learnPanel = document.createElement('div'); learnPanel.className = 'learn hidden'; hud.root.append(learnPanel);
+  let briefing: any = null; let briefTried = false;
+  const esc = (x: any) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+  const loadBriefing = async () => {
+    briefTried = true;
+    try {
+      const jobs: any[] = await (await fetch('/api/jobs')).json();
+      for (const j of jobs.filter((x) => /argon/i.test(JSON.stringify(x).slice(0, 2000)))) {
+        const r = await fetch(`/api/jobs/${j.id}/briefing`); if (r.ok) { const b = await r.json(); if (b && (b.goal || b.actions)) { briefing = { ...b, job: j.id }; break; } }
+      }
+    } catch { /* not yet */ }
+    renderBrief();
+  };
+  const renderBrief = () => {
+    const b = briefing;
+    if (!b) { sidePanel.innerHTML = `<div class="bf-h">GEMINI'S BRIEFING</div><div class="bf-wait">Waiting for Gemini — no briefing published yet.</div>`; return; }
+    const inputs = (b.inputs || []).map((i: any) => `<li><b>${esc(i.count != null ? Number(i.count).toLocaleString('en-US') + ' ' : '')}${esc(i.name)}</b>${i.what ? ` <span>${esc(i.what)}</span>` : ''}</li>`).join('');
+    const cats = new Map<string, any[]>(); for (const a of b.actions || []) { const c = a.category || 'Other'; if (!cats.has(c)) cats.set(c, []); cats.get(c)!.push(a); }
+    const acts = [...cats].map(([c, l]) => `<div class="bf-c"><b>${esc(c)}</b>${l.slice(0, 4).map((a) => `<div>${esc(a.name)}${a.cost_basis ? ` <span>${esc(a.cost_basis)}</span>` : ''}</div>`).join('')}</div>`).join('');
+    sidePanel.innerHTML = `<div class="bf-h">GEMINI'S BRIEFING</div>
+      <div class="bf-s"><div class="bf-k">1 · MISSION</div><div class="bf-goal">${esc(b.goal)}</div><div class="bf-m">Budget <b>${b.budget_usd ? usd(+b.budget_usd) : '–'}</b> · Storm <b>${esc(b.storm)}</b></div></div>
+      <div class="bf-s"><div class="bf-k">2 · WHAT GEMINI GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><ul>${inputs}</ul></div>
+      <div class="bf-s"><div class="bf-k">3 · WHAT IT CAN DO</div>${acts}</div>
+      ${b.strategy ? `<div class="bf-s"><div class="bf-k">ITS STRATEGY</div><blockquote>“${esc(b.strategy)}”</blockquote></div>` : ''}`;
+  };
+  const showLearn = async () => {
+    learnPanel.innerHTML = '<div class="lr-h">HOW GEMINI 4 ARGON LEARNED</div><div class="lr-wait">loading job log…</div>';
+    if (briefing?.runs?.length) {
+      const rs = briefing.runs; const mx = Math.max(...rs.map((r: any) => +r.damage_usd || 0), 1);
+      learnPanel.innerHTML = `<div class="lr-h">HOW GEMINI 4 ARGON LEARNED <span>real simulation runs · job ${esc(briefing.job)}</span></div><div class="lr-runs">${rs.map((r: any) => `<div class="lr-run"><div class="lr-bar"><i style="height:${Math.max(4, (+r.damage_usd / mx) * 100)}%"></i></div><div class="lr-t"><b>Run ${esc(r.run)}</b> · damage <em>${usd(+r.damage_usd)}</em>${r.lives_at_risk != null ? ` · ${esc(r.lives_at_risk)} lives at risk` : ''}<span>${esc(r.critique || '')}${r.change_made ? ' → ' + esc(r.change_made) : ''}</span></div></div>`).join('')}</div>`;
+      const d = await loadLearning(allowSynth); const tmp = document.createElement('div'); renderLearning(tmp, { jobs: [], board: d.board }); const bm = tmp.querySelector('.lr-b'); if (bm) learnPanel.append(bm);
+      return;
+    }
+    renderLearning(learnPanel, await loadLearning(allowSynth));
+  };
+  const stepEl = document.createElement('div'); stepEl.className = 'steps hidden'; hud.root.append(stepEl);
+  let steps: Step[] = []; let stepI = 0;
+  const showStep = (i: number) => {
+    const pv = visuals[planIdx]; if (!pv) return;
+    stepI = Math.max(0, Math.min(steps.length - 1, i));
+    renderStep(stepEl, steps, stepI, tile, briefing, pv.run.info.plan_cost_usd, pv.run.info.label || 'Gemini');
+    stepEl.querySelectorAll('button[data-s]').forEach((b) => ((b as HTMLElement).onclick = () => showStep(stepI + ((b as HTMLElement).dataset.s === 'next' ? 1 : -1))));
+    const st = steps[stepI]; focusId = st?.kind === 'item' ? st.id! : null;
+    for (const v of visuals) v.plan.highlightObject?.(focusId);
+    if (st?.kind === 'item') { const it = itemsFor(pv).find((x) => x.o.id === st.id); insp.pinned = it || null; } else insp.pinned = null;
+  };
+  const showBench = async () => {
+    learnPanel.innerHTML = '<div class="bs-h">BENCHMARK</div><div class="lr-wait">loading…</div>';
+    const nv = visuals[noneIdx]; const nb = nv && isNoneV(nv) ? { damage: nv.run.info.total_usd, lives: nv.run.result?.ledger?.people?.at_risk_peak ?? null, runId: nv.run.info.run_id } : null;
+    if (!briefTried) await loadBriefing();
+    renderBench(learnPanel, await loadLearning(allowSynth), nb, briefing);
+  };
+  const setView = (r: 'none' | 'plan' | 'learn') => {
+    stage = r; compare = false; active = r === 'none' ? noneIdx : planIdx;
+    sidePanel.classList.add('hidden'); learnPanel.classList.toggle('hidden', r !== 'learn'); stepEl.classList.toggle('hidden', r !== 'plan');
+    for (const v of visuals) { v.plan.setAllBuilt?.(r === 'plan'); v.plan.highlightObject?.(null); }
+    focusId = null; insp.pinned = null;
+    if (r === 'plan') { const pv = visuals[planIdx]; steps = pv && !isNoneV(pv) ? buildSteps(pv.run.plan) : []; showStep(0); if (!briefTried) loadBriefing().then(() => stage === 'plan' && showStep(stepI)); }
+    if (r === 'learn') showBench();
+    document.body.dataset.stage = r;
     refreshStory(); syncInspector();
   };
-  hud.onRun = (r) => { stopAuto(); setView(r); };
+  hud.onRun = (r) => { stopAuto(); setView(r as any); };
   hud.onSeek = (u) => { t = tOf(u); hud.resetToasts(); };
   hud.onPlay = () => { playing = !playing; if (playing && t >= tEnd) t = tStart; };
   hud.onSpeed = (s) => { speed = s; };
-  hud.onCtl = (c) => { if (c === 'walk') setWalk(true); else if (c === 'orbit') setWalk(false); else if (c === 'dir') toggleDirector(); };
+  hud.onCtl = (c) => { if (c === 'walk') setWalk(!walker.active); else if (c === 'orbit') setWalk(false); };
 
-  // ---- build tour (B) + demo director (P) ----
+  // ---- demo director (P): one fixed hero camera, no cuts ----
   let tourToken = 0, dirToken = 0; let capOverride: { key: string; time: string; text: string; color: string } | null = null;
-  let tourCost = -1;
+  const tourCost = -1;
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-  const stopAuto = () => { if (tourToken || dirToken) { tourToken = 0; dirToken = 0; capOverride = null; tourCost = -1; hud.showFinal(null); hud.setCtl(walker.active, false, false); } };
-  const fmtUsd = (v: number) => usd(v);
-  const runTour = async (fromDirector = false) => {
-    if (tourToken && !fromDirector) { stopAuto(); return; }
-    const my = ++tourToken; if (!fromDirector) dirToken = 0; hud.setCtl(walker.active, !!dirToken, true);
-    if (walker.active) setWalk(false);
-    if (isNoneV(visuals[active]) || compare) setView('plan');
-    syncInspector(); const items = [...insp.items].sort((a, b) => a.o.t_s - b.o.t_s);
-    if (!items.length) { capOverride = { key: 'notour', time: '', text: 'This run has no plan objects to show', color: '#ff9d7a' }; await sleep(2500); capOverride = null; tourToken = 0; hud.setCtl(walker.active, !!dirToken, false); return; }
-    // steps: majors one by one, minor items batched per category
-    type Step = { its: InspItem[] };
-    const steps: Step[] = []; const minor = new Map<string, InspItem[]>();
-    for (const it of items) { if (it.major) steps.push({ its: [it] }); else { if (!minor.has(it.cat)) minor.set(it.cat, []); minor.get(it.cat)!.push(it); } }
-    for (const l of minor.values()) steps.push({ its: l });
-    steps.sort((a, b) => a.its[0].o.t_s - b.its[0].o.t_s);
-    const cap = fromDirector ? 14 : 40; const use = steps.length > cap ? [...steps].sort((a, b) => b.its.reduce((s, i) => s + (i.o.cost_usd || 0), 0) - a.its.reduce((s, i) => s + (i.o.cost_usd || 0), 0)).slice(0, cap).sort((a, b) => a.its[0].o.t_s - b.its[0].o.t_s) : steps;
-    playing = false; t = tStart; hud.resetToasts(); tourCost = 0;
-    goShot('plan'); capOverride = { key: 'tour0', time: 'T−72 h', text: `Watch Gemini build the plan · ${items.length} actions before landfall`, color: '#5fe1ff' };
-    await sleep(2600); if (my !== tourToken) return;
-    for (let i = 0; i < use.length; i++) {
-      const st = use[i]; const it = st.its[0]; const nextT = use[i + 1]?.its[0].o.t_s ?? -3600;
-      const t0 = it.o.t_s - 1; const t1 = Math.max(t0 + 1, Math.min(nextT - 1, it.o.t_s + 7200));
-      t = Math.max(t, t0);
-      if (st.its.length === 1) { setFocus(it); flyTo(it, 1300); } else {
-        setFocus(null); let x = 0, y = 0; for (const s of st.its) { x += s.pos.x; y += s.pos.y; } x /= st.its.length; y /= st.its.length;
-        let ext = 0; for (const s of st.its) ext = Math.max(ext, Math.hypot(s.pos.x - x, s.pos.y - y));
-        const [lon, lat] = tile.localToLonLat(x, y); goCustom({ lon, lat, dist: Math.max(900, Math.min(4200, ext * 2.2 + 600)), heading: 330, tilt: 58 }, 1300);
-        for (const v of visuals) v.plan.setHighlight(true);
-      }
-      const cost = st.its.reduce((s, x) => s + (x.o.cost_usd || 0), 0);
-      const name = st.its.length === 1 ? it.name : `${CATS.find((c) => c[0] === it.cat)?.[1]}: ${st.its.slice(0, 3).map((s) => s.name).join(', ')}${st.its.length > 3 ? ` +${st.its.length - 3}` : ''}`;
-      capOverride = { key: 'tour' + (i + 1), time: fmtT(it.o.t_s), text: `${name}${cost ? ' · ' + fmtUsd(cost) : ''} — ${reasonOf(it.o)}`, color: it.color };
-      const dur = st.its.length === 1 ? 2900 : 2500; const s0 = performance.now();
-      await sleep(700); if (my !== tourToken) return;
-      while (performance.now() - s0 < dur) { const k = Math.min(1, (performance.now() - s0 - 700) / (dur - 900)); t = t0 + (t1 - t0) * k; await sleep(30); if (my !== tourToken) return; }
-      t = t1; tourCost += cost;
-    }
-    setFocus(null); t = -3600; for (const v of visuals) v.plan.setHighlight(true);
-    goShot('plan');
-    const total = items.reduce((s, x) => s + (x.o.cost_usd || 0), 0);
-    capOverride = { key: 'tourEnd', time: 'T−1 h', text: `${visuals[active].run.info.label} plan in place before landfall · ${items.length} actions · ${fmtUsd(total)}`, color: '#5fe1ff' };
-    await sleep(4500); if (my !== tourToken) return;
-    for (const v of visuals) v.plan.setHighlight(false);
-    capOverride = null; tourCost = -1; tourToken = 0; hud.setCtl(walker.active, !!dirToken, false);
-  };
+  const stopAuto = () => { if (tourToken || dirToken) { tourToken = 0; dirToken = 0; capOverride = null; hud.showFinal(null); hud.setCtl(walker.active, false, false); } };
+  const runTour = async () => { /* replaced by stage 2 build in the director */ };
   const finalHtml = () => {
     const nv = visuals[noneIdx], pv = visuals[planIdx]; if (!nv || !pv || nv === pv) return null;
-    const ns = statsOf(nv), ps = statsOf(pv); const mx = (a: ArrayLike<number>) => Math.max(...Array.from(a));
     const avoided = nv.run.info.total_usd - pv.run.info.total_usd; const bcr = pv.run.info.plan_cost_usd > 0 ? avoided / pv.run.info.plan_cost_usd : NaN;
-    const row = (l: string, a: string, b: string) => `<tr><td>${l}</td><td class="n">${a}</td><td class="a">${b}</td></tr>`;
-    return `<div class="f-h">SAME STORM · TWO OUTCOMES</div><table><tr><th></th><th class="n">NO PLAN</th><th class="a">${pv.run.info.label.toUpperCase()}</th></tr>
-      ${row('Damage', usd(nv.run.info.total_usd, 2), usd(pv.run.info.total_usd, 2))}
-      ${row('Peak people at risk', mx(ns.atRisk).toLocaleString('en-US'), mx(ps.atRisk).toLocaleString('en-US'))}
-      ${row('Buildings flooded (peak)', mx(ns.flooded).toLocaleString('en-US'), mx(ps.flooded).toLocaleString('en-US'))}
-      ${row('Trees down', ns.treeT.length.toLocaleString('en-US'), ps.treeT.length.toLocaleString('en-US'))}
-      ${row('Plan cost', '—', usd(pv.run.info.plan_cost_usd))}</table>
-      <div class="f-b">Avoided <b>${usd(Math.max(0, avoided))}</b> · benefit-cost ratio <b>${isFinite(bcr) ? bcr.toFixed(1) : '–'}</b></div>`;
+    const lives = (v: RunVisual) => { const L = v.run.result?.ledger?.people || {}; return L.at_risk_peak ?? Math.max(...Array.from(statsOf(v).atRisk)); };
+    return `<div class="f-h">SAME STORM · TWO OUTCOMES</div>
+      <div class="f-2"><div class="n"><span>NO PLAN</span><b>${usd(nv.run.info.total_usd, 2)}</b><em>${Math.round(lives(nv)).toLocaleString('en-US')} lives at risk</em></div>
+      <div class="a"><span>${esc(pv.run.info.label.toUpperCase())}</span><b>${usd(pv.run.info.total_usd, 2)}</b><em>${Math.round(lives(pv)).toLocaleString('en-US')} lives at risk</em></div></div>
+      <div class="f-b">Plan ${usd(pv.run.info.plan_cost_usd)} · avoided <b>${usd(Math.max(0, avoided))}</b> · benefit-cost ratio <b>${isFinite(bcr) ? bcr.toFixed(1) : '–'}</b></div>`;
   };
   const toggleDirector = () => { if (dirToken) { stopAuto(); return; } runDirector(); };
   const runDirector = async () => {
     stopAuto(); const my = ++dirToken; hud.setCtl(walker.active, true, false); hud.showFinal(null);
     const ok = () => my === dirToken;
-    const cap = (time: string, text: string, color = '#ffb54a') => { capOverride = { key: 'd' + Math.random(), time, text, color }; };
-    const walkAt = (lon: number, lat: number, yaw: number, fwd: number) => { const [x, y] = tile.lonLatToLocal(lon, lat); setWalk(true, { x, y, yaw }); walker.auto = fwd; walker.autoYaw = 2; };
-    // 1. incoming storm
-    setView('none'); playing = false; t = -6 * 3600; speed = 1;
-    if (alertHtml) hud.showBanner(alertHtml);
-    goShot('overview'); cap('LIVE', 'Incoming: El Niño atmospheric river · NWS alert live for San Francisco', '#ff5a36');
-    await sleep(6500); if (!ok()) return;
-    // 2. no-plan storm at 2×
-    cap('NO PLAN', 'First: the same storm hits a city with no plan', '#ff9d7a'); await sleep(3000); if (!ok()) return;
-    capOverride = null; t = -1800; speed = 2; playing = true; goShot('basin');
-    await sleep(12000); if (!ok()) return;
-    walkAt(-122.4148, 37.7640, 300, 3); cap('STREET LEVEL', 'Ground level at 17th & Folsom — the basin fills first', '#4fa8ff');
-    await sleep(4000); if (!ok()) return; capOverride = null;
-    await sleep(6000); if (!ok()) return;
-    setWalk(false); goShot('canyon'); await sleep(9000); if (!ok()) return;
+    if (walker.active) setWalk(false); goShot('hero');
+    // 1. no plan: storm at 2.5× (≈30 s)
+    setView('none'); t = -1200; speed = 2.5; playing = true;
     while (t < tEnd && ok()) await sleep(200); if (!ok()) return;
-    await sleep(3500); if (!ok()) return;
-    // 3. switch to Argon: build tour
-    hud.hideBanner(); setView('plan'); playing = false; speed = 1;
-    cap('GEMINI 4 ARGON', 'Now: Gemini 4 Argon plans for the storm 72 hours ahead', '#5fe1ff'); await sleep(3000); if (!ok()) return;
-    await runTour(true); if (!ok()) return;
-    // 4. same storm with the plan
-    capOverride = null; t = -1800; speed = 2; playing = true; goShot('basin');
-    await sleep(11000); if (!ok()) return;
-    walkAt(-122.4148, 37.7640, 300, 3); cap('STREET LEVEL', 'Same street, same storm — with Gemini’s plan', '#5dff9d');
-    await sleep(4000); if (!ok()) return; capOverride = null;
-    await sleep(5000); if (!ok()) return;
-    setWalk(false); goShot('embarcadero'); await sleep(8000); if (!ok()) return;
-    goShot('compare');
+    await sleep(2000); if (!ok()) return;
+    // 2. Gemini's plan builds in the same view (≈15 s), then the same storm (≈30 s)
+    setView('plan'); t = tStart; speed = 25 / 15; playing = true;
+    while (t < 0 && ok()) await sleep(200); if (!ok()) return;
+    speed = 2.5;
     while (t < tEnd && ok()) await sleep(200); if (!ok()) return;
-    // 5. final comparison
+    // 3. outcome
     const f = finalHtml(); if (f) hud.showFinal(f);
-    await sleep(20000); if (!ok()) return;
+    await sleep(10000); if (!ok()) return; hud.showFinal(null);
+    // 4. how Argon learned
+    setView('learn'); speed = 1;
     dirToken = 0; hud.setCtl(walker.active, false, false);
   };
 
-  // ---- keys ----
+  // ---- keys (WASD/arrows/QE are camera moves, handled by the free camera below) ----
   addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement)?.closest?.('input,textarea')) return;
     const k = e.key;
     if (k === 'f' || k === 'F') { setWalk(!walker.active); return; }
-    if (k === 'Escape') { if (walker.active) setWalk(false); stopAuto(); setFocus(null); return; }
-    if (k === 'p' || k === 'P') { toggleDirector(); return; }
-    if (k === 'b' || k === 'B') { runTour(); return; }
+    if (k === 'Escape') { if (walker.active) setWalk(false); stopAuto(); setFocus(null); hud.showFinal(null); return; }
     if (k === ' ') { playing = !playing; if (t >= tEnd) { t = tStart; hud.resetToasts(); } e.preventDefault(); }
-    else if (k >= '1' && k <= '5') { stopAuto(); goShot(SHOT_KEYS[+k - 1]); }
-    else if (k === 'c' || k === 'C') setView(compare ? 'plan' : 'cmp');
-    else if (k === 'v' || k === 'V') setView(compare ? 'none' : active === noneIdx ? 'plan' : 'cmp');
-    else if (k === 'a' || k === 'A') setView('none');
-    else if (k === 'd' || k === 'D') setView('plan');
-    else if (k === 'Tab') { compare = false; active = (active + 1) % Math.max(1, visuals.length); refreshStory(); syncInspector(); e.preventDefault(); }
+    else if (k === '1') { stopAuto(); setView('none'); } else if (k === '2') { stopAuto(); setView('plan'); } else if (k === '3') { stopAuto(); setView('learn'); }
     else if (k === 'g' || k === 'G') { panel?.toggle(); }
-    else if (k === 'ArrowRight') t = tOf(Math.min(1, uOf(t) + 0.03));
-    else if (k === 'ArrowLeft') { t = tOf(Math.max(0, uOf(t) - 0.03)); hud.resetToasts(); }
-    else if (k === '+' || k === '=') speed = Math.min(4, speed * 2);
-    else if (k === '-') speed = Math.max(0.5, speed / 2);
     else if (k === 'r' || k === 'R') { t = tStart; hud.resetToasts(); playing = true; }
-    else if (k === 's' || k === 'S') { t = 0; hud.resetToasts(); playing = true; }
-    else if (k === 'n' || k === 'N') hud.banner.classList.toggle('hidden');
     else if (k === 'h' || k === 'H') document.getElementById('hud')!.classList.toggle('hidden');
-    else if (k === 'o' || k === 'O') { const s = SHOTS.overview; orbit = { s: { ...s }, t0: performance.now() }; }
   });
+
+  // ---- free camera: WASD/arrows move (speed ∝ height), Q/E down/up, hold Shift + move mouse to look ----
+  const held = new Set<string>(); let lookDX = 0, lookDY = 0;
+  addEventListener('keydown', (e) => { if (stage !== 'plan' || walker.active || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return; showStep(stepI + (e.key === 'ArrowRight' ? 1 : -1)); e.preventDefault(); e.stopImmediatePropagation(); }, true);
+  const camKey = (e: KeyboardEvent) => ({ w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r', q: 'dn', e: 'up' } as Record<string, string>)[e.key.toLowerCase()];
+  addEventListener('keydown', (e) => { if (walker.active || (e.target as HTMLElement)?.closest?.('input,textarea') || e.ctrlKey || e.metaKey) return; const k = camKey(e); if (k) { held.add(k); orbit = null; camAnim = null; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  addEventListener('keyup', (e) => { const k = camKey(e); if (k) held.delete(k); }, true);
+  addEventListener('blur', () => held.clear());
+  addEventListener('mousemove', (e) => { if (e.shiftKey && !e.buttons) { lookDX += e.movementX; lookDY += e.movementY; orbit = null; } });
+  let hintShown = false;
+  let fcLast = performance.now();
+  const freeCam = (_dt: number) => {
+    const nowF = performance.now(); const dt = Math.min(0.5, (nowF - fcLast) / 1000); fcLast = nowF;
+    if (walker.active || (!held.size && !lookDX && !lookDY)) return;
+    if (!hintShown) { hintShown = true; setTimeout(() => document.body.classList.add('hinted'), 4000); }
+    const mf = (held.has('f') ? 1 : 0) - (held.has('b') ? 1 : 0), mr = (held.has('r') ? 1 : 0) - (held.has('l') ? 1 : 0), mu = (held.has('up') ? 1 : 0) - (held.has('dn') ? 1 : 0);
+    const dyaw = lookDX * 0.15, dpitch = lookDY * 0.12; lookDX = lookDY = 0;
+    if (arc) {
+      const c = arc.view.camera; const p = c.position; const [x, y] = tile.lonLatToLocal(p.longitude, p.latitude);
+      const g = arc.groundAt(p.longitude, p.latitude) ?? city.zAt(x, y) + tile.zOffset; const alt = Math.max(3, p.z - g); const sp = Math.max(6, alt * 0.9);
+      const h = c.heading * Math.PI / 180; const nx = x + (Math.sin(h) * mf + Math.cos(h) * mr) * sp * dt, ny = y + (Math.cos(h) * mf - Math.sin(h) * mr) * sp * dt;
+      const [lon, lat] = tile.localToLonLat(nx, ny);
+      arc.setCamera({ lon, lat, z: Math.max(g + 1.7, p.z + mu * sp * dt), heading: c.heading + dyaw, tilt: Math.max(1, Math.min(179, c.tilt - dpitch)) });
+    } else if (sty) {
+      const cam = sty.camera, tg = sty.controls.target; const dir = tg.clone().sub(cam.position); const alt = Math.max(3, cam.position.z - tg.z); const sp = Math.max(6, alt * 0.9);
+      const fwd = new THREE.Vector3(dir.x, dir.y, 0).normalize(); const right = new THREE.Vector3(fwd.y, -fwd.x, 0);
+      const mv = fwd.multiplyScalar(mf * sp * dt).add(right.multiplyScalar(mr * sp * dt)).add(new THREE.Vector3(0, 0, mu * sp * dt));
+      cam.position.add(mv); tg.add(mv);
+      if (dyaw || dpitch) { const d = tg.clone().sub(cam.position); d.applyAxisAngle(new THREE.Vector3(0, 0, 1), -dyaw * Math.PI / 180); const side = new THREE.Vector3(d.y, -d.x, 0).normalize(); d.applyAxisAngle(side, -dpitch * Math.PI / 180); tg.copy(cam.position).add(d); }
+    }
+  };
+
 
   // ---- hover / click on plan objects in 3D ----
   let mouse: { x: number; y: number } | null = null; let downAt: { x: number; y: number } | null = null;
@@ -465,7 +484,7 @@ async function main() {
   };
   container.addEventListener('pointerup', (e) => {
     if (!downAt || walker.active || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 5) return;
-    const it = pickAt(e.clientX, e.clientY); if (it) { stopAuto(); setFocus(it); flyTo(it); }
+    const it = pickAt(e.clientX, e.clientY); if (it) setFocus(it);
   });
 
   // ---- render ----
@@ -537,7 +556,7 @@ async function main() {
   };
 
   // ---- main loop ----
-  refreshStory(); syncInspector(); hud.setCtl(false, false, false);
+  setView(q.get('view') === 'plan' ? 'plan' : 'none'); hud.setCtl(false, false, false);
   let last = performance.now(), weatherT = 0, hudT = 0;
   const nfmt = (v: number) => Math.round(v).toLocaleString('en-US');
   const loop = () => {
@@ -563,8 +582,8 @@ async function main() {
     if (wind && !pre) { wind.lines.visible = true; wind.update(dt, gust, uref); } else if (wind) wind.lines.visible = false;
     if (arc && now - weatherT > 400 && !(window as any).sfCinema?.state?.active) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
     // camera
-    applyWalk(dt);
-    if (orbit && arc && !walker.active) { const s = orbit.s; s.heading = (s.heading + dt * 1.6) % 360; arc.setCamera(shotCam(s)); }
+    applyWalk(dt); freeCam(dt);
+    if (orbit && arc && !walker.active) { const s = orbit.s; const el = (now - orbit.t0) / 1000; arc.setCamera(shotCam({ ...s, heading: s.heading + 6 * Math.sin(el * 0.05) })); }
     if (sty) {
       if (camAnim && !walker.active) { const k = Math.min(1, (now - camAnim.t0) / camAnim.dur); const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; sty.camera.position.lerpVectors(camAnim.from, camAnim.to, e); sty.controls.target.lerpVectors(camAnim.ft, camAnim.tt, e); if (k >= 1) camAnim = null; }
       if (!walker.active) sty.controls.update();
@@ -577,41 +596,40 @@ async function main() {
     hud.setTimeline(u, playing, speed);
     if (v && !compare) hud.setLabels(v.plan.labels.slice(0, 14), cam, frame.matrix, W, H, t); else hud.setLabels([], cam, frame.matrix, 1, 1, t);
     // focus ring follows the pinned / hovered object
-    const fit = insp.pinned || insp.hovered; const fs = fit ? screenOf(fit.pos, cam, W, H) : null; insp.setRing(fs ? fs[0] : 0, fs ? fs[1] : 0, !!fs && t >= (fit?.o.t_s ?? 0), fit?.color);
+    const fit = insp.pinned || insp.hovered; const fs = fit ? screenOf(fit.pos, cam, W, H) : null; insp.setRing(fs ? fs[0] : 0, fs ? fs[1] : 0, !!fs && (stage === 'plan' || t >= (fit?.o.t_s ?? 0)), fit?.color);
     if (now - hudT > 120) {
       hudT = now;
       const ph = phaseName(t);
-      hud.setClock(t, STORM_START, t < 0 ? (preK > 0 ? 'PREP · storm approaching' : 'PREP · plan deploys') : ph, t < 0 && preK <= 0 ? 'Forecast: atmospheric river landfall in ' + Math.round(-t / 3600) + ' h' : `Rain <b>${rain.toFixed(0)}</b> mm/h · Gusts <b>${gust.toFixed(0)}</b> m/s · Tide <b>${tide.toFixed(1)}</b> m`);
+      hud.setClock(t, STORM_START, t < 0 ? 'BEFORE THE STORM' : ph, '');
       const nv = visuals[noneIdx], pv = visuals[planIdx];
-      const shown = compare ? pv : v;
+      const shown = v;
       if (shown) {
-        const isPlan = !isNoneV(shown); const s = statsOf(shown); const ns = nv ? statsOf(nv) : null;
-        const dmg = t <= 0 ? 0 : shown.damageAt(t), ndmg = nv && t > 0 ? nv.damageAt(t) : 0;
-        const vs = (x: number, f = nfmt) => (isPlan && ns ? `without plan: <b>${f(x)}</b>` : '');
-        const risk = statAt(s, s.atRisk, t), fl = statAt(s, s.flooded, t), tr = treesDownAt(s, t);
-        hud.setKpis([
-          { label: 'STORM DAMAGE', value: usd(dmg, 1), cls: isPlan ? 'good' : 'bad', sub: isPlan ? `without plan: <b>${usd(ndmg)}</b>` : `final: <b>${usd(shown.run.info.total_usd)}</b>` },
-          { label: 'PEOPLE AT RISK', value: nfmt(risk), cls: risk > 0 ? 'bad' : '', sub: ns ? vs(statAt(ns, ns.atRisk, t)) : '' },
-          { label: 'BUILDINGS FLOODED', value: nfmt(fl), sub: ns ? vs(statAt(ns, ns.flooded, t)) : '' },
-          { label: 'TREES DOWN', value: nfmt(tr), sub: ns ? vs(treesDownAt(ns, t)) : '' },
-        ]);
-        const avoided = baseline() - (pv?.run.info.total_usd ?? 0); const spend = pv?.run.info.plan_cost_usd ?? 0; const bcr = spend > 0 ? avoided / spend : NaN;
-        const pname = pv ? pv.run.info.label.toUpperCase() : 'GEMINI';
-        const planSub = `plan ${usd(spend)} · ${pv?.run.plan.length ?? 0} actions · avoids <b>${usd(Math.max(0, avoided))}</b> · BCR <b>${isFinite(bcr) ? bcr.toFixed(1) : '–'}</b>`;
-        const tourSub = tourCost >= 0 ? `building the plan · <b>${usd(tourCost)}</b> deployed` : '';
-        if (compare) hud.setMode(`NO PLAN  vs  ${pname} PLAN`, tourSub || planSub, 'cmp', 'cmp', pv?.run.info.label || 'Gemini');
-        else if (isPlan) hud.setMode(`${shown.run.info.label.toUpperCase()} PLAN`, tourSub || planSub, /argon/i.test(shown.run.info.label) ? 'argon' : 'gflash', 'plan', pv?.run.info.label || 'Gemini');
-        else hud.setMode('NO PLAN', 'the city faces the storm as-is', 'none', 'none', pv?.run.info.label || 'Gemini');
+        const isPlan = !isNoneV(shown); const s = statsOf(shown);
+        const dmg = t <= 0 ? 0 : shown.damageAt(t);
+        const risk = statAt(s, s.atRisk, t);
+        const led = shown.run.result?.ledger || {}; const fat = led.expected_fatalities ?? led.people?.expected_fatalities, inj = led.expected_injuries ?? led.people?.expected_injuries;
+        const synth = shown.run.info.base.startsWith('synth');
+        const badge = synth ? `<a class="bd synth" href="VALIDATION.md" target="_blank">SAMPLE DATA · not a simulation</a>` : `<a class="bd" href="VALIDATION.md" target="_blank" title="run ${shown.run.info.run_id}">real simulation</a>`;
+        const k: Kpi[] = [
+          { label: 'DAMAGE', value: usd(dmg, 1), cls: isPlan ? 'good' : 'bad', sub: `whole storm: ${usd(shown.run.info.total_usd)} · ${badge}` },
+          { label: 'LIVES AT RISK', value: nfmt(risk), cls: risk > 0 ? 'bad' : 'good', sub: `people in hazardous water${fat != null ? ` · expected fatalities ${(+fat).toFixed(1)}` : ''}${inj != null ? ` · injuries ${Math.round(+inj)}` : ''}` },
+        ];
+        if (isPlan) k.push({ label: 'PLAN COST', value: usd(shown.run.info.plan_cost_usd, 1), cls: 'cost', sub: '' });
+        hud.setKpis(k);
+        const pname = pv ? pv.run.info.label : 'Gemini';
+        if (stage === 'learn') hud.setMode('BENCHMARK', '', 'argon', 'learn', pname);
+        else if (isPlan) hud.setMode(`${shown.run.info.label.toUpperCase()} PLAN`, '', /argon/i.test(shown.run.info.label) ? 'argon' : 'gflash', 'plan', pname);
+        else hud.setMode('NO PLAN', 'the city faces the storm as-is', 'none', 'none', pname);
       }
       // caption
-      if (capOverride) hud.setCaption(capOverride.key, capOverride.time, capOverride.text, capOverride.color);
+      if (false as boolean) hud.setCaption('', '', '', '');
       else {
         let cur: CaptionSlot | null = null; for (const s of slots) { if (s.u <= u) cur = s; else break; }
         if (cur && u - cur.u < CAP_LEN && !shotMode) hud.setCaption('c' + cur.u + cur.ev.text, fmtT(cur.ev.t), cur.ev.text, cur.ev.color); else hud.setCaption('', '', '', '');
       }
       // inspector rows light up as objects deploy; hover card
       syncInspector(); insp.setTime(t);
-      if (mouse && !walker.active && !insp.pinned) { const it = pickAt(mouse.x, mouse.y); if (it !== insp.hovered) { insp.hovered = it; insp.show(it); } }
+      if ((false as boolean) && mouse && !walker.active && !insp.pinned) { const it = pickAt(mouse.x, mouse.y); if (it !== insp.hovered) { insp.hovered = it; insp.show(it); } }
       else if (!mouse && insp.hovered && !insp.pinned) { insp.hovered = null; insp.show(null); }
     }
     if ((t > 600 || tourToken) && !shotMode) hud.hideBanner();
@@ -619,7 +637,7 @@ async function main() {
   };
 
   // ---- start ----
-  const sq = q.get('shot') || 'overview';
+  const sq = q.get('shot') || 'hero';
   goShot(/^\d$/.test(sq) ? URL_SHOTS[+sq] || 'overview' : sq, true);
   if (arc) { setLoading('streaming textured buildings'); await Promise.race([arc.ready, new Promise((r) => setTimeout(r, shotMode ? 30000 : 9000))]); }
   loading.classList.add('done'); setTimeout(() => loading.remove(), 1500);

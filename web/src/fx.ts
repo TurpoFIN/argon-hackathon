@@ -92,7 +92,7 @@ export function spray(frame: LocalFrame, city: City, n = 5000) {
         p.xy += vec2(sin(aP * 40.0 + uTime), cos(aP * 33.0 + uTime)) * 6.0 * age;
         vA = sin(age * 3.14159) * smoothstep(0.25, 0.8, uGust);
         vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_PointSize = clamp((900.0 + 2500.0 * age) / -mv.z, 1.0, 60.0); gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform float uL; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; float a = smoothstep(0.5, 0.0, r) * vA * 0.16; gl_FragColor = vec4(vec3(0.75, 0.8, 0.85) * (a + uL * a), a); }`,
+    fragmentShader: `uniform float uL; varying float vA; void main(){ float r = length(gl_PointCoord - 0.5); if (r > 0.5) discard; float a = smoothstep(0.5, 0.0, r) * vA * 0.07; gl_FragColor = vec4(vec3(0.75, 0.8, 0.85) * (a + uL * a), a); }`,
   });
   const pts = new THREE.Points(g, m); pts.frustumCulled = false; pts.renderOrder = 17; return pts;
 }

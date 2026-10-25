@@ -125,7 +125,7 @@ export function makeRain(n = 26000, box = 520) {
       void main(){ vec3 p = position; float fall = 34.0; vec3 wind = vec3(0.34, 0.94, 0.0) * (8.0 + 26.0 * uGust);
         vec3 w = p * uBox + vec3(wind.xy, -fall) * uTime; w = mod(w - uCam + uBox * 0.5, uBox) + uCam - uBox * 0.5;
         vec3 vel = normalize(vec3(wind.xy, -fall)); w -= vel * aE * (9.0 + 9.0 * uRain);
-        vA = step(position.x, uRain * 1.0) * (0.27 + 0.2 * aE) * (0.45 + 0.55 * smoothstep(-0.3, 1.0, sin(dot(w.xy, normalize(wind.xy)) * 0.012 - uTime * 2.4)));
+        vA = step(position.x, uRain * 0.7) * (0.12 + 0.08 * aE) * (0.45 + 0.55 * smoothstep(-0.3, 1.0, sin(dot(w.xy, normalize(wind.xy)) * 0.012 - uTime * 2.4)));
         gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0); }`,
     fragmentShader: 'uniform float uL; varying float vA; void main(){ if (vA <= 0.0) discard; gl_FragColor = vec4(vec3(0.7,0.78,0.9) * vA * (1.0 + uL * 0.6), 1.0); }',
   }));

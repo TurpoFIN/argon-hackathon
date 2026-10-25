@@ -41,6 +41,7 @@ export const reasonOf = (o: PlanObject) => {
   if (txt) return String(txt);
   return (WHY.find(([re]) => re.test(o.type)) || [null, 'Part of Gemini’s storm plan.'])[1];
 };
+export const realReason = (o: PlanObject) => { const r = o.raw || {}; return String(r.why || r.notes || r.rationale || r.reasoning || r.reason || r.description || ''); };
 export const nameOf = (o: PlanObject) => o.label || o.raw?.name || o.type.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 
 export class Inspector {
@@ -58,26 +59,15 @@ export class Inspector {
     this.el.classList.toggle('empty', !items.length);
     if (!items.length) { this.el.innerHTML = `<div class="i-h"><b>NO PLAN</b><span>nothing deployed — the city faces the storm as-is</span></div>`; return; }
     const total = planCost || items.reduce((s, it) => s + (it.o.cost_usd || 0), 0); this.total = total;
-    this.el.innerHTML = `<div class="i-h"><button class="i-col" title="collapse">‹</button><b>${esc(who)}’S PLAN</b><span>${items.length} actions · <em class="i-tot">${usd(total)}</em></span></div>
-      <button class="i-tour">▶ Watch Gemini build the plan <kbd>B</kbd></button><div class="i-list"></div>`;
+    this.el.innerHTML = `<div class="i-h"><b>WHAT GEMINI BUILT</b><span>top ${items.length} items · plan total <em class="i-tot">${usd(total)}</em></span></div><div class="i-list"></div>`;
     this.head = this.el.querySelector('.i-tot') as HTMLElement;
     const list = this.el.querySelector('.i-list') as HTMLElement;
-    for (const [k, title] of CATS) {
-      const its = items.filter((i) => i.cat === k); if (!its.length) continue;
-      const sec = document.createElement('div'); sec.className = 'i-sec';
-      sec.innerHTML = `<div class="i-st"><span>${title}</span><em>${usd(its.reduce((s, i) => s + (i.o.cost_usd || 0), 0))}</em></div>`;
-      for (const it of its.sort((a, b) => a.o.t_s - b.o.t_s)) {
-        const r = document.createElement('div'); r.className = 'i-row';
-        r.innerHTML = `<i style="--c:${it.color}">${GLYPH[k]}</i><b>${esc(it.name)}</b><span>${usd(it.o.cost_usd)}</span><small>${fmtT(it.o.t_s)}</small>`;
-        r.addEventListener('click', () => this.onPick?.(it));
-        r.addEventListener('mouseenter', () => { if (!this.pinned) this.show(it); });
-        r.addEventListener('mouseleave', () => { if (!this.pinned) this.show(null); });
-        sec.append(r); this.rows.set(it.o.id, r);
-      }
-      list.append(sec);
+    for (const it of items) {
+      const r = document.createElement('div'); r.className = 'i-row';
+      r.innerHTML = `<i style="--c:${it.color}">${GLYPH[it.cat]}</i><b>${esc(it.name)}</b><span>${usd(it.o.cost_usd)}</span><small>${esc(realReason(it.o))}</small>`;
+      r.addEventListener('click', () => this.onPick?.(it));
+      list.append(r); this.rows.set(it.o.id, r);
     }
-    (this.el.querySelector('.i-col') as HTMLElement).onclick = () => this.el.classList.toggle('collapsed');
-    (this.el.querySelector('.i-tour') as HTMLElement).onclick = () => this.onTour?.();
   }
   /** grey out rows not yet deployed at sim time t; returns running cost of deployed objects */
   setTime(t: number) {
@@ -86,22 +76,8 @@ export class Inspector {
     return c;
   }
   setRunningCost(c: number, all: boolean) { if (this.head) this.head.textContent = all ? usd(this.total) : usd(c) + ' deployed'; }
-  pin(it: InspItem | null) { this.pinned = it; this.show(it); for (const [id, r] of this.rows) r.classList.toggle('sel', !!it && id === it.o.id); if (it) this.rows.get(it.o.id)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-  show(it: InspItem | null) {
-    if (!it) { if (this.pinned) it = this.pinned; else { this.card.classList.add('hidden'); return; } }
-    const o = it.o; const r = o.raw || {};
-    const cap = o.capacity ?? r.capacity_m3 ?? r.capacity_m3s ?? r.capacity_people;
-    const src = r.cost_source || r.source || r.cost_basis || 'planner unit-cost estimate';
-    this.card.style.setProperty('--c', it.color);
-    this.card.innerHTML = `<button class="ic-x">×</button><div class="ic-k">${CATS.find((c) => c[0] === it.cat)?.[1] || ''} · ${esc(o.type.replace(/_/g, ' '))}</div>
-      <div class="ic-n">${esc(it.name)}</div>
-      <div class="ic-why"><span>GEMINI’S REASONING</span>${esc(reasonOf(o))}</div>
-      <div class="ic-g"><div><span>COST</span><b>${usd(o.cost_usd)}</b><small>${esc(String(src))}</small></div>
-      <div><span>DEPLOYS</span><b>${fmtT(o.t_s)}</b><small>${o.t_s < 0 ? 'before landfall' : 'during storm'}</small></div>
-      ${cap ? `<div><span>CAPACITY</span><b>${typeof cap === 'number' ? cap.toLocaleString('en-US') : esc(String(cap))}</b><small>${/shelter/.test(o.type) ? 'cots' : ''}</small></div>` : ''}
-      ${o.height ? `<div><span>HEIGHT</span><b>${o.height} m</b><small></small></div>` : ''}</div>`;
-    this.card.classList.remove('hidden');
-  }
+  pin(it: InspItem | null) { this.pinned = it; this.show(it); for (const [id, r] of this.rows) r.classList.toggle('sel', !!it && id === it.o.id);  }
+  show(_it: InspItem | null) { this.card.classList.add('hidden'); } // compact mode: reasoning lives in the selected row
   /** screen-space ring around the focused object (pos in renderer world coords already projected by caller) */
   setRing(x: number, y: number, visible: boolean, color = '#5fe1ff') {
     this.ring.classList.toggle('hidden', !visible); if (!visible) return;
