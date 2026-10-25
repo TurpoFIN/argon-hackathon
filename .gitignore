@@ -6,3 +6,16 @@ node_modules/
 dist/
 coverage/
 *.log
+
+# StormSim
+data/raw/
+.env
+node_modules/
+.venv/
+runs/
+data/grid/*.npz
+data/grid/wind_*
+__pycache__/
+web/dist/
+web/node_modules/
+*.mp4
