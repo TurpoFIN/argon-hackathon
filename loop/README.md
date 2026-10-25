@@ -48,6 +48,12 @@ env PYTHONPATH=. $PY -m loop.report data/prep-loop/demo1   # writes data/prep-lo
 
 For the live demo, start the server and open http://localhost:5182:
 
+The main app also serves this same viewer at `/3d`, and at `/` when completed run
+artifacts are present in `data/prep-loop` (`STORM_PREP_RUNS_DIR` can point to an
+existing run directory). Build with `npm run build` to include the shared
+trackpad/keyboard camera controls. The existing plan panel closes with × or H
+and reopens with Plan; its round comparison, playback and map layers are retained.
+
 ```sh
 env PYTHONPATH=. $PY -m loop.serve --port 5182
 ```

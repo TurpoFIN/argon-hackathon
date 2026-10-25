@@ -14,6 +14,10 @@ html, body, #scene { margin:0; width:100%; height:100%; overflow:hidden; backgro
   background:var(--surface); color:var(--fg); border-radius:8.4px; box-shadow:inset 0 0 0 .5px var(--edge), 0 2px 4px rgba(0,0,0,.14), 0 24px 48px -12px rgba(0,0,0,.32);
   font:13px/1.4 var(--font); padding:12px; z-index:1; }
 #panel h1 { font-size:16px; font-weight:500; margin:0 0 2px; }
+#panel h1 { padding-right:24px; }
+#panel[hidden], #show-plan[hidden] { display:none; }
+#hide-plan { position:absolute; right:8px; top:8px; width:24px; height:24px; padding:0; border:0; background:transparent; color:var(--fg); font:20px/1 var(--font); cursor:pointer; }
+#show-plan { position:fixed; left:16px; bottom:24px; z-index:1; border:0; border-radius:8px; padding:6px 10px; color:var(--fg); background:var(--surface); font:12px var(--font); cursor:pointer; }
 #panel .sub { color:var(--muted); font-size:12px; margin:0 0 10px; }
 #plans { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
 #plans button { height:28px; padding:0 10px; border-radius:9999px; border:0; background:transparent; color:var(--fg);
@@ -32,10 +36,12 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 .esri-attribution { font-size:10px; }
 </style>
 <script src="https://js.arcgis.com/4.33/"></script>
+<script type="module" src="/prepViewer.js"></script>
 </head>
 <body>
 <main id="scene" aria-label="3D San Francisco with the storm preparation plan"></main>
 <aside id="panel" aria-label="Storm preparation plan">
+  <button id="hide-plan" type="button" aria-label="Hide plan" title="Hide plan (H)">×</button>
   <h1 id="title">Loading plan</h1>
   <p class="sub" id="sub"></p>
   <div id="plans" role="group" aria-label="Plan shown"></div>
@@ -60,11 +66,20 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
   <button id="play" type="button" style="display:none;margin-top:6px;height:24px;padding:0 10px;border-radius:9999px;border:0;background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--edge);font:500 12px var(--font);cursor:pointer">Top-down P90 video</button>
   <video id="video" muted playsinline controls></video>
 </aside>
+<button id="show-plan" type="button" hidden aria-label="Show plan" title="Show plan (H)">Plan</button>
 <p id="status" role="status">Loading the city…</p>
 <script>
 const params = new URLSearchParams(location.search);
-const run = params.get('run'), model = params.get('model') || 'argon';
-const folder = `/runs/${run}/${model}/`;
+let run = params.get('run'), model = params.get('model') || 'argon', folder;
+const panel = document.getElementById('panel'), showPlan = document.getElementById('show-plan');
+function setPlanVisible(visible) { panel.hidden = !visible; showPlan.hidden = visible; (visible ? document.getElementById('hide-plan') : showPlan).focus(); }
+document.getElementById('hide-plan').onclick = () => setPlanVisible(false);
+showPlan.onclick = () => setPlanVisible(true);
+document.addEventListener('keydown', event => {
+  if (event.key.toLowerCase() === 'h' && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey && !event.target.closest('input,select,textarea,[contenteditable=true]')) {
+    event.preventDefault(); setPlanVisible(panel.hidden);
+  }
+});
 const usd = v => (v < 0 ? '−' : '') + '$' + (Math.abs(v) / 1e6).toLocaleString('en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + 'M';
 const square = (lon, lat, half) => {
   const dlat = half / 111320, dlon = half / (111320 * Math.cos(lat * Math.PI / 180));
@@ -88,6 +103,7 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     popup: { dockEnabled: true, dockOptions: { buttonEnabled: false, breakpoint: false, position: 'top-right' } },
     environment: { lighting: { date: new Date('2026-06-21T20:00:00Z'), directShadowsEnabled: true }, atmosphereEnabled: true } });
   window.planView = view;
+  view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
   const storm = { frames: 0, minutes: [], frame: null, timer: null, layer: null };
   const floodRenderer = field => ({ type: 'class-breaks', field, classBreakInfos: [
@@ -195,6 +211,15 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
   }
 
   (async () => {
+    if (!run) {
+      const response = await fetch('/api/prep-runs');
+      if (!response.ok) throw new Error('Choose a completed preparation run.');
+      const available = (await response.json()).runs;
+      const latest = available.find(r => r.model === model) || available[0];
+      if (!latest) throw new Error('No completed preparation runs are available.');
+      run = latest.run; model = latest.model;
+    }
+    folder = `/runs/${encodeURIComponent(run)}/${encodeURIComponent(model)}/`;
     const log = await fetch(folder + model + '.json').then(r => r.json());
     const name = log.model.includes('argon') ? 'Argon' : 'Flash';
     const rounds = log.rounds.filter(r => r.ledger);

@@ -102,6 +102,16 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             return self.wfile.write(body)
+        if path == "/prepViewer.js":
+            bundle = ROOT / "dist/prepViewer.js"
+            if not bundle.is_file():
+                return self.send_error(404, "Run npm run build for camera navigation")
+            body = bundle.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
         if path in ("/", "/index.html"):
             names = runs()
             if not names:
