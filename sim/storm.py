@@ -88,6 +88,8 @@ class Storm:
     description: str = ""
     stats: dict = field(default_factory=dict)
     alerts: list = field(default_factory=list)
+    # Live scenarios retain the exact forecast/assumption boundary for the UI and ledger.
+    provenance: dict = field(default_factory=dict)
 
     @property
     def n_frames(self) -> int:
@@ -172,6 +174,77 @@ def _load_alerts():
     except Exception:
         pass
     return out
+
+
+# ---------------------------------------------------------------- forecast_live
+def _forecast_live(dt=300.0):
+    """Build a six-hour forcing window from the tracked live forecast cache.
+
+    ``sim.forecast --refresh`` owns network access and writes the compact cache.  Loading a
+    storm is deliberately offline-safe: if the cache is missing or malformed the forecast
+    module creates a deterministic NOAA-observation persistence payload instead.
+    """
+    from sim.forecast import load_or_create
+
+    payload = load_or_create()
+    f = payload.get("forecast", {})
+    times = f.get("t", [])
+    if not times or not f.get("water_level_q"):
+        raise RuntimeError("forecast_live cache has no forecast points; run python -m sim.forecast --refresh")
+    # Forecast cache is six-minute data.  The simulator uses five-minute frames; interpolation
+    # keeps the water level and quantile paths tied to the same forecast issue.
+    from datetime import timezone
+    ts = [datetime.fromisoformat(x.replace("Z", "+00:00")).timestamp() for x in times]
+    t0 = ts[0]
+    dur = min(6 * 3600.0, ts[-1] - t0)
+    tq, _ = _frames(dur, dt)
+    qwater = np.asarray(f.get("water_level_q"), dtype=float)
+    qgust = np.asarray(f.get("gust_q") or f.get("wind_gust_q"), dtype=float)
+    qwind = np.asarray(f.get("wind_speed_q") or f.get("wind_q"), dtype=float)
+    qrain = np.asarray(f.get("qpf_mm", []), dtype=float)
+    def interp(a, k=4):
+        if a.size == 0:
+            return np.zeros(len(tq))
+        return np.interp(t0 + tq, ts, a[:, k] if a.ndim == 2 else a)
+    tide = interp(qwater, 4)
+    gust = np.maximum(interp(qgust, 4), interp(qwind, 4))
+    mean = np.maximum(interp(qwind, 4), gust / 1.45)
+    # QPF is hourly depth.  Convert to a rate and use a compact atmospheric-river floor only
+    # when the live forecast is too mild to exercise the simulator.
+    qpf = np.interp(t0 + tq, ts, qrain) if qrain.size else np.zeros(len(tq))
+    rain_forecast = np.maximum(qpf, 0.0)
+    rain_rate = rain_forecast * 60.0  # mm in a one-hour period -> mm/h
+    design = _design("forecast_live_design", 100, peak_gust=20.0, wind_dir=200.0,
+                     tide_kind="mhhw", dt=dt)
+    scale = np.maximum(rain_rate, design.rain_mm_h[:len(tq)])
+    assumed = {
+        "rain": {"forecast_mm_h": round(float(rain_rate.max()), 3),
+                 "assumed_mm_h": round(float(scale.max()), 3),
+                 "rule": "use live NWS QPF; where it is below Atlas 14 100-year nested event, use design rate"},
+        "wind": {"forecast_peak_gust_mps": round(float(gust.max()), 3),
+                 "assumed_peak_gust_mps": round(float(gust.max()), 3),
+                 "rule": "use live NWS gridpoint gust; no wind design floor"},
+        "tide": {"forecast_peak_navd88_m": round(float(tide.max()), 3), "rule": "use P50 tide path"},
+    }
+    start = datetime.fromtimestamp(t0, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+    s = Storm(name="forecast_live", title="Live NOAA/NWS forecast (six-hour simulation window)",
+              duration_s=float(dur), dt_frame_s=dt, t=tq, rain_mm_h=np.append(scale, 0.0),
+              gust_ms=gust, mean_ms=mean, wind_dir_deg=float(payload.get("wind_from_deg", 200.0)),
+              tide_m=tide, wind_dir_t=np.full(len(tq), float(payload.get("wind_from_deg", 200.0))),
+              start_local=start, antecedent_rain_mm=float(payload.get("antecedent_rain_mm", 0.0)),
+              description="Live forcing from NOAA CO-OPS 9414290 and NWS MTR gridpoint; design rain is used only below the documented floor.",
+              stats={"forecast_peak_tide_m_navd": round(float(tide.max()), 3),
+                     "forecast_peak_gust_ms": round(float(gust.max()), 3),
+                     "forecast_qpf_mm": round(float(rain_forecast.sum()), 3),
+                     "assumed_rain_mm": round(float(scale.sum() * dt / 3600.0), 3),
+                     "rain_scale_applied": bool(np.any(scale > rain_rate + 1e-6)),
+                     "forecast_model": payload.get("model", "NOAA persistence fallback")},
+              alerts=payload.get("alerts", []), sources=list(payload.get("sources", {}).values()),
+              provenance={"forecast_issued": payload.get("issued"), "fetched_at": payload.get("fetched_at"),
+                          "cache_status": payload.get("cache_status", "cached"),
+                          "sources": payload.get("sources", {}), "assumptions": assumed,
+                          "model": payload.get("model"), "fallback": payload.get("fallback", {})})
+    return s
 
 
 # ---------------------------------------------------------------- dec31_2022
@@ -362,7 +435,8 @@ def _atlas100(dt=300.0):
     return s
 
 
-SCENARIOS = {"dec31_2022": _dec31_2022, "elnino_ar_2026": _elnino, "atlas14_100yr": _atlas100}
+SCENARIOS = {"dec31_2022": _dec31_2022, "elnino_ar_2026": _elnino, "atlas14_100yr": _atlas100,
+             "forecast_live": _forecast_live}
 
 
 def load_storm(name: str = "elnino_ar_2026", dt_frame_s: float = 300.0) -> Storm:

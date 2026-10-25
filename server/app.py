@@ -10,7 +10,7 @@ API:     GET  /api/health
          POST /api/managed    {storm?, plan_code? | job_id?, mode?}                       -> {job_id}
          GET  /api/jobs, /api/jobs/{id}, /api/jobs/{id}/events (SSE; Last-Event-ID / ?since=)
          POST /api/jobs/{id}/approve {approved: bool, approver?, note?}  (planner approval gate)
-         GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts
+         GET  /api/runs, /api/runs/{id}, /api/leaderboard, /api/alerts, /api/forecast
 """
 from __future__ import annotations
 
@@ -284,6 +284,20 @@ def api_alerts(live: bool = True):
     if p.exists():
         return {"source": "data/raw/nws_alerts_now.json (cached)", "live_error": err, **json.loads(p.read_text())}
     return {"source": "none", "features": [], "live_error": err}
+
+
+@app.get("/api/forecast")
+def api_forecast(refresh: bool = False):
+    """Return the tracked live tide/wind/QPF forecast and its provenance.
+
+    The default is offline-safe and reads ``data/reference/storm/forecast_live.json``.  A
+    ``?refresh=true`` request explicitly performs the NOAA/NWS fetch before returning.
+    """
+    try:
+        from sim.forecast import load_or_create
+        return load_or_create(refresh=refresh)
+    except Exception as exc:
+        raise HTTPException(502, f"forecast unavailable: {type(exc).__name__}: {exc}") from exc
 
 
 @app.get("/data/{path:path}")
