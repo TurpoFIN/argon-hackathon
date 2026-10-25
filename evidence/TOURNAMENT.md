@@ -2,7 +2,7 @@
 
 Storm: `elnino_ar_2026`; budget: **$50M**; all entries use the locked cost planner.
 
-Argon avoids $197.1M more damage than the best measured no-AI rule at the same $50M budget.
+Argon avoids $186.1M more damage than the best no-AI rule (walls everywhere) at the same $50M budget.
 
 The greedy rule measures each candidate intervention as a standalone plan, ranks by damage avoided per sourced dollar, and fills the budget in that order. It is a normal `def apply(city)` plan scored by the same runner. The table is reported as measured, including a greedy win or tie if that is what this storm produces.
 The live deadline run measured 1 greedy candidate intervention(s) one at a time; this smaller menu is stated explicitly in the JSON.

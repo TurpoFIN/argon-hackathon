@@ -311,7 +311,8 @@ def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: in
                 "started_utc": _utc(), "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1],
                 "baseline_run_id": base_dir.name, "provenance": {"source": "lead final_runs.py supplied plans",
                 "plan_paths": SUPPLIED, "source_job_ids": SUPPLIED_JOB_IDS}, "entries": entries}
-    greedy_rec = next((e for e in entries if e.get("kind") == "greedy"), None)
+    rules = [e for e in entries if not str(e.get("model") or "").startswith("gemini") and e.get("status") == "scored" and e.get("name") != "No plan"]
+    greedy_rec = max(rules, key=lambda e: float(e.get("damage_avoided_usd") or 0), default=None)  # best no-AI rule
     argon_rec = next((e for e in entries if e.get("model") == "gemini-4-argon"), None)
     if argon_rec and greedy_rec and argon_rec.get("status") == greedy_rec.get("status") == "scored":
         delta = float(argon_rec.get("damage_avoided_usd") or 0) - float(greedy_rec.get("damage_avoided_usd") or 0)
@@ -383,7 +384,8 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
     evidence = {"schema_version": 1, "status": "done", "storm": storm, "budget_usd": budget, "started_utc": started,
                 "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1], "baseline_run_id": base_dir.name,
                 "entries": entries}
-    greedy_rec = next((e for e in entries if e.get("kind") == "greedy"), None)
+    rules = [e for e in entries if not str(e.get("model") or "").startswith("gemini") and e.get("status") == "scored" and e.get("name") != "No plan"]
+    greedy_rec = max(rules, key=lambda e: float(e.get("damage_avoided_usd") or 0), default=None)  # best no-AI rule
     argon_rec = next((e for e in entries if e.get("model") == "gemini-4-argon"), None)
     if argon_rec and greedy_rec and argon_rec.get("status") == greedy_rec.get("status") == "scored":
         delta = float(argon_rec.get("damage_avoided_usd") or 0) - float(greedy_rec.get("damage_avoided_usd") or 0)
