@@ -207,6 +207,14 @@ def _ledger_deltas(ledger: dict, baseline: dict | None) -> tuple[dict, float]:
             b = b.get("now", b.get("value", 0))
         avoided[cause] = round(_money(b) - _money(c), 2)
     total = _money((baseline or {}).get("total_usd")) - _money(ledger.get("total_usd"))
+    # Tournament entries round each cause independently while retaining a more
+    # precise total damage figure.  Keep the total authoritative and put that
+    # sub-cent/dollar rounding residue on the largest cause so action rows and
+    # the headline ledger always reconcile exactly.
+    residue = round(total - sum(avoided.values()), 2)
+    if avoided and abs(residue) >= 0.01:
+        key = max(avoided, key=lambda name: abs(avoided[name]))
+        avoided[key] = round(avoided[key] + residue, 2)
     return avoided, round(total, 2)
 
 
@@ -702,7 +710,7 @@ def render_eop_html(doc: dict) -> str:
     status = str(doc.get("dispatch_status", "unverified")).upper()
     status_class = "ok" if doc.get("eligible_for_dispatch") else "bad"
     return f'''<!doctype html><html><head><meta charset="utf-8"><title>StormSim SF Emergency Operations Plan</title>
-<style>body{{font:14px system-ui,sans-serif;color:#17202a;max-width:1400px;margin:32px auto;padding:0 24px}}h1{{margin-bottom:4px}}h2{{border-bottom:2px solid #d7e1ea;padding-bottom:5px;margin-top:28px}}.meta{{color:#52616b}}.brief{{background:#eef7ff;border-left:4px solid #2471a3;padding:14px;white-space:pre-wrap}}table{{border-collapse:collapse;width:100%;font-size:12px}}th,td{{border:1px solid #ccd6dd;padding:7px;vertical-align:top}}th{{background:#1f4057;color:white;text-align:left}}tr:nth-child(even){{background:#f6f8fa}}.warn{{color:#9b2c2c}}svg{{width:100%;max-height:520px;border:1px solid #ccd6dd}}.gantt-row{{display:flex;gap:8px;align-items:center;margin:3px 0;font:11px monospace}}.gantt-row>span{{width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.gantt-track{{position:relative;height:13px;flex:1;background:linear-gradient(90deg,#dcecf4 0 {landfall_pct:.2f}%,#f7e4c2 {landfall_pct:.2f}%);border:1px solid #bccbd4}}.gantt-track i{{position:absolute;top:0;height:100%;background:#2471a3;display:block}}@media print{{body{{margin:10mm;max-width:none}}h2{{break-after:avoid}}tr{{break-inside:avoid}}}}</style></head>
+<style>body{{font:14px system-ui,sans-serif;color:#17202a;max-width:1400px;margin:32px auto;padding:0 24px}}h1{{margin-bottom:4px}}h2{{border-bottom:2px solid #d7e1ea;padding-bottom:5px;margin-top:28px}}.meta{{color:#52616b}}.brief{{background:#eef7ff;border-left:4px solid #2471a3;padding:14px;white-space:pre-wrap}}table{{border-collapse:collapse;width:100%;font-size:12px}}th,td{{border:1px solid #ccd6dd;padding:7px;vertical-align:top}}th{{background:#1f4057;color:white;text-align:left}}tr:nth-child(even){{background:#f6f8fa}}.warn{{color:#9b2c2c}}svg{{width:100%;max-height:520px;border:1px solid #ccd6dd}}.gantt-row{{display:flex;gap:8px;align-items:center;margin:3px 0;font:11px monospace}}.gantt-row>span{{width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.gantt-track{{position:relative;height:13px;flex:1;background:linear-gradient(90deg,#dcecf4 0 {landfall_pct:.2f}%,#f7e4c2 {landfall_pct:.2f}%);border:1px solid #bccbd4}}.gantt-track i{{position:absolute;top:0;height:100%;background:#2471a3;display:block}}@media print{{body{{margin:10mm;max-width:none}}h2{{break-after:avoid}}tr{{break-inside:avoid}}}}</style>
 <style>.status{{padding:14px;margin:12px 0;font-weight:700;border:2px solid}}.status.ok{{background:#e9f8ef;color:#176b3a;border-color:#39a96b}}.status.bad{{background:#fff0f0;color:#9b1c1c;border-color:#d64545}}.summary-table td{{font-weight:600}}@media print{{.status{{break-inside:avoid}}}}</style></head>
 <body><h1>Emergency Operations Plan · StormSim SF</h1><p class="meta">{esc(doc.get('storm', {}).get('title',doc.get('storm', {}).get('name','')))} · Run {esc(doc.get('run_id'))}</p>
 <div class="status {status_class}">DISPATCH STATUS: {esc(status)}<br>{esc(doc.get('budget_check', {}).get('message'))}<br>{esc('; '.join(doc.get('baseline_check', {}).get('errors', [])) or 'Baseline sanity check passed.')}</div>
@@ -812,8 +820,14 @@ def _as_float(value):
 def _path_candidates(root: Path, value) -> list[Path]:
     if not isinstance(value, str) or not value:
         return []
-    clean = value.split("?", 1)[0].lstrip("/")
-    out = [root / clean, root / "runs" / clean.removeprefix("runs/")]
+    raw = value.split("?", 1)[0]
+    supplied = Path(raw)
+    # Tournament provenance is allowed to point at the lead checkout.  Keep
+    # absolute paths when they are available, then fall back to the tracked
+    # copy under evidence/ for a checkout on another machine.
+    out = [supplied] if supplied.is_absolute() else []
+    clean = raw.lstrip("/")
+    out += [root / clean, root / "runs" / clean.removeprefix("runs/")]
     return [p for p in out if p.is_file()]
 
 
@@ -846,14 +860,35 @@ def _resolve_tournament_winner(root: Path, tournament: dict) -> tuple[dict, Path
         if has_argon or winner_flag or plan_hash or run_id or plan_value:
             candidates.append((int(winner_flag) * 10_000_000 + int(has_argon) * 1_000_000 + score, rec))
     candidates.sort(key=lambda pair: pair[0], reverse=True)
+    provenance = tournament.get("provenance", {}) if isinstance(tournament, dict) else {}
+    provenance_paths = provenance.get("plan_paths", {}) if isinstance(provenance, dict) else {}
+    provenance_jobs = provenance.get("source_job_ids", {}) if isinstance(provenance, dict) else {}
     for _, rec in candidates:
+        model_blob = " ".join(str(rec.get(k, "")) for k in ("model", "planner", "agent", "name", "label", "winner")).lower()
         run_id = _first(rec, ("run_id", "best_run_id", "plan_run_id", "winner_run_id"))
+        source_job_id = _first(rec, ("source_job_id", "source_run_id"))
+        if "argon" in model_blob and not source_job_id:
+            source_job_id = provenance_jobs.get("Gemini 4 Argon") or provenance_jobs.get("argon")
         run_path = None
         if isinstance(run_id, str):
             run_id = Path(run_id.rstrip("/")).name
             if run_id in run_docs:
                 run_path = run_docs[run_id][0]
-        plan_path = next(iter(_path_candidates(root, _first(rec, ("plan_path", "best_plan_path", "plan_url", "best_plan_url", "path")))), None)
+        if run_path is None and source_job_id:
+            for candidate in (root / "runs" / str(source_job_id) / "result.json",
+                              root / "runs" / "evolve" / str(source_job_id) / "result.json"):
+                if candidate.is_file():
+                    run_path = candidate
+                    break
+        plan_value = _first(rec, ("plan_path", "best_plan_path", "plan_url", "best_plan_url", "path"))
+        # The real tournament stores supplied plans in provenance and gives the
+        # scored entry a different (not locally materialised) tournament run id.
+        # Resolve the Argon source explicitly before trying generic layouts.
+        if "argon" in model_blob and not plan_value:
+            plan_value = provenance_paths.get("argon") or provenance_paths.get("Argon")
+        plan_path = next(iter(_path_candidates(root, plan_value)), None)
+        if plan_path is None and "argon" in model_blob:
+            plan_path = next(iter(_path_candidates(root, "evidence/argon-winner/plan_code.py")), None)
         plan_code = _first(rec, ("plan_code", "code", "winner_plan_code"))
         if plan_path is None and isinstance(plan_code, str) and "def apply" in plan_code:
             plan_path = root / "runs" / "_jobs" / "tournament-argon.plan.py"
@@ -875,13 +910,44 @@ def _resolve_tournament_winner(root: Path, tournament: dict) -> tuple[dict, Path
                 if str(run_doc.get("plan_hash", "")) == str(expected_hash):
                     run_path = candidate_path
                     break
+        # A supplied plan's parent is itself a complete scored run artifact,
+        # even when the tournament assigned it a synthetic run_id.
+        if run_path is None and plan_path is not None and (plan_path.parent / "result.json").is_file():
+            run_path = plan_path.parent / "result.json"
         if plan_path is not None and run_path is not None:
+            if isinstance(run_path, Path) and run_path.is_file():
+                return rec, plan_path, json.loads(run_path.read_text())
             return rec, plan_path, run_docs[run_path.parent.name][1]
     raise FileNotFoundError("could not resolve a tournament Argon winner with both plan and result artifacts")
 
 
 def _resolve_tournament_baseline(root: Path, tournament: dict, storm: str, winner_run_id: str | None):
     """Find the no-plan artifact from either the tournament file or the baseline index."""
+    # Prefer the current tournament's embedded no-plan ledger.  A checkout may
+    # contain an older ``runs/_baselines.json`` (including the historical
+    # tens-of-billions mock), which must never override this tournament.
+    if isinstance(tournament, dict):
+        entries = tournament.get("entries") or []
+        for rec in entries:
+            if not isinstance(rec, dict):
+                continue
+            blob = " ".join(str(rec.get(k, "")) for k in ("model", "name", "label", "kind", "role", "scenario")).lower()
+            if not any(term in blob for term in ("baseline", "no-plan", "noplan", "no plan")):
+                continue
+            causes = rec.get("by_cause") or {}
+            by_cause = {}
+            for cause, value in causes.items():
+                if isinstance(value, dict):
+                    by_cause[cause] = value.get("now", value.get("baseline", value.get("value", 0)))
+                else:
+                    by_cause[cause] = value
+            total = rec.get("damage_usd")
+            if total is not None and by_cause:
+                return {"total_usd": total, "by_cause": by_cause}, {
+                    "run_id": rec.get("run_id") or tournament.get("baseline_run_id"),
+                    "mock": bool(tournament.get("mock_sim", False)), "storm": storm,
+                    "source": "evidence/tournament.json baseline entry",
+                }
     index = root / "runs" / "_baselines.json"
     if index.exists():
         try:
@@ -923,6 +989,8 @@ def precompute_from_tournament(path: str | Path, repo: str | Path = REPO) -> dic
     for key in ("storm", "budget_usd", "budget", "plan_hash", "run_id", "best_run_id", "damage_avoided_usd"):
         if key in record and key not in result:
             result[key] = record[key]
+    if isinstance(tournament, dict):
+        result.setdefault("budget_usd", tournament.get("budget_usd"))
     result.setdefault("run_id", _first(record, ("run_id", "best_run_id")))
     storm = result.get("storm") or tournament.get("storm", "elnino_ar_2026") if isinstance(tournament, dict) else "elnino_ar_2026"
     result["storm"] = storm
@@ -931,7 +999,9 @@ def precompute_from_tournament(path: str | Path, repo: str | Path = REPO) -> dic
         result["baseline_meta"] = baseline_meta
     job_id = re.sub(r"[^a-zA-Z0-9_-]+", "-", f"tournament-argon-{tournament_path.stem}").strip("-")
     run_id = result.get("run_id")
-    run_path = root / "runs" / str(run_id) if run_id and not Path(str(run_id)).is_absolute() else Path(str(run_id))
+    run_path = root / "runs" / str(run_id) if run_id and not Path(str(run_id)).is_absolute() else Path(str(run_id or ""))
+    if not (run_path / "plan_objects.json").exists() and plan_path.parent != run_path:
+        run_path = plan_path.parent
     objects = None
     if (run_path / "plan_objects.json").exists():
         payload = json.loads((run_path / "plan_objects.json").read_text())
