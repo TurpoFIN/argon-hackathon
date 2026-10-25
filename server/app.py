@@ -215,6 +215,8 @@ def api_approve(job_id: str, req: ApproveReq):
             from agent.action_plan import generate_eop_for_job
             eop = generate_eop_for_job(job_id, res, repo=REPO)
             rec.update({"eop_json": eop["eop_json"], "eop_html": eop["eop_html"]})
+            if not eop["document"].get("eligible_for_dispatch", False):
+                rec["eop_blocked"] = True
             res["approval"] = rec
             res["eop_path"] = eop["eop_json"]
             (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
