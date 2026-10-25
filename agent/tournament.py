@@ -246,6 +246,11 @@ def run_tournament(storm: str = STORM, budget: float = BUDGET, greedy_workers: i
     # rendering a video for every one-at-a-time greedy measurement; the normal
     # UI/run pipeline still renders videos when called outside this harness.
     runner.ensure_video = lambda run_dir, log=None: None
+    # Share the 80-core box with other agents: two candidates at eight Numba
+    # workers each avoid oversubscription while preserving deterministic output.
+    threads = os.environ.get("TOURNAMENT_NUMBA_THREADS", "8")
+    os.environ["NUMBA_NUM_THREADS"] = threads
+    os.environ["STORMSIM_WATER_THREADS"] = threads
     started = _utc()
     base_dir, base = runner.baseline(storm)
     entries = [_no_plan(base_dir, base, budget)]
