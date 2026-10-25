@@ -1,0 +1,379 @@
+{
+ "about": "StormSim SF people / life-safety parameters (owned by sim/people.py). Every value has a source; 'assumption' marks planning judgements. Retrieved 25.10.2026.",
+ "retrieved": "2026-10-25",
+ "params": {
+  "persons_per_household": {
+   "value": 2.3,
+   "unit": "persons/household",
+   "source": "US Census QuickFacts, San Francisco city/county, 'Persons per household, 2019-2023' (ACS 5-yr) ~2.3, https://www.census.gov/quickfacts/sanfranciscocitycalifornia",
+   "retrieved": "2026-10-25"
+  },
+  "gross_m2_per_unit": {
+   "value": 80.0,
+   "unit": "m2 gross floor area per dwelling unit",
+   "source": "Assumption: SF median apartment ~70 m2 net + ~15% circulation/common area; used only where unit counts are missing",
+   "retrieved": "2026-10-25"
+  },
+  "occupied_unit_fraction": {
+   "value": 0.9,
+   "unit": "-",
+   "source": "ACS 2019-2023 5-yr DP04, San Francisco: ~10% housing units vacant",
+   "retrieved": "2026-10-25"
+  },
+  "hotel_m2_per_guest": {
+   "value": 90.0,
+   "unit": "m2 gross hotel floor area per guest",
+   "source": "Calibrated: SF Travel ~34,000 hotel rooms citywide, majority downtown/SoMa; ~1.5 guests/room at ~80% occupancy; hotel gross area incl. lobbies, conference and F&B ~110 m2/room (Hazus RES4) -> ~90 m2 per guest",
+   "retrieved": "2026-10-25"
+  },
+  "worker_m2": {
+   "value": {
+    "COM1": 60,
+    "COM2": 90,
+    "COM3": 50,
+    "COM4": 25,
+    "COM5": 30,
+    "COM6": 15,
+    "COM7": 30,
+    "COM8": 20,
+    "COM9": 15,
+    "COM10": 0,
+    "IND1": 90,
+    "IND2": 90,
+    "IND3": 90,
+    "IND4": 90,
+    "IND5": 70,
+    "IND6": 90,
+    "GOV1": 30,
+    "GOV2": 30,
+    "EDU1": 10,
+    "EDU2": 15,
+    "REL1": 40,
+    "AGR1": 200
+   },
+   "unit": "m2 gross floor area per daytime occupant (workers + students/visitors)",
+   "source": "After US EIA CBECS 2018 floorspace per worker by principal building activity (office ~ 30-40 m2/worker nationally; dense SF downtown lower) and Hazus 6.1 occupancy classes; assumption for SF densities",
+   "retrieved": "2026-10-25"
+  },
+  "home_fraction_by_hour": {
+   "value": [
+    0.97,
+    0.98,
+    0.98,
+    0.98,
+    0.97,
+    0.95,
+    0.9,
+    0.8,
+    0.65,
+    0.55,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.52,
+    0.6,
+    0.7,
+    0.8,
+    0.85,
+    0.9,
+    0.93,
+    0.95,
+    0.96
+   ],
+   "unit": "share of residents at home, local hour 0-23",
+   "source": "After FEMA Hazus 6.1 Earthquake Technical Manual ch. 13 population distribution (2 AM ~99% residents home, 2 PM ~50-75%, 5 PM commute); assumption interpolated hourly",
+   "retrieved": "2026-10-25"
+  },
+  "work_fraction_by_hour": {
+   "value": [
+    0.02,
+    0.02,
+    0.02,
+    0.02,
+    0.02,
+    0.03,
+    0.08,
+    0.25,
+    0.6,
+    0.85,
+    0.9,
+    0.9,
+    0.85,
+    0.9,
+    0.9,
+    0.85,
+    0.7,
+    0.45,
+    0.25,
+    0.15,
+    0.1,
+    0.06,
+    0.04,
+    0.03
+   ],
+   "unit": "share of daytime occupants present, local hour 0-23",
+   "source": "After FEMA Hazus 6.1 Earthquake Technical Manual ch. 13 (2 PM ~ commercial/industrial fully occupied, 2 AM ~ 2%); assumption interpolated hourly",
+   "retrieved": "2026-10-25"
+  },
+  "holiday_work_factor": {
+   "value": {
+    "12-24": 0.5,
+    "12-25": 0.15,
+    "12-31": 0.5,
+    "01-01": 0.15
+   },
+   "unit": "multiplier on workers present on these dates (MM-DD)",
+   "source": "Assumption: Christmas Eve / New Year's Eve half staffing, holidays skeleton staffing",
+   "retrieved": "2026-10-25"
+  },
+  "no_car_household_share_city": {
+   "value": 0.31,
+   "unit": "-",
+   "source": "ACS 5-yr B25044 'Tenure by vehicles available', San Francisco County: ~31% of households have no vehicle (SFMTA cites ~30%); tract variation scaled by DataSF cne3-h93g poverty share (assumption)",
+   "retrieved": "2026-10-25"
+  },
+  "group_size_target": {
+   "value": 25,
+   "unit": "persons per agent",
+   "source": "Model resolution choice (agents are household/building groups of ~10-50 people)",
+   "retrieved": "2026-10-25"
+  },
+  "max_agents": {
+   "value": 16000,
+   "unit": "agents",
+   "source": "Model resolution choice (web playback budget)",
+   "retrieved": "2026-10-25"
+  },
+  "walk_speed_ms": {
+   "value": 1.2,
+   "unit": "m/s",
+   "source": "ITE / FHWA design walking speed 4 ft/s (1.2 m/s); MUTCD 2009 sec. 4E.06 uses 3.5 ft/s for signal timing",
+   "retrieved": "2026-10-25"
+  },
+  "walk_speed_vulnerable_ms": {
+   "value": 0.9,
+   "unit": "m/s",
+   "source": "MUTCD 2009 sec. 4E.06: 3.0 ft/s (0.91 m/s) for slower pedestrians (elderly, disabled)",
+   "retrieved": "2026-10-25"
+  },
+  "walk_depth_limit_m": {
+   "value": 0.5,
+   "unit": "m",
+   "source": "Abt et al. 1989 (Water Resour. Bull. 25(4)) human stability in flood flows; Defra/EA FD2321 Fig. 3.2: d=0.5 m at low velocity is 'danger for most'; Bernardini et al. 2017 walking speed in floodwater decreases ~linearly with depth",
+   "retrieved": "2026-10-25"
+  },
+  "drive_speed_ms": {
+   "value": 6.7,
+   "unit": "m/s",
+   "source": "Assumption: ~24 km/h urban storm traffic (SFMTA reports Muni/arterial speeds ~13-25 km/h)",
+   "retrieved": "2026-10-25"
+  },
+  "car_depth_limit_m": {
+   "value": 0.3,
+   "unit": "m",
+   "source": "NWS 'Turn Around Don't Drown': 12 inches (0.3 m) of moving water can float most cars; 6 in reaches the bottom of most cars, https://www.weather.gov/safety/flood-turn-around-dont-drown",
+   "retrieved": "2026-10-25"
+  },
+  "exposed_depth_m": {
+   "value": 0.05,
+   "unit": "m",
+   "source": "Assumption: depth below which a person is not counted as standing in flood water",
+   "retrieved": "2026-10-25"
+  },
+  "hr_velocity_const": {
+   "value": 0.5,
+   "unit": "m/s",
+   "source": "Defra/EA FD2321/TR1 (2006) sec. 3.5: HR = d (v + 0.5) + DF, https://assets.publishing.service.gov.uk/media/602bbc768fa8f50383c41f80/Flood_risks_to_people_-_Phase_2_The_flood_risks_to_people_methodology_technical_report.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "debris_factor_urban": {
+   "value": [
+    [
+     0.25,
+     0.0
+    ],
+    [
+     0.75,
+     1.0
+    ],
+    [
+     99,
+     1.0
+    ]
+   ],
+   "unit": "[depth upper bound m, DF]",
+   "source": "FD2321/TR1 Table 3.1 (urban): 0-0.25 m DF 0; 0.25-0.75 m DF 1; >0.75 m or v>2 DF 1; EA/HR Wallingford Supplementary Note on Flood Hazard Ratings, https://assets.publishing.service.gov.uk/media/602d04a98fa8f5037d371a08/FLOOD_HAZARD_RATINGS_AND_THRESHOLDS_explanatory_note.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "hr_class_bounds": {
+   "value": [
+    0.75,
+    1.25,
+    2.0
+   ],
+   "unit": "HR",
+   "source": "EA/HR Wallingford Supplementary Note (FD2320 thresholds): <0.75 low/caution, 0.75-1.25 danger for some, 1.25-2.0 danger for most, >2.0 danger for all",
+   "retrieved": "2026-10-25"
+  },
+  "av_speed_of_onset": {
+   "value": 3,
+   "unit": "score 1-3",
+   "source": "FD2321/TR1 Table 4.4: rapid flooding = 3 (urban pluvial / sewer surcharge)",
+   "retrieved": "2026-10-25"
+  },
+  "av_nature_of_area": {
+   "value": {
+    "multi_storey": 1,
+    "typical": 2,
+    "high_risk": 3
+   },
+   "unit": "score 1-3",
+   "source": "FD2321/TR1 Table 4.4: multi-storey apartments 1; typical residential/commercial/industrial 2; bungalows, busy roads, parks, single-storey schools 3 (outdoors/moving people use 3)",
+   "retrieved": "2026-10-25"
+  },
+  "av_warning_formula": {
+   "value": "3 - P1*(P2+P3)",
+   "unit": "score 1-3",
+   "source": "FD2321/TR1 Table 4.4: warning score = 3 - P1 (P2 + P3); P1 warning coverage, P2 warning-time target met, P3 effective action. Here P1 = 1 if an alert covers the person, P2 = min(1, lead time / warning_target_s), P3 = 0.5 (assumption)",
+   "retrieved": "2026-10-25"
+  },
+  "warning_target_s": {
+   "value": 7200,
+   "unit": "s",
+   "source": "EA flood warning service target: 2 h lead time before flooding (FD2321 context)",
+   "retrieved": "2026-10-25"
+  },
+  "baseline_warning_P": {
+   "value": {
+    "P1": 0.5,
+    "P2": 0.5,
+    "P3": 0.5
+   },
+   "unit": "-",
+   "source": "Assumption for the no-plan case: generic NWS Flood Watch/Warning reaches ~half of residents with partial lead time (score 2.5)",
+   "retrieved": "2026-10-25"
+  },
+  "injury_formula": {
+   "value": "Ninj = 2 * Nz * HR * AV/100 * PV ; Nf = 2 * Ninj * HR/100",
+   "unit": "-",
+   "source": "FD2321/TR1 sec. 6 worked example (Gowdall): Ninj = 2 x Nz x HR x AV/100 x PV, Nf = 2 x Ninj x HR/100; PV = %long-term ill + %aged 75+ (sec. 5.4). Nz = people at ground/basement level in the hazard zone. Peak HR per person over the event.",
+   "retrieved": "2026-10-25"
+  },
+  "pv_source_fields": {
+   "value": [
+    "disability",
+    "elderly"
+   ],
+   "unit": "-",
+   "source": "DataSF San Francisco Flood Health Vulnerability (cne3-h93g), block-group shares of disabled and elderly residents (proxy for FD2321 long-term ill + aged 75+), https://data.sf.gov/resource/cne3-h93g.json",
+   "retrieved": "2026-10-25"
+  },
+  "vsl_usd": {
+   "value": 13700000,
+   "unit": "USD (2024$)",
+   "source": "US DOT Departmental Guidance on Valuation of a Statistical Life in Economic Analysis, 2024 update: VSL $13.7M (2024 dollars) as reported (UMich MJE op-ed May 2025 citing USDOT 2024); prior update $13.2M (2023$) per DHS/USCG VSL memo 9.5.2024 https://www.dco.uscg.mil/Portals/9/VSL%202024%209May24%20FINAL%20for%20DIST.pdf ; DOT page https://www.transportation.gov/office-policy/transportation-policy/revised-departmental-guidance-on-valuation-of-a-statistical-life-in-economic-analysis",
+   "retrieved": "2026-10-25"
+  },
+  "injury_vsl_fraction": {
+   "value": 0.047,
+   "unit": "fraction of VSL per injury",
+   "source": "US DOT VSL guidance, AIS/MAIS injury relative values: MAIS 2 (moderate) = 0.047 of VSL (MAIS1 0.003, MAIS3 0.105); flood injuries treated as moderate",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_hr_threshold": {
+   "value": 0.75,
+   "unit": "HR",
+   "source": "FD2321 'danger for some' threshold: people at or above need assisted evacuation/rescue",
+   "retrieved": "2026-10-25"
+  },
+  "shelter_flood_depth_m": {
+   "value": 0.3,
+   "unit": "m",
+   "source": "Assumption: shelter is compromised when water against its walls exceeds its typical first-floor elevation (~0.3 m, buildings.json first_floor_m)",
+   "retrieved": "2026-10-25"
+  },
+  "tree_block_height_m": {
+   "value": 6.0,
+   "unit": "m",
+   "source": "Assumption: a failed street tree taller than ~6 m spans a lane (SF residential curb-to-curb 12 m, Better Streets Plan)",
+   "retrieved": "2026-10-25"
+  },
+  "vertical_evac_delay_s": {
+   "value": 1800,
+   "unit": "s",
+   "source": "Assumption: un-warned ground-floor occupants of multi-storey buildings move upstairs ~30 min after water enters (SF DEM / FEMA flood guidance 'go to higher floors'); warned occupants move before water arrives; vulnerable (elderly/disabled) and single-storey occupants cannot",
+   "retrieved": "2026-10-25"
+  },
+  "building_depth_quantile": {
+   "value": 0.75,
+   "unit": "-",
+   "source": "Model choice: depth against a building = 75th percentile of street cells within 6 m of its walls (robust to one deep corner)",
+   "retrieved": "2026-10-25"
+  },
+  "census_blocks": {
+   "value": "data/reference/people_census_blocks.json",
+   "unit": "-",
+   "source": "US Census 2020 P.L. 94-171 block POP100 (TIGERweb tigerWMS_Census2020 layer 10); residents per building = block population x share of the block's residential floor area (x fraction of block inside tile)",
+   "retrieved": "2026-10-25"
+  },
+  "velocity_cap_ms": {
+   "value": 3.0,
+   "unit": "m/s",
+   "source": "Model limit for Manning-estimated street flow speed (urban overland flow rarely exceeds ~3 m/s; Russo et al. 2013, Nat. Hazards Earth Syst. Sci. 13, pedestrian stability in urban floods)",
+   "retrieved": "2026-10-25"
+  },
+  "slope_cap": {
+   "value": 0.05,
+   "unit": "m/m",
+   "source": "Model limit on water-surface slope used in the Manning velocity estimate (avoids wet/dry-edge artefacts)",
+   "retrieved": "2026-10-25"
+  },
+  "manning_formula": {
+   "value": "v = d^(2/3) S^(1/2) / n",
+   "unit": "-",
+   "source": "Manning (1891) / Chow 1959 Open-Channel Hydraulics; n from data/grid city.npz (Chow 1959 / HEC-RAS 2D manual)",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_detour_factor": {
+   "value": 1.3,
+   "unit": "-",
+   "source": "Assumption: street-network distance ~1.3x straight-line (typical urban circuity factor, Ballou et al. 2002, Transportation Research A 36)",
+   "retrieved": "2026-10-25"
+  },
+  "walk_min_speed_factor": {
+   "value": 0.2,
+   "unit": "-",
+   "source": "Assumption: wading speed floor (20% of dry walking) below the 0.5 m stop depth",
+   "retrieved": "2026-10-25"
+  },
+  "worker_vulnerable_factor": {
+   "value": 0.5,
+   "unit": "-",
+   "source": "Assumption: elderly/disabled share among daytime workers/visitors is ~half the residential share (working-age population)",
+   "retrieved": "2026-10-25"
+  },
+  "worker_nocar_factor": {
+   "value": 1.5,
+   "unit": "-",
+   "source": "Assumption: SF downtown commuters mostly arrive by transit (SFMTA/SFCTA: ~50-60% of downtown work trips by transit), so no-car share is higher than residents'",
+   "retrieved": "2026-10-25"
+  },
+  "sffd_station_1_xy": {
+   "value": [
+    1859.0,
+    2517.0
+   ],
+   "unit": "local m",
+   "source": "SFFD Station 1, 935 Folsom St (37.7800 N, 122.4040 W) projected to the grid; staging of baseline SFFD rescue units",
+   "retrieved": "2026-10-25"
+  },
+  "warning_P3": {
+   "value": 0.5,
+   "unit": "-",
+   "source": "FD2321/TR1 Table 4.4 P3 (effective action target met): assumption 50% of warned people act effectively",
+   "retrieved": "2026-10-25"
+  }
+ }
+}

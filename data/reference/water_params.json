@@ -1,0 +1,186 @@
+{
+ "_about": "Parameters of sim/water.py (surface water + combined sewer). Every value has a source; 'calibrated' = tuned on the 31.12.2022 replay vs the SFPUC 100-yr map and 311 reports (see runs/dev_water/). Loaded by sim.water.default_params().",
+ "retrieved": "2026-10-25",
+ "params": {
+  "alpha": {
+   "value": 0.7,
+   "unit": "-",
+   "source": "Bates, Horritt & Fewtrell 2010, J. Hydrol. 387:33-45, eq. 14: CFL coefficient 0.2-0.7 for the local-inertial scheme"
+  },
+  "theta": {
+   "value": 0.8,
+   "unit": "-",
+   "source": "de Almeida, Bates, Freer & Souvignet 2012, Water Resour. Res. 48 W05528: theta 0.7-0.9 suppresses oscillations"
+  },
+  "hmin": {
+   "value": 0.001,
+   "unit": "m",
+   "source": "LISFLOOD-FP user manual v8 (Univ. Bristol): depth threshold 1e-3 m for wet/dry faces"
+  },
+  "fr_max": {
+   "value": 3.0,
+   "unit": "-",
+   "source": "Froude limiter as in LISFLOOD-FP / de Almeida & Bates 2013 (WRR 49): caps spurious supercritical fluxes; 3 allows real supercritical flow on SF's 10-30 % grades"
+  },
+  "dt_max": {
+   "value": 5.0,
+   "unit": "s",
+   "source": "numerical choice (upper bound on the adaptive step, keeps rain/inlet coupling explicit-stable)"
+  },
+  "flood_thr": {
+   "value": 0.1,
+   "unit": "m",
+   "source": "FEMA / Hazus: water above ~10 cm on streets impedes traffic and starts entering doorways; used for flood_duration_s"
+  },
+  "edge_freeboard_m": {
+   "value": 0.5,
+   "unit": "m",
+   "source": "model boundary choice: tile-edge free outflow only where ground is > 0.5 m above the storm's peak tide (low edge cells continue as Bay/shore outside the tile)"
+  },
+  "intertidal_z": {
+   "value": 0.5,
+   "unit": "m NAVD88",
+   "source": "NOAA CO-OPS 9414290 datums: MLLW ~0.0 m NAVD88, MHHW 1.798 m; open cells below MLLW+0.5 touching the Bay are water (hydro-flattened lidar)"
+  },
+  "i_design_mm_h": {
+   "value": 20.0,
+   "unit": "mm/h",
+   "source": "calibrated equivalent conveyance intensity; SFPUC Sewer System Improvement Program level of service = 5-year 3-hour design storm (SFPUC SSIP Levels of Service, 2016); NOAA Atlas 14 at 37.7765N 122.405W: 5-yr 60-min depth 18 mm, 10-yr 21 mm (data/reference/storm/noaa_atlas14_pfds_sf_37.7765_-122.405_mm.csv)"
+  },
+  "c_imp": {
+   "value": 0.9,
+   "unit": "-",
+   "source": "Rational method runoff coefficient, paved/roof 0.7-0.95: ASCE/WEF MOP 77 Design and Construction of Urban Stormwater Management Systems (1992) Table 5.4"
+  },
+  "c_perv": {
+   "value": 0.2,
+   "unit": "-",
+   "source": "Rational method, lawns/parks 0.1-0.35: ASCE/WEF MOP 77 (1992) Table 5.4"
+  },
+  "store_mm": {
+   "value": 6.0,
+   "unit": "mm over basin area",
+   "source": "calibrated on the 31.12.2022 replay: in-pipe + transport/storage-box volume as an equivalent depth over the sub-basin (SFPUC combined system with transport/storage boxes, SFPUC Sewer System Master Plan 2010; citywide volume not verified here)"
+  },
+  "pipe_depth_m": {
+   "value": 2.0,
+   "unit": "m",
+   "source": "typical combined-sewer cover + diameter below grate in SF (SFPUC Subdivision Regulations / standard catch-basin details, 1.5-3 m)"
+  },
+  "a_manhole_m2": {
+   "value": 1.0,
+   "unit": "m2 per inlet",
+   "source": "catch-basin / manhole shaft plan area ~0.6-1.2 m2 (SF DPW standard plans); free surface area once the sewer is surcharged"
+  },
+  "v0_frac": {
+   "value": 0.15,
+   "unit": "-",
+   "source": "dry-weather flow occupies ~15 % of combined-sewer capacity: SFPUC ~80 Mgal/d dry vs ~500 Mgal/d wet-weather (sfpuc.gov 'Our Sewer System')"
+  },
+  "basin_km2": {
+   "value": 0.6,
+   "unit": "km2",
+   "source": "model discretisation: SF's 8 urban watersheds are subdivided into ~0.5-1 km2 sub-sewersheds in the SFPUC Sewer System Master Plan hydraulic model"
+  },
+  "cw": {
+   "value": 1.66,
+   "unit": "SI",
+   "source": "FHWA HEC-22 Urban Drainage Design Manual 3rd ed. (2009) eq. 4-26: grate in sag weir coefficient 1.66 (SI)"
+  },
+  "perim_m": {
+   "value": 3.0,
+   "unit": "m",
+   "source": "perimeter of a ~0.6 x 0.9 m SF catch-basin grate (curb side excluded): HEC-22 sag-inlet weir length"
+  },
+  "co": {
+   "value": 0.67,
+   "unit": "-",
+   "source": "FHWA HEC-22 (2009) eq. 4-27: orifice coefficient 0.67"
+  },
+  "a_open_m2": {
+   "value": 0.3,
+   "unit": "m2",
+   "source": "clear opening of a ~0.6 x 0.9 m grate (~55 % open), HEC-22 chart 9/10"
+  },
+  "inlet_mult": {
+   "value": 1.0,
+   "unit": "-",
+   "source": "inlet capacity per data/grid/inlets.json (FHWA HEC-22 interception, sim/prep.py)"
+  },
+  "clog_max": {
+   "value": 0.5,
+   "unit": "fraction of capacity lost",
+   "source": "FHWA HEC-22 (2009) inlets in sag: design practice assumes ~50 % grate clogging; SFPUC Adopt-a-Drain: leaves clog drains in storms"
+  },
+  "clog_tree_radius_m": {
+   "value": 15.0,
+   "unit": "m",
+   "source": "model assumption: street trees within ~15 m (about 2 tree spacings) shed leaves into an inlet"
+  },
+  "clog_trees_full": {
+   "value": 3.0,
+   "unit": "trees",
+   "source": "model assumption: 3+ nearby street trees give the full HEC-22 50 % clogging; fewer scale linearly; drain clearing (plan) restores 1.0"
+  },
+  "psi_m": {
+   "value": 0.11,
+   "unit": "m",
+   "source": "Green-Ampt wetting-front suction, sandy loam 110 mm: Rawls, Brakensiek & Miller 1983, J. Hydraul. Eng. 109(1) Table 1"
+  },
+  "porosity": {
+   "value": 0.43,
+   "unit": "-",
+   "source": "effective porosity sandy loam/loam 0.41-0.43: Rawls et al. 1983 Table 1"
+  },
+  "root_m": {
+   "value": 0.6,
+   "unit": "m",
+   "source": "street-tree root plate depth ~0.4-1 m (most roots in the top 0.6 m): Dupuy, Fourcaud & Stokes 2007 review of root anchorage, Plant Soil"
+  },
+  "pit_root_m": {
+   "value": 0.9,
+   "unit": "m",
+   "source": "street tree basin soil depth ~3 ft (SF Better Streets Plan tree basin guidance; model assumption)"
+  },
+  "pit_frac": {
+   "value": 0.1,
+   "unit": "-",
+   "source": "tree basin ~3x3 to 4x4 ft (~1-1.5 m2) of a 16 m2 cell (SF Better Streets Plan street tree guidance)"
+  },
+  "pit_ksat_mm_h": {
+   "value": 15.0,
+   "unit": "mm/h",
+   "source": "sandy loam Ks ~11-30 mm/h (Rawls et al. 1983) reduced for urban compaction (Pitt, Chen, Clark, Swenson & Ong 2008, J. Irrig. Drain. Eng. 134(5))"
+  },
+  "sf_land_km2": {
+   "value": 121.4,
+   "unit": "km2",
+   "source": "US Census Bureau 2020 Gazetteer: San Francisco city land area 46.9 mi2"
+  },
+  "dry_mgd": {
+   "value": 80.0,
+   "unit": "Mgal/day",
+   "source": "SFPUC 'Our Sewer System' (sfpuc.gov): combined system treats ~80 Mgal/day in dry weather"
+  },
+  "wet_mgd": {
+   "value": 500.0,
+   "unit": "Mgal/day",
+   "source": "SFPUC: up to ~500 Mgal/day treated citywide in wet weather (sfpuc.gov sewer system overview)"
+  },
+  "court_max_m2": {
+   "value": 5000.0,
+   "unit": "m2",
+   "source": "model assumption: SF block interiors / rear-yard open space enclosed by buildings (25x100 ft lots, mid-block open space up to ~0.5 ha) drain via private area drains to the building sewer lateral (SF Plumbing Code: yard drains connect to the building sewer)"
+  },
+  "ext_upstream_m": {
+   "value": 0.0,
+   "unit": "m",
+   "source": "calibrated: length of upstream sewershed beyond tile edges where ground falls into the tile (Mission Creek / Channel watershed drains from Twin Peaks & Bernal Heights, ~2-3 km to the divide; SFPUC Urban Watershed Assessment)"
+  },
+  "c_ext": {
+   "value": 0.7,
+   "unit": "-",
+   "source": "Rational method, residential multi-unit 0.6-0.75: ASCE/WEF MOP 77 (1992) Table 5.4"
+  }
+ }
+}

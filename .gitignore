@@ -13,7 +13,6 @@ data/raw/
 node_modules/
 .venv/
 runs/
-data/grid/*.npz
 data/grid/wind_*
 __pycache__/
 web/dist/

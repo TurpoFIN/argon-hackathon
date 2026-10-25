@@ -1,0 +1,803 @@
+{
+ "items": {
+  "fema_pump_trash_6in_diesel_hr": {
+   "usd": 56.67,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "6\" Diesel Trash Pump Trailer Mount, 6 In, to 23 HP, up to 59,400 GPH (~990 gpm)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8465)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8465 | Pump, Trash Pump | 6\" Diesel Trash Pump Trailer Mount, 6 In, to 23 HP, up to 59,400 GPH (~990 gpm) | hour | $56.67",
+   "derived": false
+  },
+  "fema_pump_trash_4in_diesel_hr": {
+   "usd": 27.38,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4\" Diesel Trash Pump, to 15 HP, up to 37,200 GPH (~620 gpm)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8466)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8466 | Pump, Trash Pump | 4\" Diesel Trash Pump, to 15 HP, up to 37,200 GPH (~620 gpm) | hour | $27.38",
+   "derived": false
+  },
+  "fema_pump_trash_3in_diesel_hr": {
+   "usd": 13.06,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "3\" Diesel Trash Pump, to 5 HP, up to 18,000 GPH (300 gpm)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8467)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8467 | Pump, Trash Pump | 3\" Diesel Trash Pump, to 5 HP, up to 18,000 GPH (300 gpm) | hour | $13.06",
+   "derived": false
+  },
+  "fema_pump_trash_2in_diesel_hr": {
+   "usd": 9.31,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "2\" Diesel Trash Pump, to 5 HP, up to 12,000 GPH (200 gpm)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8468)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8468 | Pump, Trash Pump | 2\" Diesel Trash Pump, to 5 HP, up to 12,000 GPH (200 gpm) | hour | $9.31",
+   "derived": false
+  },
+  "fema_pump_centrifugal_4in_hr": {
+   "usd": 25.62,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "40M gasoline, 4 In, to 60 HP, 40,000 gph (~667 gpm), hoses not included",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8476)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8476 | Pump, Centrifugal | 40M gasoline, 4 In, to 60 HP, 40,000 gph (~667 gpm), hoses not included | hour | $25.62",
+   "derived": false
+  },
+  "fema_pump_centrifugal_6in_hr": {
+   "usd": 33.54,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "90M gasoline, 6 In, to 95 HP, 90,000 gph (1,500 gpm), hoses not included",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8477)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8477 | Pump, Centrifugal | 90M gasoline, 6 In, to 95 HP, 90,000 gph (1,500 gpm), hoses not included | hour | $33.54",
+   "derived": false
+  },
+  "fema_pump_centrifugal_12in_hr": {
+   "usd": 34.82,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "350M diesel, 12 In, to 140 HP, 350,000 gph (~5,833 gpm), hoses not included",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8478)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8478 | Pump, Centrifugal | 350M diesel, 12 In, to 140 HP, 350,000 gph (~5,833 gpm), hoses not included | hour | $34.82",
+   "derived": false
+  },
+  "fema_pump_submersible_6in_hr": {
+   "usd": 18.43,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "6 In, three phase 35 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8475)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8475 | Pump, Electric Submersible | 6 In, three phase 35 HP | hour | $18.43",
+   "derived": false
+  },
+  "fema_pump_submersible_4in_hr": {
+   "usd": 8.2,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4 In, three phase 25 HP, hoses not included",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8474)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8474 | Pump, Electric Submersible | 4 In, three phase 25 HP, hoses not included | hour | $8.2",
+   "derived": false
+  },
+  "fema_pump_stormwater_custom_hr": {
+   "usd": 1743.1,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Caterpillar/Lufkin/Fairbanks-Morse, 1740 CFS, 5400 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8469)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8469 | Pump - Stormwater Custom | Caterpillar/Lufkin/Fairbanks-Morse, 1740 CFS, 5400 HP | hour | $1743.1",
+   "derived": false
+  },
+  "fema_generator_5_5kw_hr": {
+   "usd": 6.78,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "5.5 kW gas",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8310)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8310 | Generator | 5.5 kW gas | hour | $6.78",
+   "derived": false
+  },
+  "fema_generator_17kw_hr": {
+   "usd": 8.12,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "17 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8311)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8311 | Generator | 17 kW diesel | hour | $8.12",
+   "derived": false
+  },
+  "fema_generator_40kw_hr": {
+   "usd": 41.55,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "40 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8313)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8313 | Generator | 40 kW diesel | hour | $41.55",
+   "derived": false
+  },
+  "fema_generator_100kw_hr": {
+   "usd": 62.08,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "100 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8315)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8315 | Generator | 100 kW diesel | hour | $62.08",
+   "derived": false
+  },
+  "fema_generator_150kw_hr": {
+   "usd": 70.76,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "150 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8316)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8316 | Generator | 150 kW diesel | hour | $70.76",
+   "derived": false
+  },
+  "fema_generator_350kw_hr": {
+   "usd": 172.46,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "350 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8319)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8319 | Generator | 350 kW diesel | hour | $172.46",
+   "derived": false
+  },
+  "fema_generator_400kw_hr": {
+   "usd": 219.49,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "400 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8320)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8320 | Generator | 400 kW diesel | hour | $219.49",
+   "derived": false
+  },
+  "fema_generator_500kw_hr": {
+   "usd": 392.87,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "500 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8321)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8321 | Generator | 500 kW diesel | hour | $392.87",
+   "derived": false
+  },
+  "fema_generator_1000kw_hr": {
+   "usd": 748.86,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "1000 kW diesel",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8325)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8325 | Generator | 1000 kW diesel | hour | $748.86",
+   "derived": false
+  },
+  "fema_truck_dump_7cy_hr": {
+   "usd": 55.28,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "7-CY, 330 HP (2026 Freightliner M2 106)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8720)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8720 | Truck, Dump | 7-CY, 330 HP (2026 Freightliner M2 106) | hour | $55.28",
+   "derived": false
+  },
+  "fema_truck_dump_12cy_hr": {
+   "usd": 120.74,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "12-CY, 350 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8722)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8722 | Truck, Dump | 12-CY, 350 HP | hour | $120.74",
+   "derived": false
+  },
+  "fema_truck_dump_18cy_hr": {
+   "usd": 147.99,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "18 CY, 525 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8724)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8724 | Truck, Dump | 18 CY, 525 HP | hour | $147.99",
+   "derived": false
+  },
+  "fema_truck_flatbed_25kgvw_dsl_hr": {
+   "usd": 33.69,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4X2 25K GVW diesel, 200 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8701.1)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8701.1 | Truck, Flatbed | 4X2 25K GVW diesel, 200 HP | hour | $33.69",
+   "derived": false
+  },
+  "fema_truck_flatbed_15kgvw_dsl_hr": {
+   "usd": 33.37,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4X2 15K GVW diesel, 200 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8700)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8700 | Truck, Flatbed | 4X2 15K GVW diesel, 200 HP | hour | $33.37",
+   "derived": false
+  },
+  "fema_truck_pickup_3_4t_crew_hr": {
+   "usd": 18.71,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4X4 3/4 ton crew cab gas, 285 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8807)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8807 | Truck, Pickup | 4X4 3/4 ton crew cab gas, 285 HP | hour | $18.71",
+   "derived": false
+  },
+  "fema_truck_pickup_1t_crew_dsl_hr": {
+   "usd": 31.54,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "4X4 1 ton crew diesel, 340 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8808)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8808 | Truck, Pickup | 4X4 1 ton crew diesel, 340 HP | hour | $31.54",
+   "derived": false
+  },
+  "fema_truck_pickup_per_mile": {
+   "usd": 0.7,
+   "unit": "USD per mile",
+   "year": 2025,
+   "spec": "Any size pickup, per mile",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8800)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8800 | Truck, Pickup | Any size pickup, per mile | mile | $0.7",
+   "derived": false
+  },
+  "fema_truck_tow_rollback_hr": {
+   "usd": 51.83,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Freightliner M2 106 rollback/flatbed tow, winch 15,000 lb, GVW 33,000 lb, 350 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8736)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8736 | Truck, Tow | Freightliner M2 106 rollback/flatbed tow, winch 15,000 lb, GVW 33,000 lb, 350 HP | hour | $51.83",
+   "derived": false
+  },
+  "fema_vactor_combo_vacuum_truck_hr": {
+   "usd": 99.66,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "2014 International 7500 Vactor 2100 Plus hydro-excavation vacuum truck, 310 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8714.1)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8714.1 | Vector Combine Vacuum Truck | 2014 International 7500 Vactor 2100 Plus hydro-excavation vacuum truck, 310 HP | hour | $99.66",
+   "derived": false
+  },
+  "fema_combined_sewer_vacuum_truck_800gal_hr": {
+   "usd": 29.07,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Vacuum Truck 800 gal spoils/400 gal water, 74 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8714)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8714 | Combined Sewer Cleaning | Vacuum Truck 800 gal spoils/400 gal water, 74 HP | hour | $29.07",
+   "derived": false
+  },
+  "fema_sewer_jetter_25gpm_hr": {
+   "usd": 25.32,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Mongoose Model 254 sewer jetter 25 GPM @ 4000 PSI, 74 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8713)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8713 | Cleaner, Sewer/Catch Basin | Mongoose Model 254 sewer jetter 25 GPM @ 4000 PSI, 74 HP | hour | $25.32",
+   "derived": false
+  },
+  "fema_sewer_jetter_12gpm_hr": {
+   "usd": 19.58,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Mongoose Model 123 sewer jetter 12 GPM @ 3000 PSI, 24 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8712)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8712 | Cleaner, Sewer/Catch Basin | Mongoose Model 123 sewer jetter 12 GPM @ 3000 PSI, 24 HP | hour | $19.58",
+   "derived": false
+  },
+  "fema_truck_hydro_vac_500gal_hr": {
+   "usd": 21.27,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "500-gal debris tank",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8715)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8715 | Truck, Hydro Vac | 500-gal debris tank | hour | $21.27",
+   "derived": false
+  },
+  "fema_loader_wheel_cat926_hr": {
+   "usd": 116.74,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Caterpillar 926, to 170 HP, includes bucket",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8393)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8393 | Loader, Wheel | Caterpillar 926, to 170 HP, includes bucket | hour | $116.74",
+   "derived": false
+  },
+  "fema_loader_wheel_cat950_hr": {
+   "usd": 139.8,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Caterpillar 950, to 250 HP, includes bucket",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8396)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8396 | Loader, Wheel | Caterpillar 950, to 250 HP, includes bucket | hour | $139.8",
+   "derived": false
+  },
+  "fema_loader_skid_steer_s76_hr": {
+   "usd": 45.23,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Bobcat S76, to 74 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8541)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8541 | Loader, Skid Steer | Bobcat S76, to 74 HP | hour | $45.23",
+   "derived": false
+  },
+  "fema_chainsaw_20in_hd_hr": {
+   "usd": 3.65,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Bar length 20\", 5.0 cu in, heavy duty",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8188)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8188 | Chainsaw | Bar length 20\", 5.0 cu in, heavy duty | hour | $3.65",
+   "derived": false
+  },
+  "fema_chainsaw_16in_ld_hr": {
+   "usd": 1.71,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Bar length 16\", 2.5 cu in, light duty",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8190)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8190 | Chainsaw | Bar length 16\", 2.5 cu in, light duty | hour | $1.71",
+   "derived": false
+  },
+  "fema_aerial_lift_truck_55ft_hr": {
+   "usd": 62.86,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Altec AA55 on Freightliner M2 106, 55 FT, including truck (bucket truck)",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8486)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8486 | Aerial Lift, Truck Mounted | Altec AA55 on Freightliner M2 106, 55 FT, including truck (bucket truck) | hour | $62.86",
+   "derived": false
+  },
+  "fema_aerial_lift_truck_80ft_hr": {
+   "usd": 65.87,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Altec AH85B, 80 FT, including truck",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8487)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8487 | Aerial Lift, Truck Mounted | Altec AH85B, 80 FT, including truck | hour | $65.87",
+   "derived": false
+  },
+  "fema_light_tower_8kw_led_hr": {
+   "usd": 8.71,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Generac MLT4080 8kW mobile LED light tower, 25 FT",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8870)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8870 | Light Tower | Generac MLT4080 8kW mobile LED light tower, 25 FT | hour | $8.71",
+   "derived": false
+  },
+  "fema_light_tower_20kw_hr": {
+   "usd": 5.49,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Generac MLT4200 20kW mobile light tower, 25 FT",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8871)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8871 | Light Tower | Generac MLT4200 20kW mobile light tower, 25 FT | hour | $5.49",
+   "derived": false
+  },
+  "fema_chipper_brush_bc1000xl_hr": {
+   "usd": 29.7,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Vermeer BC1000XL, 74 HP, trailer mounted",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8201)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8201 | Chipper, Brush | Vermeer BC1000XL, 74 HP, trailer mounted | hour | $29.7",
+   "derived": false
+  },
+  "fema_sweeper_pavement_elgin_pelican_hr": {
+   "usd": 100.34,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "Elgin Pelican SE, 3.6-CY hopper, to 110 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8157)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8157 | Sweeper, Pavement | Elgin Pelican SE, 3.6-CY hopper, to 110 HP | hour | $100.34",
+   "derived": false
+  },
+  "fema_truck_water_2500gal_hr": {
+   "usd": 35.05,
+   "unit": "USD per hour",
+   "year": 2025,
+   "spec": "2500 gal, 150 HP",
+   "source": "FEMA 2025 Schedule of Equipment Rates (cost code 8780)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_pa_schedule-equipment-rates_2025.pdf",
+   "quote": "8780 | Truck, Water | 2500 gal, 150 HP | hour | $35.05",
+   "derived": false
+  },
+  "sfmta_tow_admin_fee_first_time": {
+   "usd": 335,
+   "unit": "USD per towed vehicle",
+   "year": 2025,
+   "spec": "first-time tow administrative fee",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "First-time tow $335",
+   "derived": false
+  },
+  "sfmta_tow_admin_fee_repeat": {
+   "usd": 385,
+   "unit": "USD per towed vehicle",
+   "year": 2025,
+   "spec": "repeat tow administrative fee",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "All repeat tows $385",
+   "derived": false
+  },
+  "sfmta_tow_fee": {
+   "usd": 317,
+   "unit": "USD per towed vehicle",
+   "year": 2025,
+   "spec": "tow fee, all others",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "All others $317",
+   "derived": false
+  },
+  "sfmta_tow_fee_low_income": {
+   "usd": 111,
+   "unit": "USD per towed vehicle",
+   "year": 2025,
+   "spec": "tow fee, low-income",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "Low-income $111",
+   "derived": false
+  },
+  "sfmta_storage_first_day": {
+   "usd": 69,
+   "unit": "USD per vehicle-day",
+   "year": 2025,
+   "spec": "first day after first 4 hours free",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "First day after first 4 hours $69",
+   "derived": false
+  },
+  "sfmta_storage_subsequent_day": {
+   "usd": 82,
+   "unit": "USD per vehicle-day",
+   "year": 2025,
+   "spec": "subsequent days",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "Subsequent days $82",
+   "derived": false
+  },
+  "sfmta_dolly_fee": {
+   "usd": 56,
+   "unit": "USD per tow",
+   "year": 2025,
+   "spec": "dolly if applicable",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "Dolly (if applicable) $56",
+   "derived": false
+  },
+  "sfmta_tow_total_first_time_same_day": {
+   "usd": 652,
+   "unit": "USD per towed car",
+   "year": 2025,
+   "spec": "admin $335 + tow $317, retrieved within 4 h",
+   "source": "SFMTA Towed Vehicles",
+   "url": "https://www.sfmta.com/getting-around/drive-park/towed-vehicles",
+   "quote": "First-time tow $335; All others $317; First four hours free",
+   "derived": true
+  },
+  "usace_sandbags_per_100lf_1ft_levee": {
+   "usd": 600,
+   "unit": "bags per 100 linear ft",
+   "year": 2019,
+   "spec": "pyramid levee 1 ft high (6 bags/LF); N=(3H+9H^2)/2",
+   "source": "USACE St. Louis District Sandbags brochure",
+   "url": "https://www.mvs.usace.army.mil/portals/54/docs/floodfight/resources/eoc_sandbag_brochure.pdf",
+   "quote": "Bags per 100 linear feet of levee: 1 foot 600*, 2 feet 2100, 3 feet 4500, 4 feet 7800",
+   "derived": false
+  },
+  "usace_sandbags_per_100lf_3ft_levee": {
+   "usd": 4500,
+   "unit": "bags per 100 linear ft",
+   "year": 2019,
+   "spec": "pyramid levee 3 ft high (45 bags/LF)",
+   "source": "USACE St. Louis District Sandbags brochure",
+   "url": "https://www.mvs.usace.army.mil/portals/54/docs/floodfight/resources/eoc_sandbag_brochure.pdf",
+   "quote": "3 feet 4500",
+   "derived": false
+  },
+  "usace_sandbags_per_100lf_1ft_single_course": {
+   "usd": 300,
+   "unit": "bags per 100 linear ft",
+   "year": 2019,
+   "spec": "single-width course, 1 ft high",
+   "source": "USACE St. Louis District Sandbags brochure",
+   "url": "https://www.mvs.usace.army.mil/portals/54/docs/floodfight/resources/eoc_sandbag_brochure.pdf",
+   "quote": "*Single width course requires 300 bags per 100 linear feet, on foot high",
+   "derived": false
+  },
+  "usace_sand_tons_per_100lf_1ft_levee": {
+   "usd": 12,
+   "unit": "tons of sand per 100 linear ft",
+   "year": null,
+   "spec": "1 ft levee, 600 bags",
+   "source": "USACE Tulsa District Flood Fighting Techniques",
+   "url": "https://www.swl.usace.army.mil/Portals/50/Flood%20Fighting%20Booklet.pdf",
+   "quote": "1-foot levee takes 600 bags and about 12 tons of sand per 100 feet",
+   "derived": false
+  },
+  "sf_public_works_sandbags_per_household": {
+   "usd": 10,
+   "unit": "bags per SF household/business",
+   "year": 2023,
+   "spec": "free, Operations Yard 2323 Cesar Chavez St (Marin & Kansas gate), Mon-Sat 8am-2pm, SF ID required",
+   "source": "SF Public Works on X / sf.gov urban flooding",
+   "url": "https://x.com/sfpublicworks/status/1611459163259011073",
+   "quote": "we are able to provide up to 10 sandbags per San Francisco household or business. Pick them up at our Operations Yard, Kansas & Marin streets gate",
+   "derived": false
+  },
+  "catch_basin_cleaning_federal_way_type1": {
+   "usd": 40.94,
+   "unit": "USD per catch basin",
+   "year": 2020,
+   "spec": "Type 1/1L catch basin, 1,850 ea, vactor services bid",
+   "source": "Federal Way WA SWM Vactor Services RFB 21-002 bid results",
+   "url": "https://www.federalwaywa.gov/sites/default/files/bids/Preliminary%20bid%20results%20SWM%20Vactor%20Services%20RFB%2021-002.pdf",
+   "quote": "Type 1/1L catch basin cleaning (1,850 ea) bid at $40.94 and $39.00 per unit",
+   "derived": false
+  },
+  "catch_basin_cleaning_federal_way_type2": {
+   "usd": 59.3,
+   "unit": "USD per catch basin",
+   "year": 2020,
+   "spec": "Type II catch basin/manhole >=48in dia, 500 ea",
+   "source": "Federal Way WA SWM Vactor Services RFB 21-002 bid results",
+   "url": "https://www.federalwaywa.gov/sites/default/files/bids/Preliminary%20bid%20results%20SWM%20Vactor%20Services%20RFB%2021-002.pdf",
+   "quote": "Type II catch basin or manhole (48\" dia or greater, 500 ea) at $59.30 and $58.00",
+   "derived": false
+  },
+  "catch_basin_cleaning_scarsdale_ny": {
+   "usd": 95,
+   "unit": "USD per catch basin",
+   "year": 2026,
+   "spec": "municipal contract unit price; jetting $2.50/LF beyond 10 ft",
+   "source": "Scarsdale NY board approves catch-basin cleaning contract (citizenportal)",
+   "url": "https://citizenportal.ai/articles/10894005/New-York/Westchester-County/Scarsdale/Board-approves-catch-basin-cleaning-contract-and-topographical-survey-agreement",
+   "quote": "unit bid price of $95 per catch basin and a jetting price of $2.50 per linear foot beyond 10 feet",
+   "derived": false
+  },
+  "catch_basin_cleaning_fema_appeal_post_disaster": {
+   "usd": 300,
+   "unit": "USD per catch basin",
+   "year": 2005,
+   "spec": "post-Hurricane Rita debris removal from catch basins, found reasonable on appeal",
+   "source": "FEMA appeal: Debris Removal from Catch Basins",
+   "url": "https://www.fema.gov/appeal/debris-removal-catch-basins",
+   "quote": "the cost for catch basin cleaning at a unit rate of $300 per catch basin was reasonable",
+   "derived": false
+  },
+  "fema_noncongregate_shelter_room_night_nc": {
+   "usd": 50,
+   "unit": "USD per room-night",
+   "year": 2020,
+   "spec": "hotel room (EconoLodge) non-congregate shelter, COVID-19, NC",
+   "source": "FEMA appeal: Allowable/Reasonable Costs (non-congregate sheltering)",
+   "url": "https://www.fema.gov/appeal/allowable-costs-reasonable-costs-4",
+   "quote": "4,270 room-nights ... $213,500.00 ($50.00/night x 4,270)",
+   "derived": false
+  },
+  "fema_bca_vsl_2020base": {
+   "usd": 11600000,
+   "unit": "USD per statistical life",
+   "year": 2020,
+   "spec": "DHS VSL used by FEMA BCA (v11, 2022); v13 2024 rebased to 2022$",
+   "source": "FEMA Standard Economic Values Methodology Report v11 (Sep 2022)",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_standard-economic-values-methodology-report_092022.pdf",
+   "quote": "a VSL of $11.6 million with a base year of 2020",
+   "derived": false
+  },
+  "fema_bca_injury_hospitalized_v4_8": {
+   "usd": 1088000,
+   "unit": "USD per hospitalized injury",
+   "year": 2009,
+   "spec": "old BCA Toolkit 4.8 injury value (outdated)",
+   "source": "FEMA BCA Sustainment and Enhancements / methodology history",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_standard-economic-values-methodology-report_092022.pdf",
+   "quote": "Death $5,800,000.00 Hospitalized $1,088,000.00 Treat & Release $ 90,000.00 Self Treat $ 12,000.00",
+   "derived": false
+  },
+  "fema_bca_injury_treat_release_v4_8": {
+   "usd": 90000,
+   "unit": "USD per treat-and-release injury",
+   "year": 2009,
+   "spec": "old BCA Toolkit 4.8 (outdated)",
+   "source": "FEMA Standard Economic Values Methodology Report",
+   "url": "https://www.fema.gov/sites/default/files/documents/fema_standard-economic-values-methodology-report_092022.pdf",
+   "quote": "Treat & Release $ 90,000.00",
+   "derived": false
+  },
+  "hhs_vsl_2024usd": {
+   "usd": 13600000,
+   "unit": "USD per statistical life",
+   "year": 2024,
+   "spec": "HHS central VSL, 2024 dollars",
+   "source": "HHS ASPE Standard Values for Regulatory Analysis, 2025",
+   "url": "https://aspe.hhs.gov/sites/default/files/documents/639756a60fbe7e51786bcec176ad52f1/Standard-RIA-Values-2025.pdf",
+   "quote": "HHS's current central estimate of the value per statistical life is $13.6 million",
+   "derived": false
+  },
+  "bls_oews_sf_construction_laborers_mean_hourly_2022": {
+   "usd": 31.48,
+   "unit": "USD per hour (wage only, unburdened)",
+   "year": 2022,
+   "spec": "SOC 47-2061, San Francisco-Oakland-Hayward MSA, May 2022",
+   "source": "BLS OEWS Construction Laborers 47-2061 (May 2022 metro table, seen via search snippet)",
+   "url": "https://blsmon1.bls.gov/oes/current/oes472061.htm",
+   "quote": "San Francisco-Oakland-Hayward, CA | 12,290 | 5.14 | 0.75 | $ 31.48 | $ 65,480",
+   "derived": false
+  },
+  "bls_oews_sf_construction_extraction_mean_hourly_2025": {
+   "usd": 43.66,
+   "unit": "USD per hour (wage only)",
+   "year": 2025,
+   "spec": "SOC 47-0000 group, SF-Oakland-Fremont, May 2025",
+   "source": "BLS Occupational Employment and Wages in San Francisco-Oakland-Fremont, May 2025",
+   "url": "https://www.bls.gov/regions/west/news-release/occupationalemploymentandwages_sanfrancisco.htm",
+   "quote": "construction and extraction ... 31.42 nationally and 43.66 in San Francisco",
+   "derived": false
+  },
+  "bls_oews_sf_grounds_maintenance_group_mean_hourly_2025": {
+   "usd": 25.46,
+   "unit": "USD per hour (wage only)",
+   "year": 2025,
+   "spec": "Building and grounds cleaning and maintenance group (incl. tree trimmers), SF-Oakland-Fremont",
+   "source": "BLS Occupational Employment and Wages in San Francisco-Oakland-Fremont, May 2025",
+   "url": "https://www.bls.gov/regions/west/news-release/occupationalemploymentandwages_sanfrancisco.htm",
+   "quote": "Building and grounds cleaning and maintenance | 2.9 | 2.6 | 19.66 | 25.46",
+   "derived": false
+  },
+  "bls_oews_sf_transport_material_moving_mean_hourly_2025": {
+   "usd": 30.45,
+   "unit": "USD per hour (wage only)",
+   "year": 2025,
+   "spec": "Transportation and material moving group (incl. truck drivers), SF-Oakland-Fremont",
+   "source": "BLS Occupational Employment and Wages in San Francisco-Oakland-Fremont, May 2025",
+   "url": "https://www.bls.gov/regions/west/news-release/occupationalemploymentandwages_sanfrancisco.htm",
+   "quote": "Transportation and material moving | 8.8 | 6.5 | 23.96 | 30.45",
+   "derived": false
+  },
+  "sfpuc_combined_system_storage_volume": {
+   "usd": 200,
+   "unit": "million gallons",
+   "year": 2025,
+   "spec": "transport/storage boxes, ~50 ft deep, along Embarcadero & Great Highway",
+   "source": "SFPUC Wastewater Collection System",
+   "url": "https://www.sfpuc.gov/about-us/our-systems/sewer-system/wastewater-collection-system",
+   "quote": "able to hold approximately 200 million gallons of stormwater and sewage for later treatment",
+   "derived": false
+  },
+  "sfpuc_wet_weather_treatment_capacity": {
+   "usd": 465,
+   "unit": "million gallons per day",
+   "year": 2025,
+   "spec": "wet weather treatment capacity vs 54 MGD avg dry weather flow",
+   "source": "SFPUC CAC Wastewater Committee minutes 2025-07-08",
+   "url": "https://www.sfpuc.gov/sites/default/files/about-us/agendas-minutes/CAC-ww_07082025%20Minutes.pdf",
+   "quote": "wet weather treatment capacity ... 465 MGD ... 54 MGD average dry weather flow ... 200 MG of storage",
+   "derived": false
+  },
+  "sfpuc_storage_bayside_westside": {
+   "usd": 231,
+   "unit": "million gallons",
+   "year": null,
+   "spec": "~160 MG Bayside + 71 MG Westside T/S structures (1980s-90s)",
+   "source": "EPA EAB docket Attachment 4 (SF NPDES)",
+   "url": "https://yosemite.epa.gov/oa/EAB_Web_Docket.nsf/Attachments%20By%20ParentFilingId/10EA52A29A2B3D73852584EF004B65CE/$FILE/Attachment%20%204.pdf",
+   "quote": "approximately 160 million gallons (MG) of storage on the Bayside and 71 MG of storage on the Westside",
+   "derived": true
+  },
+  "sfpuc_cso_discharges_per_year": {
+   "usd": 10,
+   "unit": "discharge events per year (avg)",
+   "year": 2025,
+   "spec": "36 discharge points; discharges ~94% stormwater",
+   "source": "SFPUC Wastewater Collection System",
+   "url": "https://www.sfpuc.gov/about-us/our-systems/sewer-system/wastewater-collection-system",
+   "quote": "On average, only 10 discharges happen each year",
+   "derived": false
+  },
+  "rental_6in_trash_pump_day_defatte_ukiah_ca": {
+   "usd": 385,
+   "unit": "USD per day",
+   "year": 2026,
+   "spec": "6 in diesel trailer-mounted trash pump MQ62TKT (CA dealer); $1,025/wk, $2,600/mo",
+   "source": "DeFatte Equipment, Ukiah CA",
+   "url": "https://www.defatteequipment.com/equipment.asp?action=category&category=37&key=95f",
+   "quote": "$385.00 a day, $1,025.00 a week, $2,600.00 a month",
+   "derived": false
+  },
+  "rental_6in_trash_pump_day_arts": {
+   "usd": 300,
+   "unit": "USD per day",
+   "year": 2026,
+   "spec": "6 in Thompson diesel trash pump with trailer; $1,050/wk",
+   "source": "Art's Rental",
+   "url": "https://artsrental.com/products/trash-pump-with-trailer-6-diesel-powered",
+   "quote": "$300.00 per day, $1,050.00 per week, $2,400.00 per 4-weeks",
+   "derived": false
+  },
+  "rental_6in_trash_pump_day_buttrey": {
+   "usd": 320,
+   "unit": "USD per day",
+   "year": 2026,
+   "spec": "Multiquip MQ62 towable 6 in diesel; $1,270/wk",
+   "source": "Buttrey Rental (Chicago)",
+   "url": "https://www.buttreyrental.com/equipment.asp?action=category&category=177&key=PUD6TTOW",
+   "quote": "$320.00 a day, $1,270.00 a week, $3,600.00 a month",
+   "derived": false
+  },
+  "rental_6in_trash_pump_day_redhat": {
+   "usd": 191,
+   "unit": "USD per day",
+   "year": 2026,
+   "spec": "6 in trash pump; $573/wk",
+   "source": "Red Hat Rentals (TX)",
+   "url": "https://www.redhatrentals.com/m/equipment.asp?action=category&category=81&key=PUM6T",
+   "quote": "$191 a day, $573 a week",
+   "derived": false
+  }
+ },
+ "notes": [
+  "FEMA 2025 Schedule of Equipment Rates applies to declarations on/after 2025-07-01; rates are per operating hour, include fuel/maintenance/depreciation, exclude operator labor (FEMA landing page).",
+  "FEMA 2023 PDF could not be text-extracted in time; 2025 schedule used as latest.",
+  "USACE Walla Walla and King County tables list 800 bags per 100 LF for 1 ft (vs 600 in St. Louis/Tulsa main table); 3 ft = 4,500 in both. Walla Walla: ~40 lb sand per bag.",
+  "USDOT VSL page (transportation.gov) returned 403; $13.7M (2024) for USDOT seen only in secondary sources (UMich op-ed citing USDOT 2024); one source says $13.2M. Not recorded as an item.",
+  "BLS OEWS SF metro wage rows not retrieved in time; search snippet: May 2022 SF-Oakland-Hayward construction laborers mean $31.48/h; May 2025 SF construction & extraction group mean $43.66/h.",
+  "Not found in time: SF DHR 7514 burdened rate, Adopt-a-Drain stats, empty/filled sandbag price, MRE/bottled water price, Red Cross shelter per person-night, generator rental/day, barricade rental/day, alert cost. Search snippets (unverified URL) gave 6in pump hose $30/day suction, $20/day discharge; GSA ceiling 6in vac-assist diesel $276.64/day.",
+  "SFMTA towed-vehicles page has no effective date (footer 2013-2025); older SFMTA fee list showed admin $360/first-time $304/tow $297, storage $64/$77."
+ ]
+}

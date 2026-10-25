@@ -1,0 +1,256 @@
+{
+ "about": "StormSim SF emergency-response cost table (owned by sim/response.py). The model chooses quantities/actions only; every price here is fixed and cited. FEMA equipment rates exclude operator labor (added via labor items). Retrieved 25.10.2026.",
+ "retrieved": "2026-10-25",
+ "items": {
+  "shelter_person_night": {
+   "usd": 45.63,
+   "unit": "person-night",
+   "what": "Congregate shelter operations (staff, cots, sanitation, utilities) per occupant-night",
+   "source": "Cost comparison of congregate, motel and village-type shelters, J. Social Distress & Homelessness (2025), doi:10.1080/10530789.2025.2473756: congregate shelter operating cost $16,654 per bed-year -> /365 = $45.63/bed-night. Cross-check: FEMA PA appeal (Hurricane Dorian, Coastal Carolina Univ.) accepted $15/person-night for facility use alone, https://www.fema.gov/appeal/evacuation-medical-care-and-sheltering-ineligible-costs",
+   "retrieved": "2026-10-25"
+  },
+  "meal": {
+   "usd": 5.16,
+   "unit": "meal",
+   "what": "Shelf-stable meal / MRE delivered to a shelter",
+   "source": "DHS OIG-20-76 (Sep 2020), FEMA commodity distribution Hurricanes Irma & Maria, Table of estimated commodity costs: meals $5.16/unit, https://www.oig.dhs.gov/sites/default/files/assets/2020-09/OIG-20-76-Sep20.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "water_gal": {
+   "usd": 2.08,
+   "unit": "US gal",
+   "what": "Bottled drinking water",
+   "source": "DHS OIG-20-76 (Sep 2020): water $0.55/unit (1 L bottle assumed) -> x3.785 = $2.08/gal, https://www.oig.dhs.gov/sites/default/files/assets/2020-09/OIG-20-76-Sep20.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "cot": {
+   "usd": 39.0,
+   "unit": "cot",
+   "what": "Shelter cot (one per shelter space opened)",
+   "source": "DHS OIG-20-76 (Sep 2020): cots $39.00/unit, https://www.oig.dhs.gov/sites/default/files/assets/2020-09/OIG-20-76-Sep20.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "truck_hour": {
+   "usd": 35.58,
+   "unit": "truck-hour",
+   "what": "Supply truck 4x2 25k GVW diesel (equipment only)",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8701-1 Truck, Flatbed 4X2 25KGVW DSL, $35.58/h, https://www.fema.gov/sites/default/files/documents/fema_schedule-of-equipment-rates_2023.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "driver_hour": {
+   "usd": 48.72,
+   "unit": "person-hour",
+   "what": "Truck driver, burdened (mean wage x 1.5)",
+   "source": "BLS OEWS May 2023, Heavy & tractor-trailer truck drivers (53-3032), San Francisco-Oakland-Hayward MSA mean $32.48/h, https://www.bls.gov/oes/2023/may/oes533032.htm ; x1.5 fringe/overhead burden (planning factor, FEMA PA reimburses actual fringe)",
+   "retrieved": "2026-10-25"
+  },
+  "crew_person_hour": {
+   "usd": 72.23,
+   "unit": "person-hour",
+   "what": "Response crew member (sandbag, pump, tree, medical, shelter staff), burdened",
+   "source": "BLS OEWS May 2024, San Francisco-Oakland-Fremont MSA all-occupations mean $48.15/h, https://www.bls.gov/regions/west/news-release/2025/occupationalemploymentandwages_sanfrancisco_20250501.htm ; x1.5 fringe/overhead burden (planning factor)",
+   "retrieved": "2026-10-25"
+  },
+  "bus_hour": {
+   "usd": 41.46,
+   "unit": "bus-hour",
+   "what": "Evacuation bus / paratransit for no-car vulnerable residents (equipment)",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8180 Bus, $41.46/h (operator via driver_hour)",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_boat_hour": {
+   "usd": 30.93,
+   "unit": "boat-hour",
+   "what": "Shallow-draft rescue boat (equipment)",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8138 Boat, Jet (shallow draft, 20 ft), $30.93/h",
+   "retrieved": "2026-10-25"
+  },
+  "pump_hour": {
+   "usd": 60.83,
+   "unit": "pump-hour",
+   "what": "6-in diesel trash pump, 90,000 gph (~0.095 m3/s)",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8465 Pump, Trash Pump 6 in DIESEL, $60.83/h",
+   "retrieved": "2026-10-25"
+  },
+  "generator_hour": {
+   "usd": 85.0,
+   "unit": "generator-hour",
+   "what": "150 kW portable diesel generator for a shelter",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8314 Generator DIESEL 150 KW, $85.00/h",
+   "retrieved": "2026-10-25"
+  },
+  "ambulance_hour": {
+   "usd": 48.32,
+   "unit": "ambulance-hour",
+   "what": "Ambulance standby at a medical post (equipment)",
+   "source": "FEMA 2023 Schedule of Equipment Rates, cost code 8041 Ambulance GVW 11000 lb, $48.32/h",
+   "retrieved": "2026-10-25"
+  },
+  "sandbag": {
+   "usd": 0.25,
+   "unit": "bag",
+   "what": "Sandbag (bag + sand), labor via crew_person_hour",
+   "source": "Sandbag Cost Analysis (2023, cited in data/reference/unit_costs_research.json 'sandbag_*'): 'widely accepted that sandbags cost $.25 each'; USACE pyramid dike bag counts",
+   "retrieved": "2026-10-25"
+  },
+  "alert_message": {
+   "usd": 0.0,
+   "unit": "alert",
+   "what": "AlertSF / WEA alert (existing city system, no marginal cost)",
+   "source": "SF Department of Emergency Management, AlertSF (https://www.sf.gov/alertsf) and FEMA IPAWS Wireless Emergency Alerts: no per-message charge to the city",
+   "retrieved": "2026-10-25"
+  }
+ },
+ "planning_factors": {
+  "shelter_m2_per_person": {
+   "value": 3.716,
+   "unit": "m2/person",
+   "source": "FEMA P-785 Shelter Field Guide (with American Red Cross): 'allow 40 square feet of space per person'; FEMA Mega-Shelter Planning Guide: minimum 40 sq ft per person; https://www.nationalmasscarestrategy.org/wp-content/uploads/2015/10/Shelter-Field-Guide-508_f3.pdf",
+   "retrieved": "2026-10-25"
+  },
+  "shelter_usable_fraction": {
+   "value": 0.6,
+   "unit": "-",
+   "source": "Planning assumption: sleeping area share of gross floor area (aisles, kitchens, toilets, stairs excluded); Riverside County OA Mass Care guidance example: 10,000 sf gym -> 250 people (40 sf each, ~100% of a clear gym floor), multi-storey buildings have less clear floor",
+   "retrieved": "2026-10-25"
+  },
+  "projected_shelter_nights": {
+   "value": 2,
+   "unit": "nights",
+   "source": "Georgia State Shelter Plan 2024 (GEMA): evacuation shelters typically open < 72 hours; used to price person-nights beyond the 6 h sim window",
+   "retrieved": "2026-10-25"
+  },
+  "shelter_staff_per_100": {
+   "value": 4,
+   "unit": "staff per 100 occupants per shift",
+   "source": "Planning assumption after American Red Cross shelter staffing practice (FEMA P-785 Shelter Field Guide staffing chapter); used for shelter staff person-hours",
+   "retrieved": "2026-10-25"
+  },
+  "meals_per_person_day": {
+   "value": 3,
+   "unit": "meals/person/day",
+   "source": "FEMA / Ready.gov food planning: three meals per person per day; FEMA commodity planning factors",
+   "retrieved": "2026-10-25"
+  },
+  "water_gal_per_person_day": {
+   "value": 1.0,
+   "unit": "US gal/person/day",
+   "source": "FEMA Ready.gov 'Water': at least one gallon of water per person per day, https://www.ready.gov/water",
+   "retrieved": "2026-10-25"
+  },
+  "truck_payload_kg": {
+   "value": 4500,
+   "unit": "kg",
+   "source": "Class 6 box/flatbed truck (19,501-26,000 lb GVW) payload ~10,000 lb, US DOE AFDC vehicle weight classes, https://afdc.energy.gov/data/10380",
+   "retrieved": "2026-10-25"
+  },
+  "meal_kg": {
+   "value": 0.7,
+   "unit": "kg/meal",
+   "source": "MRE ~0.6-0.75 kg each (DLA Troop Support MRE fact sheet)",
+   "retrieved": "2026-10-25"
+  },
+  "water_kg_per_gal": {
+   "value": 3.785,
+   "unit": "kg/gal",
+   "source": "physical constant (1 US gal = 3.785 L of water)",
+   "retrieved": "2026-10-25"
+  },
+  "truck_load_unload_s": {
+   "value": 1200,
+   "unit": "s per stop",
+   "source": "Planning assumption (20 min dock time per shelter stop)",
+   "retrieved": "2026-10-25"
+  },
+  "bus_capacity": {
+   "value": 40,
+   "unit": "persons/trip",
+   "source": "FEMA 2023 rate 8180 Bus (standard transit bus seated capacity ~40)",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_boat_persons_per_trip": {
+   "value": 6,
+   "unit": "persons",
+   "source": "FEMA NIMS Resource Typing (RTLT) Swiftwater/Flood Rescue Boat Team: typical 4-6 survivors per trip for small flood boats",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_boat_speed_ms": {
+   "value": 2.0,
+   "unit": "m/s",
+   "source": "Planning assumption: shallow urban flood water, obstacles (walking-pace to slow motoring)",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_load_s": {
+   "value": 600,
+   "unit": "s per trip",
+   "source": "Planning assumption: 10 min to locate, load and secure survivors",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_crew_size": {
+   "value": 4,
+   "unit": "persons per boat team",
+   "source": "FEMA RTLT Swiftwater/Flood Search and Rescue Team: boat squads of ~4",
+   "retrieved": "2026-10-25"
+  },
+  "sffd_baseline_rescue_units": {
+   "value": 2,
+   "unit": "boat teams",
+   "source": "Assumption: SFFD Rescue Squads 1 and 2 (water-rescue capable) available to this district when no plan stages more crews",
+   "retrieved": "2026-10-25"
+  },
+  "sffd_dispatch_delay_s": {
+   "value": 1800,
+   "unit": "s",
+   "source": "Assumption: 30 min from first at-risk call to boat on scene during a city-wide storm (unstaged)",
+   "retrieved": "2026-10-25"
+  },
+  "tree_crew_clear_s": {
+   "value": 1800,
+   "unit": "s per blocked road",
+   "source": "Planning assumption: 30 min to cut and clear one fallen street tree from a lane (SF Public Works Bureau of Urban Forestry crews)",
+   "retrieved": "2026-10-25"
+  },
+  "sandbag_bags_per_m_03m": {
+   "value": 19.7,
+   "unit": "bags per m at 0.3 m",
+   "source": "USACE pyramid sandbag dike (6 bags/ft at 1 ft), via data/reference/unit_costs_research.json 'sandbag_bags_per_ft_usace'",
+   "retrieved": "2026-10-25"
+  },
+  "sandbag_bags_per_crew_hour": {
+   "value": 25.7,
+   "unit": "bags per person-hour",
+   "source": "Sandbag Cost Analysis (2023) in unit_costs_research.json: 11,700 sandbags / 455 man-hours",
+   "retrieved": "2026-10-25"
+  },
+  "building_doorway_m": {
+   "value": 12.0,
+   "unit": "m of sandbag line per protected building",
+   "source": "Planning assumption: entrances + garage/basement openings of a typical SF row building frontage (~7.6 m lot)",
+   "retrieved": "2026-10-25"
+  },
+  "sandbag_height_m": {
+   "value": 0.3,
+   "unit": "m",
+   "source": "USACE sandbag guidance: 1 ft pyramid",
+   "retrieved": "2026-10-25"
+  },
+  "medical_post_staff": {
+   "value": 6,
+   "unit": "persons",
+   "source": "Planning assumption: field treatment site (2 EMT teams + lead), FEMA RTLT medical strike team",
+   "retrieved": "2026-10-25"
+  },
+  "pump_m3s": {
+   "value": 0.095,
+   "unit": "m3/s per 6-in pump",
+   "source": "FEMA 2023 rate 8465: 90,000 gph = 0.0946 m3/s",
+   "retrieved": "2026-10-25"
+  },
+  "rescue_boat_shuttle_m": {
+   "value": 150,
+   "unit": "m one-way boat shuttle per trip",
+   "source": "Planning assumption: boats are trailered by road to the water's edge (drive_speed) and shuttle ~150 m through flooded streets per trip (urban flood blocks ~100-200 m)",
+   "retrieved": "2026-10-25"
+  }
+ }
+}

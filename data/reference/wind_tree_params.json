@@ -1,0 +1,236 @@
+{
+ "_about": "Parameters of sim/wind.py (LBM wind) and sim/trees.py (tree failure, debris, glazing, flood-driven cars). Every value has a source; 'calibrated' = tuned so the 31.12.2022 replay matches the 311 tree reports in the tile (see runs/dev_wind/); 'assumed' = engineering judgement, stated as such. Loaded by sim.trees.load_params().",
+ "retrieved": "2026-10-25",
+ "params": {
+  "wind_z0_inflow_m": {
+   "value": 0.7,
+   "unit": "m",
+   "source": "Wieringa 1992, J. Wind Eng. Ind. Aerodyn. 41:357-368, updated Davenport roughness classification: class 6 'very rough' 0.5 m, class 7 'skimming' 1.0 m (dense city)"
+  },
+  "wind_z0_street_m": {
+   "value": 0.1,
+   "unit": "m",
+   "source": "Wieringa 1992 (as above), class 4 'roughly open' 0.10 m: sub-grid street roughness (cars, furniture) beneath resolved buildings"
+  },
+  "von_karman": {
+   "value": 0.41,
+   "unit": "-",
+   "source": "von Karman constant; Garratt 1992, The Atmospheric Boundary Layer, Cambridge UP"
+  },
+  "smagorinsky_cs": {
+   "value": 0.17,
+   "unit": "-",
+   "source": "Lilly 1967, Proc. IBM Sci. Comput. Symp. Environ. Sci., 195-210 (Cs ~ 0.17 for isotropic turbulence)"
+  },
+  "lbm_u10_lattice": {
+   "value": 0.03,
+   "unit": "lattice",
+   "source": "Kruger et al. 2017, The Lattice Boltzmann Method, Springer, sec. 7.3: compressibility error O(Ma^2); Ma = 0.05 at 10 m, 0.12 at lid"
+  },
+  "reynolds_independence": {
+   "value": 11000,
+   "unit": "Re_H",
+   "source": "Snyder 1981, Guideline for Fluid Modeling of Atmospheric Diffusion, US EPA-600/8-81-009: flow around sharp-edged buildings is Re-independent above Re_H ~ 11,000 (storm Re_H ~ 1e8), so velocity scales linearly with the reference gust"
+  },
+  "rho_air": {
+   "value": 1.225,
+   "unit": "kg/m3",
+   "source": "ISO 2533 standard atmosphere, sea level"
+  },
+  "velocity_pressure": {
+   "value": 0.613,
+   "unit": "Pa/(m/s)^2",
+   "source": "ASCE 7-22 eq. 26.10-1 (SI): q = 0.613 K V^2; quasi-steady 3-s gust pressure, p = q Cp"
+  },
+  "glass_capacity_pre1980_kpa": {
+   "value": 2.0,
+   "unit": "kPa",
+   "source": "ASTM E1300-16, load resistance of ~6 mm annealed monolithic lites ~1.5-2 m^2 under 3-s load: ~1.5-2.5 kPa"
+  },
+  "glass_capacity_post1980_kpa": {
+   "value": 3.0,
+   "unit": "kPa",
+   "source": "ASTM E1300-16 glass type factor 2.0 for heat-strengthened glass (short duration) applied to insulating units; typical SF curtain-wall design pressures 1.9-3.4 kPa (ASCE 7 C&C)"
+  },
+  "tree_crown_length_frac": {
+   "value": 0.6,
+   "unit": "-",
+   "source": "McPherson, van Doorn & Peper 2016, Urban Tree Database, USFS GTR PSW-253: crown height ~0.5-0.7 of tree height for street trees"
+  },
+  "tree_vogel_exponent": {
+   "value": 0.7,
+   "unit": "-",
+   "source": "Vogel 1989, J. Exp. Bot. 40:941-948; Vollsinger et al. 2005, Can. J. For. Res. 35:1238-1249 (hardwood crowns, Cd*A ~ U^-b, b ~ 0.5-1.0); de Langre 2008, Annu. Rev. Fluid Mech. 40:141-168"
+  },
+  "tree_vogel_u0_ms": {
+   "value": 10.0,
+   "unit": "m/s",
+   "source": "GALES streamlining onset: crown drag area constant below 10 m/s and reconfigures above (Gardiner et al. 2000, Ecol. Model. 129:1-23; Mayhead 1973, Agric. Meteorol. 12:123-130 wind-tunnel trees to 38 m/s)"
+  },
+  "tree_cd0": {
+   "value": 0.5,
+   "unit": "-",
+   "source": "calibrated: chosen so the median critical breaking speed of sound (defect-free) trees in the inventory is ~42 m/s, Virot et al. 2016, Phys. Rev. E 93:023001; consistent with crown Cd 0.3-0.7 at low speed (Mayhead 1973, Agric. Meteorol. 12:123-130)"
+  },
+  "tree_gust_dyn_factor": {
+   "value": 1.0,
+   "unit": "-",
+   "source": "quasi-static with 3-s gust; GALES gust factor already in the 3-s gust (Gardiner et al. 2000, Ecol. Model. 129:1-23)"
+  },
+  "wood_density_green": {
+   "value": 950.0,
+   "unit": "kg/m3",
+   "source": "USDA FPL Wood Handbook FPL-GTR-282 (2021) ch. 4: green hardwood density ~800-1100 kg/m3 above fibre saturation"
+  },
+  "stem_form_factor": {
+   "value": 0.45,
+   "unit": "-",
+   "source": "stem volume = f * pi/4 * d^2 * H, form factor ~0.4-0.5 for broadleaves (Husch, Beers & Kershaw 2003, Forest Mensuration, 4th ed.)"
+  },
+  "uproot_creg_nm_per_kg": {
+   "value": 145.0,
+   "unit": "N m / kg",
+   "source": "Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883: critical turning moment = Creg x stem weight, Creg ~100-200 N m/kg by soil; used in GALES (Gardiner et al. 2000/2008)"
+  },
+  "uproot_sat_reduction": {
+   "value": 0.4,
+   "unit": "-",
+   "source": "Kamimura et al. 2012, Eur. J. For. Res. 131:219-227 (tree-pulling with rapidly supplied water: anchorage ~30-50% lower on saturated soil); Peltola et al. 2000 (waterlogged soils)"
+  },
+  "snap_decay_prevalence": {
+   "value": 0.1,
+   "unit": "-",
+   "source": "assumed/calibrated: fraction of street trees with internal decay; strength of a hollow stem = 1-(r/R)^4 (Kane & Ryan 2004, J. Arboric. 30:347-356)"
+  },
+  "snap_decay_rr_max": {
+   "value": 0.85,
+   "unit": "-",
+   "source": "Mattheck & Breloer 1994, The Body Language of Trees: failure common when shell t/R < 0.3 (r/R > 0.7); r/R ~ U(0.3, 0.85) assumed"
+  },
+  "beaufort_twigs_ms": {
+   "value": 17.2,
+   "unit": "m/s",
+   "source": "Beaufort scale force 8 (gale, 17.2-20.7 m/s): 'twigs broken from trees' (UK Met Office / WMO-No. 8)"
+  },
+  "beaufort_branches_ms": {
+   "value": 20.8,
+   "unit": "m/s",
+   "source": "Beaufort scale force 9 (strong gale, 20.8-24.4 m/s): branches break, slight structural damage (UK Met Office)"
+  },
+  "leaf_area_index": {
+   "value": 3.0,
+   "unit": "m2/m2",
+   "source": "Peper & McPherson 2003, Urban For. Urban Green. 2:19-29 (street tree LAI ~2-6)"
+  },
+  "leaf_shed_frac_max": {
+   "value": 0.05,
+   "unit": "-",
+   "source": "assumed: storm-stripped share of leaf area at Beaufort 10+; most SF street trees are evergreen in winter"
+  },
+  "debris_cd_plate": {
+   "value": 1.2,
+   "unit": "-",
+   "source": "Wills, Lee & Wyatt 2002, J. Wind Eng. Ind. Aerodyn. 90:555-565 (plate/sheet debris); Tachikawa 1983, JWEIA 14:443-453"
+  },
+  "debris_cd_rod": {
+   "value": 1.0,
+   "unit": "-",
+   "source": "circular cylinder, subcritical Re (Hoerner 1965, Fluid-Dynamic Drag)"
+  },
+  "leaf_terminal_ms": {
+   "value": 1.5,
+   "unit": "m/s",
+   "source": "Vogel 1994, Life in Moving Fluids, Princeton UP: falling leaves ~1-2 m/s"
+  },
+  "ground_restitution": {
+   "value": 0.3,
+   "unit": "-",
+   "source": "assumed (inelastic debris impacts; Lin, Holmes & Letchford 2007, J. Struct. Eng. 133:274 use rest after first impact)"
+  },
+  "ground_friction": {
+   "value": 0.5,
+   "unit": "-",
+   "source": "assumed Coulomb friction for debris on wet pavement"
+  },
+  "inlet_capture_radius_m": {
+   "value": 5.0,
+   "unit": "m",
+   "source": "team spec (CONTRACT v3): leaf litter landing within ~5 m of a grate is swept onto it by gutter flow"
+  },
+  "inlet_grate_area_m2": {
+   "value": 0.54,
+   "unit": "m2",
+   "source": "~0.6 x 0.9 m SF catch-basin grate (data/grid/meta.json sources.inlets; FHWA HEC-22 3rd ed.)"
+  },
+  "inlet_clog_max": {
+   "value": 0.8,
+   "unit": "-",
+   "source": "FHWA HEC-22 3rd ed. sec. 4.4: design clogging factor 50% for sag grates; up to ~80% observed in leaf-fall storms (assumed upper bound)"
+  },
+  "car_mass_kg": {
+   "value": 1400.0,
+   "unit": "kg",
+   "source": "US EPA Automotive Trends Report 2023: average new car ~1,800 kg incl. SUVs; sedan ~1,400 kg"
+  },
+  "car_length_m": {
+   "value": 4.6,
+   "unit": "m",
+   "source": "typical mid-size sedan"
+  },
+  "car_width_m": {
+   "value": 1.8,
+   "unit": "m",
+   "source": "typical mid-size sedan"
+  },
+  "car_clearance_m": {
+   "value": 0.15,
+   "unit": "m",
+   "source": "typical sedan ground clearance (Shu et al. 2011)"
+  },
+  "car_seal_frac": {
+   "value": 0.75,
+   "unit": "-",
+   "source": "Martinez-Gomariz et al. 2018, J. Flood Risk Manag. 11:S817-S826: water ingress reduces buoyancy; gives float depth ~0.35-0.5 m, in the 0.3-0.6 m range of experiments"
+  },
+  "car_cd_side": {
+   "value": 1.1,
+   "unit": "-",
+   "source": "Shu, Xia, Falconer & Lin 2011, J. Hydraul. Res. 49:709-717 (drag on partially submerged vehicles ~1.1)"
+  },
+  "car_friction": {
+   "value": 0.25,
+   "unit": "-",
+   "source": "Shu et al. 2011 / Xia et al. 2014, Nat. Hazards 70:1619-1630: tyre-ground friction 0.25-0.75; 0.25 conservative (wet, parked in gear)"
+  },
+  "car_drift_frac": {
+   "value": 0.8,
+   "unit": "-",
+   "source": "assumed: an unstable car moves at ~80% of the local depth-averaged velocity"
+  },
+  "fall_noise_deg": {
+   "value": 15.0,
+   "unit": "deg",
+   "source": "assumed scatter of fall direction around the local wind (gust direction variability ~10-20 deg, ESDU 85020)"
+  },
+  "prune_area_factor": {
+   "value": 0.75,
+   "unit": "-",
+   "source": "ANSI A300 Part 1 (2017) pruning standard: crown reduction/thinning removes <=25% of live foliage per cycle; Pavlis et al. 2008, Arboric. Urban For. 34:102 (wind-tunnel drag reduction after thinning/reduction)"
+  },
+  "brace_strength_factor": {
+   "value": 1.25,
+   "unit": "-",
+   "source": "assumed: ANSI A300 Part 3 supplemental support (cabling/bracing) limits stem/codominant failure; 25% effective capacity gain (Smiley & Kane 2006, Arboric. Urban For. 32:33 report reduced failure of cabled stems)"
+  },
+  "tree_load_factor": {
+   "value": 2.9,
+   "unit": "-",
+   "source": "calibrated so the inventory's sound (defect-free) trees break at a median crown gust of 42 m/s (Virot et al. 2016, Phys. Rev. E 93:023001). Bundles, each within its published range: dynamic (sway) amplification 1.3-1.6 (Gardiner et al. 2008, Forestry 81:447-463), overhanging crown weight 1.1-1.2 (Peltola et al. 1999, Can. J. For. Res. 29:647-661), open-grown crown silhouette vs inventory allometry ~1.5-2 (McPherson et al. 2016 Urban Tree Database)"
+  },
+  "uproot_calib_factor": {
+   "value": 1.0,
+   "unit": "-",
+   "source": "calibrated: multiplies Creg so the 31.12.2022 replay reproduces the 9 SF 311 'tree down/damaged' reports inside the tile (data/grid/validation.json); placeholder until calibration run"
+  }
+ }
+}
