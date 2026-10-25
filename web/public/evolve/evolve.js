@@ -8,12 +8,12 @@ const POLL_MS = 1500;
 const SVGNS = 'http://www.w3.org/2000/svg';
 
 const OPS = {
-  seed: { label: 'Seed', color: 'var(--seed)', hex: '#8fa1b6' },
-  crossover: { label: 'Argon crossover', color: 'var(--cross)', hex: '#e58cff' },
-  mutate: { label: 'Flash diff', color: 'var(--flash)', hex: '#5fe1ff' },
-  tweak: { label: 'Tweak', color: 'var(--tweak)', hex: '#ffb54a' },
+  seed: { label: 'Seed', color: 'var(--seed)', hex: '#c2c2c2' },
+  crossover: { label: 'Argon crossover', color: 'var(--cross)', hex: '#0a0a0a' },
+  mutate: { label: 'Flash diff', color: 'var(--flash)', hex: '#555555' },
+  tweak: { label: 'Tweak', color: 'var(--tweak)', hex: '#9a9a9a' },
 };
-const STRAT_COLORS = { grey: '#7f9cff', green: '#5dff9d', building: '#ffb54a', response: '#ff7ab6', trees: '#3fd0a6', other: '#8fa1b6', mixed: '#c7d4e2' };
+const STRAT_COLORS = { grey: '#8c8c8c', green: '#0a0a0a', building: '#9a9a9a', response: '#7a7a7a', trees: '#8c8c8c', other: '#c2c2c2', mixed: '#d4d4d4' };
 const STRAT_LABELS = { grey: 'Grey infra', green: 'Green infra', building: 'Floodproofing', response: 'Emergency response', trees: 'Tree work', mixed: 'Mixed portfolio', other: 'Other' };
 const CAUSE_LABELS = {
   building_structure: 'Building structure', contents: 'Contents', business_interruption: 'Business interruption',
@@ -25,7 +25,7 @@ const PENDING = new Set(['writing', 'checking', 'simulating']);
 let S = null;            // current state
 let jobId = q.get('job');
 let selId = q.get('cand');
-let tab = ['architecture', 'agents'].includes(q.get('tab')) ? q.get('tab') : 'evolution';
+let tab = ['architecture', 'agents', 'evolution'].includes(q.get('tab')) ? q.get('tab') : 'overview';
 let treeMode = q.get('tree') === 'pareto' ? 'pareto' : 'tree';
 let pollTimer = null;
 const seen = new Set();  // candidate ids already drawn (for pop-in animation)
@@ -250,7 +250,7 @@ function renderMain() {
     if (c.id === selId) cls += ' sel';
     else if (sel && !lineIds.has(c.id)) cls += ' dim';
     const isBest = D.best && c.id === D.best.id;
-    const dot = el('circle', { cx: x, cy: yy, r: isBest ? r + 1.5 : r, fill: op.hex, stroke: PENDING.has(c.status) ? op.hex : 'rgba(7,11,17,.9)', 'stroke-width': 1.2, class: cls }, svg);
+    const dot = el('circle', { cx: x, cy: yy, r: isBest ? r + 1.5 : r, fill: op.hex, stroke: PENDING.has(c.status) ? op.hex : 'rgba(255,255,255,.95)', 'stroke-width': 1.2, class: cls }, svg);
     bindTip(dot, c);
   });
   if (D.best) {
@@ -303,7 +303,7 @@ function renderPareto() {
     const op = opOf(c);
     const cls = 'pt' + (D.ok(c) ? '' : ' reject') + (c.id === selId ? ' sel' : '') + (!seen.has(c.id) && !firstRender ? ' new' : '');
     const onF = frontIds.has(c.id);
-    const dot = el('circle', { cx: x(c.score.plan_cost_usd), cy: y(c.score.damage_avoided_usd), r: onF ? 5.5 : 4, fill: op.hex, 'fill-opacity': onF ? 1 : 0.55, stroke: 'rgba(7,11,17,.9)', 'stroke-width': 1, class: cls }, svg);
+    const dot = el('circle', { cx: x(c.score.plan_cost_usd), cy: y(c.score.damage_avoided_usd), r: onF ? 5.5 : 4, fill: op.hex, 'fill-opacity': onF ? 1 : 0.55, stroke: 'rgba(255,255,255,.95)', 'stroke-width': 1, class: cls }, svg);
     bindTip(dot, c);
   });
 }
@@ -322,7 +322,7 @@ function renderArchive() {
   const bl = ([a, b]) => (a <= 0 ? `< ${money(b, { dp: 0 })}` : `${money(a, { dp: 0 })}–${Math.round(b / 1e6)}M`);
   let html = '<div></div>' + bands.map((b) => `<div class="ar-h">${bl(b)}</div>`).join('');
   strats.forEach((s) => {
-    html += `<div class="ar-row" title="${esc(stratLabel(s))}"><span class="sw" style="background:${STRAT_COLORS[s] || '#8fa1b6'}"></span>${esc(stratLabel(s))}</div>`;
+    html += `<div class="ar-row" title="${esc(stratLabel(s))}"><span class="sw" style="background:${STRAT_COLORS[s] || '#c2c2c2'}"></span>${esc(stratLabel(s))}</div>`;
     bands.forEach((_, bi) => {
       const key = `${s}|${bi}`;
       const c = cells[key] && D.byId.get(cells[key]);
@@ -330,7 +330,7 @@ function renderArchive() {
       const v = c.score.net_benefit_usd;
       const t = (v - minN) / (maxN - minN || 1);
       const a = 0.07 + 0.55 * Math.pow(Math.max(0, t), 1.1);
-      const bg = v >= 0 ? `rgba(95,225,255,${a.toFixed(3)})` : 'rgba(255,93,108,0.16)';
+      const bg = v >= 0 ? `rgba(0,0,0,${a.toFixed(3)})` : 'rgba(0,0,0,0.05)';
       const changed = cellPrev[key] && cellPrev[key] !== c.id;
       cellPrev[key] = c.id;
       html += `<div class="ar-cell${D.best && c.id === D.best.id ? ' best' : ''}${c.id === selId ? ' sel' : ''}${changed ? ' flash' : ''}" data-id="${esc(c.id)}" style="background:${bg}">
@@ -351,7 +351,7 @@ function renderBoard() {
   if (!top.length) { $('#board').innerHTML = '<div class="empty-note">No scored plans yet.</div>'; return; }
   $('#board').innerHTML = `<table><thead><tr><th>#</th><th>Plan</th><th>Gen</th><th>Cost</th><th>Avoided</th><th>Net</th><th>BCR</th></tr></thead><tbody>
     ${top.map((c, i) => `<tr data-id="${esc(c.id)}" class="${c.id === selId ? 'sel' : ''}"><td class="rank">${i + 1}</td>
-      <td><span class="mono" style="color:#fff;margin-right:6px">${esc(c.id)}</span>${chip(c)}</td><td>${c.gen}</td>
+      <td><span class="mono" style="margin-right:6px">${esc(c.id)}</span>${chip(c)}</td><td>${c.gen}</td>
       <td>${money(c.score.plan_cost_usd)}</td><td>${money(c.score.damage_avoided_usd)}</td>
       <td class="net">${money(c.score.net_benefit_usd, { sign: true })}</td><td>${num(c.score.bcr, 1)}</td></tr>`).join('')}
   </tbody></table>`;
@@ -462,8 +462,8 @@ async function renderDetail() {
         <span class="val">${money(c.by_cause?.[k] || 0)}</span></div>`).join('')}</div></div>` : '';
 
   const spendHtml = cbsTot > 0 ? `<div class="d-sec"><div class="lab">Spend by strategy<span class="r">${money(cbsTot)}</span></div>
-      <div class="stack">${cbsSorted.map(([k, v]) => `<span style="width:${(100 * v) / cbsTot}%;background:${STRAT_COLORS[k] || '#8fa1b6'}" title="${esc(stratLabel(k))} ${money(v)}"></span>`).join('')}</div>
-      <div class="stack-leg">${cbsSorted.map(([k, v]) => `<span><i style="background:${STRAT_COLORS[k] || '#8fa1b6'}"></i>${esc(stratLabel(k))} ${money(v)}</span>`).join('')}</div></div>` : '';
+      <div class="stack">${cbsSorted.map(([k, v]) => `<span style="width:${(100 * v) / cbsTot}%;background:${STRAT_COLORS[k] || '#c2c2c2'}" title="${esc(stratLabel(k))} ${money(v)}"></span>`).join('')}</div>
+      <div class="stack-leg">${cbsSorted.map(([k, v]) => `<span><i style="background:${STRAT_COLORS[k] || '#c2c2c2'}"></i>${esc(stratLabel(k))} ${money(v)}</span>`).join('')}</div></div>` : '';
 
   const can3d = !!c.run_id;
   box.innerHTML = `
@@ -567,7 +567,7 @@ function renderArch() {
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
   box.appendChild(svg);
   const defs = el('defs', {}, svg);
-  [['ah', 'rgba(95,225,255,.6)'], ['ahg', 'rgba(93,255,157,.65)'], ['ahp', 'rgba(180,140,255,.7)'], ['ahb', 'rgba(159,179,255,.7)']].forEach(([id, col]) => {
+  [['ah', 'rgba(0,0,0,.6)'], ['ahg', 'rgba(0,0,0,.65)'], ['ahp', 'rgba(0,0,0,.7)'], ['ahb', 'rgba(0,0,0,.7)']].forEach(([id, col]) => {
     const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 6.5, markerHeight: 6.5, orient: 'auto-start-reverse' }, defs);
     el('path', { d: 'M0,0L10,5L0,10z', fill: col }, mk);
   });
@@ -584,35 +584,35 @@ function renderArch() {
     : ['one directive each from the architect'];
   const hasReviewer = !!agentByKey('reviewer') || D.cands.some((c) => c.review);
   const nodes = {
-    sampler: { x: 20, y: 96, w: 250, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell,', 'top elites as inspiration'], c: '#5fe1ff', on: running && (llmOn || st === 'architect' || st === 'mutating') },
-    db: { x: 20, y: 352, w: 250, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#5dff9d', on: running && st === 'selecting', n: nCells },
-    argon: { x: 330, y: 22, w: 300, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, dispatches', 'specialists, writes a crossover plan'], c: '#b48cff', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
-    flash: { x: 330, y: 144, w: 300, h: 136, k: `${specialists.length > 1 ? specialists.length + ' specialist' : ''} mutators × ${Math.max(1, N - 3)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', ...persona], c: '#5fe1ff', on: running && cnt.flash > 0, n: cnt.flash },
-    tweak: { x: 330, y: 302, w: 300, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#ffb54a', on: running && cnt.tweak > 0, n: cnt.tweak },
-    review: { x: 676, y: 160, w: 200, h: 100, k: 'Pre-sim critic', t: 'Reviewer', s: [modelName(agentByKey('reviewer')?.model || 'gemini-3.5-flash-lite'), 'predicts better / same / worse'], c: '#9fb3ff', on: running && cnt.review > 0, n: cnt.review, off: !hasReviewer },
-    sandbox: { x: 920, y: 60, w: 170, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#5fe1ff', on: running && cnt.check > 0, n: cnt.check },
-    cost: { x: 1106, y: 60, w: 168, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical', 'diff, cited unit costs'], c: '#ffb54a', on: running && cnt.check > 0 },
-    sim: { x: 920, y: 300, w: 354, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood · LBM wind', 'tree failure · people · Hazus damage', 'same plan → same ledger, every time'], c: '#4fb8ff', on: running && cnt.sim > 0, n: cnt.sim },
-    eop: { x: 330, y: 446, w: 300, h: 92, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#5dff9d', on: DONE.has(S.status) },
+    sampler: { x: 20, y: 96, w: 250, h: 100, k: 'Prompt sampler', t: 'Parent + inspirations', s: ['a parent from an archive cell,', 'top elites as inspiration'], c: '#555555', on: running && (llmOn || st === 'architect' || st === 'mutating') },
+    db: { x: 20, y: 352, w: 250, h: 112, k: 'Program database', t: 'MAP-Elites archive', s: [`${nCells} elite cells · ${nScored} scored plans`, 'best plan per strategy × cost band'], c: '#0a0a0a', on: running && st === 'selecting', n: nCells },
+    argon: { x: 330, y: 22, w: 300, h: 100, k: 'Architect', t: modelName(S.config?.architect_model || 'gemini-4-argon'), s: ['reads the whole archive, dispatches', 'specialists, writes a crossover plan'], c: '#0a0a0a', on: running && (cnt.argon > 0 || st === 'architect'), n: cnt.argon },
+    flash: { x: 330, y: 144, w: 300, h: 136, k: `${specialists.length > 1 ? specialists.length + ' specialist' : ''} mutators × ${Math.max(1, N - 3)} in parallel`, t: modelName(S.config?.mutator_model || 'gemini-3.8-flash'), s: ['SEARCH/REPLACE diffs on the parent', ...persona], c: '#555555', on: running && cnt.flash > 0, n: cnt.flash },
+    tweak: { x: 330, y: 302, w: 300, h: 78, k: 'Hill-climb', t: 'Numeric tweak', s: ['no LLM: perturbs sizes, heights, flows'], c: '#9a9a9a', on: running && cnt.tweak > 0, n: cnt.tweak },
+    review: { x: 676, y: 160, w: 200, h: 100, k: 'Pre-sim critic', t: 'Reviewer', s: [modelName(agentByKey('reviewer')?.model || 'gemini-3.5-flash-lite'), 'predicts better / same / worse'], c: '#8c8c8c', on: running && cnt.review > 0, n: cnt.review, off: !hasReviewer },
+    sandbox: { x: 920, y: 60, w: 170, h: 100, k: 'Isolation', t: 'Sandbox', s: ['Landlock + seccomp,', 'no network, no secrets'], c: '#555555', on: running && cnt.check > 0, n: cnt.check },
+    cost: { x: 1106, y: 60, w: 168, h: 100, k: 'Locked', t: 'Cost planner', s: ['prices the physical', 'diff, cited unit costs'], c: '#9a9a9a', on: running && cnt.check > 0 },
+    sim: { x: 920, y: 300, w: 354, h: 128, k: 'Deterministic evaluator', t: 'Storm simulation', s: ['shallow-water flood · LBM wind', 'tree failure · people · Hazus damage', 'same plan → same ledger, every time'], c: '#7a7a7a', on: running && cnt.sim > 0, n: cnt.sim },
+    eop: { x: 330, y: 446, w: 300, h: 92, k: 'People stay in control', t: 'Planner approval', s: ['the planner approves the best plan', 'before anything is built or spent'], c: '#0a0a0a', on: DONE.has(S.status) },
   };
   const simOut = running && (cnt.sim > 0 || st === 'selecting');
   const chk = cnt.check > 0 && running;
   const edges = [
-    { d: 'M145,350 L145,198', on: nodes.sampler.on, c: '#5fe1ff', label: 'elites', lx: 154, ly: 278 },
-    { d: 'M272,124 C300,124 300,72 328,72', on: nodes.argon.on, c: '#b48cff', m: 'ahp' },
-    { d: 'M272,146 C300,146 300,212 328,212', on: cnt.flash > 0 && running, c: '#5fe1ff' },
-    { d: 'M272,168 C300,168 300,341 328,341', on: cnt.tweak > 0 && running, c: '#ffb54a' },
-    { d: 'M632,90 C656,90 652,190 674,190', on: (cnt.argon > 0 || cnt.review > 0) && running, c: '#b48cff', m: 'ahp' },
-    { d: 'M632,212 L674,212', on: (cnt.flash > 0 || cnt.review > 0) && running, c: '#5fe1ff' },
-    { d: 'M878,206 C900,206 896,124 918,124', on: chk, c: '#9fb3ff', m: 'ahb' },
-    { d: 'M632,336 C800,336 940,312 940,164', on: chk, c: '#ffb54a' },
-    { d: 'M1092,110 L1104,110', on: chk, c: '#ffb54a' },
-    { d: 'M1190,162 L1190,298', on: cnt.sim > 0 && running, c: '#4fb8ff', label: 'within budget', lx: 1198, ly: 236 },
-    { d: 'M918,392 C720,400 480,408 272,408', on: simOut, c: '#5dff9d', m: 'ahg', label: 'ledger + score', lx: 700, ly: 416 },
-    { d: 'M200,466 C200,492 280,492 328,492', on: DONE.has(S.status), c: '#5dff9d', m: 'ahg', exit: true, label: 'best plan', lx: 214, ly: 512 },
-    { d: 'M480,20 C480,2 96,2 96,94', on: nodes.argon.on, c: '#b48cff', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 112, ly: 64 },
+    { d: 'M145,350 L145,198', on: nodes.sampler.on, c: '#555555', label: 'elites', lx: 154, ly: 278 },
+    { d: 'M272,124 C300,124 300,72 328,72', on: nodes.argon.on, c: '#0a0a0a', m: 'ahp' },
+    { d: 'M272,146 C300,146 300,212 328,212', on: cnt.flash > 0 && running, c: '#555555' },
+    { d: 'M272,168 C300,168 300,341 328,341', on: cnt.tweak > 0 && running, c: '#9a9a9a' },
+    { d: 'M632,90 C656,90 652,190 674,190', on: (cnt.argon > 0 || cnt.review > 0) && running, c: '#0a0a0a', m: 'ahp' },
+    { d: 'M632,212 L674,212', on: (cnt.flash > 0 || cnt.review > 0) && running, c: '#555555' },
+    { d: 'M878,206 C900,206 896,124 918,124', on: chk, c: '#8c8c8c', m: 'ahb' },
+    { d: 'M632,336 C800,336 940,312 940,164', on: chk, c: '#9a9a9a' },
+    { d: 'M1092,110 L1104,110', on: chk, c: '#9a9a9a' },
+    { d: 'M1190,162 L1190,298', on: cnt.sim > 0 && running, c: '#7a7a7a', label: 'within budget', lx: 1198, ly: 236 },
+    { d: 'M918,392 C720,400 480,408 272,408', on: simOut, c: '#0a0a0a', m: 'ahg', label: 'ledger + score', lx: 700, ly: 416 },
+    { d: 'M200,466 C200,492 280,492 328,492', on: DONE.has(S.status), c: '#0a0a0a', m: 'ahg', exit: true, label: 'best plan', lx: 214, ly: 512 },
+    { d: 'M480,20 C480,2 96,2 96,94', on: nodes.argon.on, c: '#0a0a0a', m: 'ahp', thin: true, label: 'reads every plan so far', lx: 112, ly: 64 },
   ];
-  if (!hasReviewer) { edges.splice(4, 3, { d: 'M632,90 C780,90 800,110 918,110', on: chk, c: '#b48cff', m: 'ahp' }, { d: 'M632,212 C780,212 800,134 918,134', on: chk, c: '#5fe1ff' }); delete nodes.review; }
+  if (!hasReviewer) { edges.splice(4, 3, { d: 'M632,90 C780,90 800,110 918,110', on: chk, c: '#0a0a0a', m: 'ahp' }, { d: 'M632,212 C780,212 800,134 918,134', on: chk, c: '#555555' }); delete nodes.review; }
   edges.forEach((e) => {
     const pth = el('path', { d: e.d, class: 'aedge' + (e.on ? ' on' : '') + (e.exit ? ' exit' : ''), style: `--c:${e.c}`, 'marker-end': `url(#${e.m || 'ah'})` }, svg);
     if (e.thin && !e.on) pth.setAttribute('stroke-dasharray', '2 5');
@@ -652,6 +652,8 @@ function renderUsage() {
 
 // ---------------------------------------------------------------- log
 let logOpen = false;
+// monochrome: shade by model tier (Argon darkest, Flash mid, Flash-Lite light, no model lightest)
+const monoFor = (m) => (!m ? '#b5b5b5' : /argon/.test(m) ? '#0a0a0a' : /lite/.test(m) ? '#8c8c8c' : '#555555');
 const DONE = new Set(['completed', 'awaiting_approval', 'approved', 'rejected']);
 const KIND_COLORS = { architect: 'var(--argon)', insight: 'var(--argon)', score: 'var(--good)', best: 'var(--good)', elite: 'var(--good)', fail: 'var(--bad)', reject: 'var(--warn)', error: 'var(--bad)', api_error: 'var(--bad)', sim_error: 'var(--bad)', over: 'var(--warn)', repair: 'var(--warn)', info: 'var(--accent)', start: 'var(--accent)', generation: 'var(--accent)', video: 'var(--accent)', stop: 'var(--warn)' };
 function renderLog() {
@@ -674,6 +676,8 @@ function select(id) {
 function setTab(t) {
   tab = t;
   document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === t));
+  $('#view-overview').classList.toggle('hidden', t !== 'overview');
+  document.body.classList.toggle('is-overview', t === 'overview');
   $('#view-evolution').classList.toggle('hidden', t !== 'evolution');
   $('#view-architecture').classList.toggle('hidden', t !== 'architecture');
   $('#view-agents').classList.toggle('hidden', t !== 'agents');
@@ -688,7 +692,8 @@ function renderAll() {
   D = derive(S);
   if (!selId && D.best) selId = D.best.id;
   renderTop();
-  if (tab === 'evolution') { renderMain(); renderTreeCard(); renderArchive(); renderBoard(); renderGens(); }
+  if (tab === 'overview') renderOverview();
+  else if (tab === 'evolution') { renderMain(); renderTreeCard(); renderArchive(); renderBoard(); renderGens(); }
   else if (tab === 'agents') renderAgents();
   else renderArch();
   const c = selId && D.byId.get(selId);
@@ -787,7 +792,7 @@ setInterval(() => { if (S && S.status === 'running') renderTop(); }, 1000);
 
 (async function boot() {
   renderLegend();
-  if (tab !== 'evolution') setTab(tab);
+  setTab(tab);
   const list = await loadJobs();
   if (!FIXTURE && !jobId) {
     if (!list.length) { showEmpty('No evolution runs yet.'); return; }
@@ -825,16 +830,16 @@ async function approve(ok) {
 
 // ================================================================ agents (round 2)
 const FALLBACK_AGENTS = [
-  { key: 'architect', label: 'Architect', model: 'gemini-4-argon', role: 'reads the whole archive, writes directions and crossovers', color: '#b48cff' },
-  { key: 'flash', label: 'Mutators', model: 'gemini-3.8-flash', role: 'write SEARCH/REPLACE diffs on a parent plan', color: '#5fe1ff' },
-  { key: 'tweak', label: 'Hill-climber', model: null, role: 'no LLM: rescales sizes, heights and flows', color: '#ffb54a' },
-  { key: 'sandbox', label: 'Sandbox + cost planner', model: null, role: 'Landlock sandbox, locked cited cost table', color: '#8fa1b6' },
-  { key: 'sim', label: 'Storm simulator', model: null, role: 'deterministic flood, wind, trees, people, damage', color: '#4fb8ff' },
+  { key: 'architect', label: 'Architect', model: 'gemini-4-argon', role: 'reads the whole archive, writes directions and crossovers', color: '#0a0a0a' },
+  { key: 'flash', label: 'Mutators', model: 'gemini-3.8-flash', role: 'write SEARCH/REPLACE diffs on a parent plan', color: '#555555' },
+  { key: 'tweak', label: 'Hill-climber', model: null, role: 'no LLM: rescales sizes, heights and flows', color: '#9a9a9a' },
+  { key: 'sandbox', label: 'Sandbox + cost planner', model: null, role: 'Landlock sandbox, locked cited cost table', color: '#c2c2c2' },
+  { key: 'sim', label: 'Storm simulator', model: null, role: 'deterministic flood, wind, trees, people, damage', color: '#7a7a7a' },
 ];
 let _rosterCache = null;
 function roster() {
   if (_rosterCache && _rosterCache.S === S) return _rosterCache.list;
-  const list = (S.agents && S.agents.length ? S.agents : FALLBACK_AGENTS).map((a, i) => ({ ...a, color: a.color || ['#5fe1ff', '#b48cff', '#ffb54a', '#5dff9d', '#ff7ab6'][i % 5] }));
+  const list = (S.agents && S.agents.length ? S.agents : FALLBACK_AGENTS).map((a) => ({ ...a, color: monoFor(a.model) }));
   _rosterCache = { S, list, by: new Map(list.map((a) => [a.key, a])) };
   return list;
 }
@@ -850,7 +855,7 @@ function agentOf(c) {
   const a = agentByKey(agentKeyOfCand(c));
   if (a) return a;
   const k = agentKeyOfCand(c);
-  return { key: k, label: c.agent_label || EXTRA_LABELS[k] || k, color: '#8fa1b6', model: c.model };
+  return { key: k, label: c.agent_label || EXTRA_LABELS[k] || k, color: '#c2c2c2', model: c.model };
 }
 const EXTRA_LABELS = { import: 'Imported', repair: 'Repair', flash: 'Mutators' };
 const initials = (label) => { const w = String(label || '?').split(/[\s+]+/).filter(Boolean); return (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase(); };
@@ -899,7 +904,7 @@ function reviewHtml(c) {
   const held = c.improved == null ? null : (r.predicted === 'better') === !!c.improved;
   const outcome = c.improved == null ? '<span class="faint">outcome pending</span>'
     : `<span class="${held ? 'ok' : 'no'}">${held ? '✓ prediction held' : '✕ prediction missed'}</span> <span class="faint">· actually ${c.improved ? 'better' : 'not better'} than its parent</span>`;
-  return `<div class="review"><div class="rv-h"><span class="av" style="--ac:${agentByKey('reviewer')?.color || '#9fb3ff'}">RV</span><b>Reviewer</b><span class="faint">${esc(modelName(r.model || 'gemini-3.5-flash-lite'))}</span>
+  return `<div class="review"><div class="rv-h"><span class="av" style="--ac:${agentByKey('reviewer')?.color || '#8c8c8c'}">RV</span><b>Reviewer</b><span class="faint">${esc(modelName(r.model || 'gemini-3.5-flash-lite'))}</span>
     <span class="pred ${esc(r.predicted)}">predicted ${esc(r.predicted)}</span>${r.verdict === 'risky' ? '<span class="badge risky">risky</span>' : ''}</div>
     ${r.reason ? `<div class="rv-r">${esc(r.reason)}</div>` : ''}<div class="rv-o">${outcome}</div></div>`;
 }
@@ -970,7 +975,7 @@ function renderTree() {
     if (!seen.has(c.id) && !firstRender) cls += ' new';
     if (c.id === selId) cls += ' sel';
     if (bestLine.has(c.id)) cls += ' onbest';
-    const dot = el('circle', { cx: x, cy: y, r: D.best && c.id === D.best.id ? r + 2 : r, fill: col, stroke: PENDING.has(c.status) ? col : 'rgba(7,11,17,.95)', 'stroke-width': 1.3, class: cls }, svg);
+    const dot = el('circle', { cx: x, cy: y, r: D.best && c.id === D.best.id ? r + 2 : r, fill: col, stroke: PENDING.has(c.status) ? col : 'rgba(255,255,255,.95)', 'stroke-width': 1.3, class: cls }, svg);
     bindTip(dot, c);
   });
   if (D.best && pos.get(D.best.id)) {
@@ -1055,7 +1060,7 @@ function renderSwim() {
     const items = acts.filter((x2) => x2.agent === k);
     const rowsEnd = [];
     items.sort((p, q2) => p.t0 - q2.t0).forEach((it) => { const end = it.t1 ?? t1; let r = rowsEnd.findIndex((e) => e <= it.t0 - 0.5); if (r < 0) { r = rowsEnd.length; rowsEnd.push(end); } else rowsEnd[r] = end; it._row = r; });
-    lanes.push({ a: { key: k, label: EXTRA_LABELS[k] || k, color: '#8fa1b6' }, items, rows: Math.max(1, rowsEnd.length) });
+    lanes.push({ a: { key: k, label: EXTRA_LABELS[k] || k, color: '#c2c2c2' }, items, rows: Math.max(1, rowsEnd.length) });
   });
   let y = axisH;
   lanes.forEach((L) => { L.y = y; L.h = L.rows * rowH + 8; y += L.h + laneGap; });
@@ -1064,7 +1069,7 @@ function renderSwim() {
   box.appendChild(svg);
   const defs = el('defs', {}, svg);
   const pat = el('pattern', { id: 'stripes', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
-  el('rect', { width: 4, height: 8, fill: 'rgba(255,255,255,0.22)' }, pat);
+  el('rect', { width: 4, height: 8, fill: 'rgba(0,0,0,0.12)' }, pat);
   // axis ticks (elapsed)
   const span = t1 - t0;
   const step = [10, 15, 30, 60, 120, 300, 600, 900, 1800].find((s2) => span / s2 <= 12) || 3600;
@@ -1111,7 +1116,7 @@ function showActTip(it, a, ev) {
   const c = it.cand && D.byId.get(it.cand);
   const d = (it.t1 ?? nowT()) - it.t0;
   tip.innerHTML = `<div class="th"><span class="chip"><i style="background:${a.color}"></i>${esc(a.label)}</span><span style="color:var(--faint)">${it.gen != null ? 'gen ' + it.gen : ''}</span></div>
-    <div class="tn">${esc(KIND_LABEL[it.kind] || it.kind)}${c ? ` · <span class="mono" style="color:#fff">${esc(c.id)}</span>` : ''}</div>
+    <div class="tn">${esc(KIND_LABEL[it.kind] || it.kind)}${c ? ` · <span class="mono" style="color:#0a0a0a">${esc(c.id)}</span>` : ''}</div>
     <div class="tg"><span>Duration</span><span>${d < 60 ? d.toFixed(1) + ' s' : dur(d)}</span>${it.model ? `<span>Model</span><span>${esc(modelName(it.model))}</span>` : ''}
     <span>Result</span><span style="color:${it.t1 == null ? 'var(--accent)' : it.ok === false ? 'var(--bad)' : 'var(--good)'}">${it.t1 == null ? 'running' : it.ok === false ? 'failed' : 'ok'}</span></div>
     ${c && c.note ? `<div class="tn" style="margin-top:4px">${esc(c.note)}</div>` : ''}`;
@@ -1164,4 +1169,113 @@ function renderCalib() {
     <table class="cm"><thead><tr><th></th><th>beat parent</th><th>did not</th></tr></thead><tbody>
       ${P.map((p) => `<tr><th>predicted ${p}</th>${td(p, 1)}${td(p, 0)}</tr>`).join('')}</tbody></table>
     <div class="faint cnote">Gemini 3.5 Flash-Lite reads each diff and the parent's ledger and predicts the outcome in a second, before the minutes-long storm run. Green cells are correct calls.</div></div>`;
+}
+
+// ---------------------------------------------------------------- overview (AlphaEvolve-style explainer)
+document.querySelectorAll('[data-go]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); setTab(a.dataset.go); }));
+function renderOverview() {
+  const gens = [...new Set(D.cands.map((c) => c.gen))].sort((a, b) => a - b);
+  const seeds = D.scored.filter((c) => c.gen === 0);
+  const seedBest = seeds.length ? Math.max(...seeds.map((c) => c.score.net_benefit_usd)) : null;
+  const best = D.best ? D.best.score.net_benefit_usd : null;
+  const ratio = best && seedBest > 0 ? best / seedBest : null;
+  const nAgents = (S.agents || []).length || 11;
+  $('#ovStats').innerHTML = `
+    <div class="ov-big"><span class="v">${best != null ? money(best, { sign: true }) : '—'}</span><span class="k">best net benefit<br>(damage avoided − cost)</span></div>
+    <div class="ov-big alt"><span class="v">${ratio ? '×' + ratio.toFixed(ratio < 10 ? 2 : 1) : '—'}</span><span class="k">better than the<br>best first plan</span></div>
+    <div class="ov-small"><b>${D.cands.length}</b> plans tried<b>${Math.max(0, gens.length - 1)}</b> generations<b>${nAgents}</b> agents</div>`;
+  renderOvLoop();
+  renderOvChart(gens, seedBest);
+}
+function renderOvLoop() {
+  const box = $('#ovLoop');
+  box.innerHTML = '';
+  const W = 1000, H = 520, cx = 500, cy = 262, R = 168;
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+  box.appendChild(svg);
+  const defs = el('defs', {}, svg);
+  const mk = el('marker', { id: 'ovArrow', viewBox: '0 0 10 10', refX: 8, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+  el('path', { d: 'M0,0 L10,5 L0,10 z', fill: 'rgba(0,0,0,.55)' }, mk);
+  const glow = el('filter', { id: 'ovGlow', x: '-30%', y: '-30%', width: '160%', height: '160%' }, defs);
+  el('feGaussianBlur', { stdDeviation: 6, result: 'b' }, glow);
+  const fm = el('feMerge', {}, glow); el('feMergeNode', { in: 'b' }, fm); el('feMergeNode', { in: 'SourceGraphic' }, fm);
+  const running = S.status === 'running';
+  const cnt = archCounts();
+  const st = S.stage;
+  const boxes = [
+    { n: 1, t: 'Prompt sampler', s: ['picks a parent plan +', 'inspirations from the database'], x: cx, y: cy - R, c: '#0a0a0a', on: running && st === 'mutating' && cnt.flash === 0 && cnt.argon === 0 },
+    { n: 2, t: 'LLM ensemble', s: ['Gemini 4 Argon directs,', '6 Gemini 3.8 Flash specialists', 'write code diffs'], x: cx + R * 1.55, y: cy, c: '#0a0a0a', on: running && (cnt.argon + cnt.flash + cnt.review > 0 || st === 'architect' || st === 'seeding') },
+    { n: 3, t: 'Evaluators', s: ['sandbox · cited cost planner', 'storm sim: flood, wind,', 'trees, people'], x: cx, y: cy + R, c: '#0a0a0a', on: running && cnt.check + cnt.sim > 0 },
+    { n: 4, t: 'Program database', s: ['keeps the best plan per', 'strategy and budget band'], x: cx - R * 1.55, y: cy, c: '#0a0a0a', on: running && st === 'selecting' },
+  ];
+  // ring path (ellipse) for the travelling pulse
+  const rx = R * 1.55, ry = R;
+  const ring = `M ${cx} ${cy - ry} A ${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 0 1 ${cx - rx} ${cy} A ${rx} ${ry} 0 0 1 ${cx} ${cy - ry}`;
+  el('path', { d: ring, fill: 'none', stroke: 'rgba(0,0,0,.10)', 'stroke-width': 2 }, svg);
+  // arrows between boxes along the ring (quarter arcs, trimmed)
+  const P = (deg) => [cx + rx * Math.cos(deg * Math.PI / 180), cy + ry * Math.sin(deg * Math.PI / 180)];
+  const arcs = [[-90, 0], [0, 90], [90, 180], [180, 270]].map(([a, b]) => {
+    const [x1, y1] = P(a + 34), [x2, y2] = P(b - 30);
+    return `M ${x1} ${y1} A ${rx} ${ry} 0 0 1 ${x2} ${y2}`;
+  });
+  arcs.forEach((d) => el('path', { d, fill: 'none', stroke: 'rgba(0,0,0,.45)', 'stroke-width': 2, 'marker-end': 'url(#ovArrow)' }, svg));
+  const pulse = el('circle', { r: 6, fill: '#555555', filter: 'url(#ovGlow)', class: 'ov-pulse' }, svg);
+  const am = el('animateMotion', { dur: running ? '6s' : '10s', repeatCount: 'indefinite', path: ring }, pulse);
+  void am;
+  // centre label
+  const ctr = el('text', { x: cx, y: cy - 6, 'text-anchor': 'middle', class: 'ov-ctr' }, svg); ctr.textContent = 'repeat every';
+  const ctr2 = el('text', { x: cx, y: cy + 22, 'text-anchor': 'middle', class: 'ov-ctr b' }, svg); ctr2.textContent = 'generation';
+  boxes.forEach((b) => {
+    const w = 300, hh = 74 + b.s.length * 21;
+    const g = el('g', { class: 'ov-node' + (b.on ? ' on' : '') }, svg);
+    el('rect', { x: b.x - w / 2, y: b.y - hh / 2, width: w, height: hh, rx: 16, fill: '#ffffff', stroke: b.c, 'stroke-opacity': b.on ? 1 : 0.18, 'stroke-width': b.on ? 2.5 : 1.5, filter: b.on ? 'url(#ovGlow)' : null }, g);
+    el('circle', { cx: b.x - w / 2 + 24, cy: b.y - hh / 2 + 26, r: 13, fill: b.c }, g);
+    const nn = el('text', { x: b.x - w / 2 + 24, y: b.y - hh / 2 + 31, 'text-anchor': 'middle', class: 'ov-n' }, g); nn.textContent = b.n;
+    const tt = el('text', { x: b.x - w / 2 + 46, y: b.y - hh / 2 + 32, class: 'ov-t' }, g); tt.textContent = b.t;
+    b.s.forEach((line, i) => { const s = el('text', { x: b.x - w / 2 + 20, y: b.y - hh / 2 + 62 + i * 21, class: 'ov-s' }, g); s.textContent = line; });
+  });
+  // inputs (left) and output (right) as side notes
+  const side = (x, y, lines, cls) => { lines.forEach((l, i) => { const t = el('text', { x, y: y + i * 22, class: cls }, svg); t.textContent = l; }); };
+  const budget = money(S.config?.budget_usd || 50e6, { dp: 0 });
+  side(14, 34, ['INPUTS'], 'ov-side-k');
+  side(14, 60, [`Problem: storm + ${budget} budget`, 'Evaluator: the locked StormSim', 'Initial plans'], 'ov-side');
+  side(W - 14, 34, ['OUTPUT'], 'ov-side-k r');
+  side(W - 14, 60, ['Best plan →', 'planner approval'], 'ov-side r');
+}
+function renderOvChart(gens, seedBest) {
+  const box = $('#ovChart');
+  const { svg, W, H } = svgIn(box);
+  const pts = [];
+  let run = null;
+  gens.forEach((g) => {
+    const v = D.scored.filter((c) => c.gen === g).map((c) => c.score.net_benefit_usd);
+    if (v.length) run = run == null ? Math.max(...v) : Math.max(run, ...v);
+    if (run != null) pts.push({ g, v: run });
+  });
+  if (!pts.length) { const t = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = 'waiting for the first scored plans…'; return; }
+  const m = { l: 92, r: 40, t: 40, b: 56 };
+  const lo = Math.min(0, ...pts.map((p) => p.v)), hi = Math.max(...pts.map((p) => p.v)) * 1.12 || 1;
+  const gMax = Math.max(1, pts[pts.length - 1].g);
+  const x = (g) => m.l + (W - m.l - m.r) * (g / gMax);
+  const y = (v) => H - m.b - (H - m.t - m.b) * ((v - lo) / (hi - lo));
+  for (let i = 0; i <= 3; i++) {
+    const v = lo + (hi - lo) * i / 3;
+    el('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: 'rgba(0,0,0,.08)' }, svg);
+    const t = el('text', { x: m.l - 14, y: y(v) + 5, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = money(v);
+  }
+  pts.forEach((p) => { const t = el('text', { x: x(p.g), y: H - m.b + 32, 'text-anchor': 'middle', class: 'ov-ax' }, svg); t.textContent = p.g === 0 ? 'first plans' : 'gen ' + p.g; });
+  let d = `M ${x(pts[0].g)} ${y(pts[0].v)}`;
+  pts.slice(1).forEach((p) => { d += ` H ${x(p.g)} V ${y(p.v)}`; });
+  const area = d + ` V ${y(lo)} H ${x(pts[0].g)} Z`;
+  el('path', { d: area, fill: 'rgba(0,0,0,.07)' }, svg);
+  el('path', { d, fill: 'none', stroke: '#0a0a0a', 'stroke-width': 3.5, 'stroke-linejoin': 'round' }, svg);
+  if (seedBest != null) {
+    el('line', { x1: m.l, x2: W - m.r, y1: y(seedBest), y2: y(seedBest), stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '5 6' }, svg);
+    const t = el('text', { x: W - m.r, y: y(seedBest) + 22, 'text-anchor': 'end', class: 'ov-ax' }, svg); t.textContent = 'best first plan ' + money(seedBest);
+  }
+  pts.forEach((p, i) => {
+    el('circle', { cx: x(p.g), cy: y(p.v), r: i === pts.length - 1 ? 9 : 6, fill: i === pts.length - 1 ? '#0a0a0a' : '#ffffff', stroke: '#0a0a0a', 'stroke-width': 3 }, svg);
+    const t = el('text', { x: x(p.g), y: y(p.v) - 18, 'text-anchor': i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle', class: 'ov-val' + (i === pts.length - 1 ? ' last' : '') }, svg);
+    t.textContent = money(p.v, { sign: true });
+  });
 }
