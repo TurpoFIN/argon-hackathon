@@ -53,3 +53,24 @@ A plan is Python code defining `def apply(city): ...` against `sim/city_api.py` 
 ## Server (`server/`, owned by agent/server)
 
 FastAPI on port 8765: serves `web/dist`, `data/grid` static (`/data/...`), `runs/` (`/runs/...`), `POST /api/run {storm, plan_code?, label}`, `POST /api/optimize {model: gemini-4-argon|gemini-3.8-flash, budget_usd, storm}` → job id, `GET /api/jobs/<id>/events` (SSE: thoughts, code, tool calls, run results), `GET /api/runs`.
+
+## v2 (13:25): Argon's plan = full city defence + emergency response, built in 3D
+
+Argon's plan is the heart of the demo. It must be as complete as a real city's storm plan, and every part shows up as 3D in the scene and is simulated.
+
+A plan has two parts, both produced by Argon's `apply(city)` code:
+1. **Infrastructure** (CityEditor helpers + raw arrays, priced by sim/costs.py): floodwalls with real cross-sections, deployable gates, berms, pumps, tanks, tunnels, permeable streets, bioswales, green roofs, sandbags, wind screens, tree work.
+2. **Emergency response** (`city.response`, new, owned by sim/response.py + sim/people.py):
+   - `shelter(building_id, capacity, open_at_s, supplies)`: open shelters in real buildings (schools EDU1, gov GOV1, Moscone, rec centres).
+   - `evacuate(polygon, order_at_s, to_shelters=[...], priority='vulnerable'|'all')`: evacuation orders; people walk or drive the street graph to shelters.
+   - `depot(x, y, kind='food'|'water'|'medical'|'sandbags'|'pumps')` + `supply_run(depot, shelter_ids, trucks, depart_at_s)`: logistics. Needs are 3 meals and 1 gal water per person per day (FEMA); routes are blocked by deep water.
+   - `crew(kind='sandbag'|'pump'|'tree'|'rescue'|'medical', n, stage_at=(x, y), tasks=[...], start_s)`
+   - `close_road(polyline, at_s)`, `alert(text, at_s, zone)`, `generator(building_id)`, `medical_post(x, y)`.
+   - Phases: each action has a time in sim seconds relative to storm start; negative = before landfall (−72 h … 0).
+3. **3D objects**: everything above is emitted to `runs/<id>/plan_objects.json`:
+   `{objects: [{id, type, phase, t_s, geometry: {kind: point|polyline|polygon|mesh, coords: [[x, y], ...] (local m from grid SW), z_base: 'ground', height_m, width_m, profile: [[w, h], ...]}, style: {color, material: concrete|steel|glass|water|holo|fabric}, label, cost_usd, capacity, notes, mesh?: {positions: [...], indices: [...]} }]}`.
+   Argon can also author custom 3D models (`type: 'custom_mesh'` with explicit positions/indices it generates), for example a gate design, a pump station or a shelter tent village.
+
+People sim (`sim/people.py`): population from buildings (units × persons/household; day/night), vulnerable residents (DataSF Flood Health Vulnerability `cne3-h93g`), group agents on the street graph (data/raw/extra centrelines). Walking speed drops with depth; people in water are scored with the DEFRA FD2321 hazard rating HR = d·(v + 0.5) + DF → at-risk / injuries / fatalities expected. Outputs `people.f32` frames (n_frames × n_agents × 3: x, y, state) + `people.json` (shelter occupancy over time, stranded, rescued, meals/water delivered vs needed, at-risk person-hours) for the web and the ledger. Damage adds `life_safety_usd` (DOT value of a statistical life; cite) and response operating costs.
+
+Render-watch-critique loop (Problem Two): after each run, the server renders screenshots/video of the plan in the 3D scene (headless Chrome) **and** the top-down sim video. Argon watches both and fixes gaps (a wall that doesn't tie into high ground, a shelter that floods, an evacuation route that crosses a flooded underpass).
