@@ -18,7 +18,7 @@ export const workFacts:Record<string,Fact>={
   'install-cordon':{name:'Set authorized closure',without:'No new access restriction',benefit:'Limits entry to the danger area',evidence:'Official storm protocol; avoided injuries unmeasured.',source:'sf-storm-roles',sourceLabel:'SF · Storm annex',inspect:'Confirm hazard, authority and a usable alternate route.'},
 };
 
-export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:WorkFindings){
+export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:WorkFindings,compact=false){
   const fact=workFacts[work.operation_id],planned=data.selected.find(s=>s.id===work.id),harm=work.harm;
   const metric:Record<string,string>={water_entry:'Water entry',contents_inundated:'Contents inundation',water_control:'Floodwater control',glazing_failure:'Glazing failure',tree_failure:'Tree failure',structural_failure:'Structural failure',route_impassable:'Blocked access'};
   const state=(value:boolean|null|undefined)=>value==null?'Unverified':value?'Yes':'No';
@@ -30,10 +30,11 @@ export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:Wor
     heading.textContent=title;body.textContent=value;resource.textContent=cost;block.append(heading,body,resource);return block;
   };
   comparison.append(
-    side('Do nothing',(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.before),'0 person-min · no added equipment','work-state-before'),
-    side('After planned work',(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.after),planned?`${planned.labor_minutes} person-min · ${planned.people} people`:'No crew or equipment assigned','work-state-after'),
+    side('Do nothing',work.scenario?.before.summary??(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.before),'0 person-min','work-state-before'),
+    side('With this action',work.scenario?.after.summary??(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.after),planned?`${planned.labor_minutes} person-min · ${planned.people} people`:`${work.people} people · ${work.minimum_minutes}–${work.maximum_minutes} min`,'work-state-after'),
   );root.append(comparison);
-  const qualifier=document.createElement('p');qualifier.className='work-comparison-qualifier';qualifier.textContent=harm?.improvement==null?'No supported local harm difference established.':harm.improvement>0?'Conditional harm reduction; not field validated.':harm.improvement<0?'Conditional increase in harm; not field validated.':'No change in the specified consequence.';root.append(qualifier);
+  if(compact)return root;
+  const qualifier=document.createElement('p');qualifier.className='work-comparison-qualifier';qualifier.textContent=work.scenario?'Illustrative model; site conditions and capacities are assumed.':harm?.improvement==null?'No supported local harm difference established.':harm.improvement>0?'Conditional harm reduction; not field validated.':harm.improvement<0?'Conditional increase in harm; not field validated.':'No change in the specified consequence.';root.append(qualifier);
   const evidenceList=document.createElement('dl');evidenceList.className='work-evidence-inline';root.append(evidenceList);
   const add=(label:string,value:string)=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;evidenceList.append(dt,dd);return dd;};
   const evidence=add('Evidence',fact?.evidence??work.evidence_grade);
