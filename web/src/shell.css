@@ -21,3 +21,17 @@
 .evolve-stage { min-width: 92px; color: #607d8d; }.evolve-stage span { display: block; color: #4f6979; font: 10px 'JetBrains Mono',monospace; }.evolve-stage b { display: block; margin-top: 6px; color: #a2bac7; font: 600 11px 'JetBrains Mono',monospace; letter-spacing: .11em; }.evolve-stage small { display: block; margin-top: 4px; color: #607d8d; font-size: 10px; }.evolve-stage.done span,.evolve-stage.done b { color: #62e7a0; }.evolve-stage.watch span,.evolve-stage.watch b { color: #5be0ff; }.evolve-stage.fix span,.evolve-stage.fix b { color: #ffbd69; }
 .presenter-mode .product-topbar { opacity: 0; transition: opacity .25s ease; pointer-events: none; }.presenter-mode .product-topbar:hover { opacity: 1; pointer-events: auto; }
 @media (max-width: 900px) { .evolve-timeline { overflow-x: auto; } }
+/* Round 2: opaque shell background keeps the 3D loading watermark out of product cards. */
+#shell-page { background: linear-gradient(120deg, #04101a, #081a28 50%, #04111b); }
+.shell-storm #shell-page { background: transparent; }
+.forecast-provenance { margin-top: 10px; color: #698797; font: 10px/1.45 'JetBrains Mono',monospace; }
+.map-still { position: relative; height: 170px; margin: 15px 0 10px; overflow: hidden; padding: 0; box-sizing: border-box; border: 1px solid rgba(149,207,227,.16); border-radius: 6px; background: #081620; }
+.map-still img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.map-still:before { display: none; }
+.map-still:after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 42%, rgba(3,10,16,.86)); pointer-events: none; }
+.map-still figcaption { position: absolute; z-index: 1; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.map-still figcaption b { color: #fff; font-size: 13px; }.map-still figcaption span { color: #a6c2ce; font: 9px 'JetBrains Mono',monospace; }.media-card > small { color: #668492; font-size: 10px; }
+.storm-live-chip { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); padding: 8px 12px; border: 1px solid rgba(149,207,227,.18); border-radius: 999px; background: rgba(5,14,21,.66); color: #9bb2be; font: 10px 'JetBrains Mono',monospace; letter-spacing: .06em; backdrop-filter: blur(8px); }
+.storm-live-chip .status-dot { display: inline-block; margin-right: 7px; }
+.shell-storm #hud .brand { top: 84px; }.shell-storm #hud .topc { top: 82px; }.shell-storm #hud .kpis { top: 82px; }.shell-storm #hud .banner { top: 208px; }
+@media (max-width: 900px) { .storm-live-chip { left: 50%; font-size: 9px; white-space: nowrap; } }

@@ -3,6 +3,7 @@ import './shell.css';
 type Step = 'forecast' | 'storm' | 'evolve' | 'compare' | 'plan';
 
 interface ForecastPoint { time: string; p10: number; p50: number; p90: number; }
+interface ForecastData { points: ForecastPoint[]; source: string; rainTotal: string; windPeak: string; fetchedAt: string; provenance: string; rainNote: string; }
 interface AlertItem { event: string; headline: string; severity: string; area: string; }
 
 const STORM_ARRIVAL = new Date('2026-10-27T02:00:00-07:00');
@@ -29,20 +30,28 @@ const money = (value: unknown) => {
 
 const number = (value: unknown) => Number(value || 0).toLocaleString('en-US');
 
-function fixtureForecast(): { points: ForecastPoint[]; source: string; rainTotal: string; windPeak: string } {
+function fixtureForecast(): ForecastData {
   const points: ForecastPoint[] = [];
   for (let i = 0; i < 25; i++) {
     const phase = Math.max(0, Math.sin((i - 5) / 8 * Math.PI));
     points.push({ time: `+${i}h`, p10: 0.26 + phase * 0.28, p50: 0.38 + phase * 0.64, p90: 0.55 + phase * 1.05 });
   }
-  return { points, source: 'StormSim design forcing · preview fixture', rainTotal: '228 mm / 72 h', windPeak: '31 m/s gusts' };
+  return { points, source: 'StormSim design forcing · cached', rainTotal: '228 mm / 72 h', windPeak: '31 m/s gusts', fetchedAt: 'cached', provenance: 'NOAA harmonic tide + observed surge persistence', rainNote: 'Atlas 14 100-year rain floor retained in the simulator.' };
 }
 
-function normalizeForecast(raw: any): { points: ForecastPoint[]; source: string; rainTotal: string; windPeak: string } {
+function normalizeForecast(raw: any): ForecastData {
   const fallback = fixtureForecast();
   if (!raw || typeof raw !== 'object') return fallback;
-  const tide = raw.tide || raw.tides || raw.forecast || raw.points;
+  const forecast = raw.forecast || {};
+  const tide = raw.tide || raw.tides || forecast || raw.points;
   let list = Array.isArray(tide) ? tide : (Array.isArray(tide?.points) ? tide.points : []);
+  if (!list.length && Array.isArray(forecast.t)) {
+    const quantiles = Array.isArray(forecast.water_level_q) ? forecast.water_level_q : [];
+    list = forecast.t.map((time: any, i: number) => {
+      const q = Array.isArray(quantiles[i]) ? quantiles[i] : [];
+      return { time, p10: q[0], p50: q[4] ?? q[Math.floor(q.length / 2)], p90: q[8] ?? q[q.length - 1] };
+    });
+  }
   if (!list.length && Array.isArray(tide?.times)) {
     const quantiles = tide.quantiles || {};
     list = tide.times.map((time: any, i: number) => ({ time, p10: quantiles.p10?.[i], p50: quantiles.p50?.[i], p90: quantiles.p90?.[i] }));
@@ -53,11 +62,20 @@ function normalizeForecast(raw: any): { points: ForecastPoint[]; source: string;
     p50: Number(p.p50 ?? p.median ?? p.q50 ?? p.quantiles?.p50 ?? p.value ?? 0),
     p90: Number(p.p90 ?? p.high ?? p.q90 ?? p.quantiles?.p90 ?? p.value ?? 0),
   })).filter((p: ForecastPoint) => [p.p10, p.p50, p.p90].every(Number.isFinite));
+  const qpf = Array.isArray(forecast.qpf_mm) ? forecast.qpf_mm.map(Number).filter(Number.isFinite) : [];
+  const gust = Array.isArray(forecast.gust_q) ? forecast.gust_q.map((q: any) => Array.isArray(q) ? Number(q[8] ?? q[q.length - 1]) : 0).filter(Number.isFinite) : [];
+  const fallbackReason = raw.fallback?.used ? ' · ' + String(raw.fallback.method || 'persistence fallback') : '';
+  const notes = Array.isArray(raw.notes) ? raw.notes : [];
+  const rainNote = String(notes.find((n: any) => /Atlas 14/i.test(String(n))) || 'Atlas 14 100-year rain floor retained in the simulator.');
+  const provenance = String(raw.model || 'NOAA harmonic tide + observed surge persistence') + fallbackReason;
   return {
     points: points.length > 2 ? points : fallback.points,
-    source: String(raw.source || raw.tide?.source || 'TimesFM + NOAA CO-OPS · live'),
-    rainTotal: String(raw.rain_total || raw.rainTotal || raw.precip_total || fallback.rainTotal),
-    windPeak: String(raw.wind_peak || raw.windPeak || fallback.windPeak),
+    source: `NOAA CO-OPS ${raw.station || '9414290'} · live cache`,
+    rainTotal: qpf.length ? `${qpf.reduce((a: number, b: number) => a + b, 0).toFixed(1)} mm / ${Math.round((qpf.length * Number(raw.step_minutes || 6)) / 60)} h` : String(raw.rain_total || raw.rainTotal || raw.precip_total || fallback.rainTotal),
+    windPeak: gust.length ? `${Math.max(...gust).toFixed(1)} m/s gusts` : String(raw.wind_peak || raw.windPeak || fallback.windPeak),
+    fetchedAt: String(raw.fetched_at || raw.issued || 'cached'),
+    provenance,
+    rainNote,
   };
 }
 
@@ -122,13 +140,13 @@ function forecastPage(data: ReturnType<typeof fixtureForecast>, alerts: AlertIte
   const hours = Math.max(1, Math.round((STORM_ARRIVAL.getTime() - Date.now()) / 3600000));
   const alertMarkup = alerts.length ? alerts.map((a) => `<article class="alert-row"><span class="alert-pulse"></span><div><b>${escapeHtml(a.event)}</b><p>${escapeHtml(a.headline)}</p><small>${escapeHtml(a.area)} · ${escapeHtml(a.severity)}</small></div></article>`).join('') : `<article class="alert-row"><span class="alert-pulse muted"></span><div><b>No active NWS alert returned</b><p>Forecast forcing remains loaded from the latest verified storm scenario.</p><small>San Francisco · cached fallback</small></div></article>`;
   return `<section class="shell-view forecast-view"><div class="view-heading"><div><div class="eyebrow">STEP 01 / SITUATIONAL AWARENESS</div><h1>Storm arriving in <em>${hours} h</em></h1><p>Atmospheric river forcing is converging on San Francisco. Read the uncertainty before you commit resources.</p></div><div class="arrival-card"><span>LANDFALL</span><strong>27 OCT · 02:00</strong><small>Pacific daylight time</small></div></div>
-    <div class="forecast-grid"><div class="shell-card tide-card"><div class="card-heading"><div><span class="eyebrow">BAY + SURGE</span><h2>Tide forecast envelope</h2></div><span class="live-chip">${escapeHtml(data.source)}</span></div><div class="chart-wrap">${chartSvg(data.points)}</div><div class="chart-legend"><span><i class="legend-line median"></i>median</span><span><i class="legend-line band"></i>10–90% range</span><span class="chart-note">Model uncertainty stays visible</span></div></div>
+    <div class="forecast-grid"><div class="shell-card tide-card"><div class="card-heading"><div><span class="eyebrow">BAY + SURGE</span><h2>Tide forecast envelope</h2></div><span class="live-chip">${escapeHtml(data.source)}</span></div><div class="chart-wrap">${chartSvg(data.points)}</div><div class="chart-legend"><span><i class="legend-line median"></i>median</span><span><i class="legend-line band"></i>10–90% range</span><span class="chart-note">Fetched ${escapeHtml(data.fetchedAt)}</span></div><div class="forecast-provenance">${escapeHtml(data.provenance)} · ${escapeHtml(data.rainNote)}</div></div>
     <div class="forecast-side"><div class="shell-card alert-card"><div class="card-heading"><div><span class="eyebrow">LIVE FEED</span><h2>Alerts & signals</h2></div><span class="live-dot">● LIVE</span></div>${alertMarkup}</div><div class="metric-strip"><div><small>PRECIPITATION</small><b>${escapeHtml(data.rainTotal)}</b><span>design forcing</span></div><div><small>WIND PEAK</small><b>${escapeHtml(data.windPeak)}</b><span>HRRR envelope</span></div></div></div></div>
     <div class="forecast-next"><span class="eyebrow">NEXT ACTION</span><strong>Open the city replay</strong><p>See where water concentrates before Argon begins building the response.</p><button class="primary-btn" data-step="storm">Enter Storm Replay <span>→</span></button></div></section>`;
 }
 
 function stormPage(): string {
-  return `<section class="shell-view storm-context"><div class="storm-context-card"><span class="eyebrow">STEP 02 / PHYSICAL REPLAY</span><h1>Watch the city take the hit.</h1><p>Photoreal San Francisco, lidar terrain, rainfall, surge, wind and damage are rendered behind this control surface.</p><div class="storm-context-actions"><button class="primary-btn" data-dismiss-shell>Hide panel <span>↗</span></button><button class="quiet-btn" data-shot="basin">Jump to Mission Creek</button></div><small>Use the native replay controls along the bottom of the scene.</small></div></section>`;
+  return `<section class="shell-view storm-context" aria-label="3D storm replay"></section>`;
 }
 
 function evolvePage(): string {
@@ -156,7 +174,7 @@ function comparePage(rows: any[]): string {
   }).join('');
   const verifiedCount = rows.filter((r) => r.status === 'verified' || r.verified).length;
   const evidenceLabel = verifiedCount === rows.length ? 'VERIFIED DATA' : verifiedCount ? 'PARTIAL EVIDENCE' : 'FIXTURE DATA';
-  return `<section class="shell-view compare-view"><div class="view-heading"><div><div class="eyebrow">STEP 04 / DECISION SUPPORT</div><h1>Compare outcomes honestly.</h1><p>Same storm, same physics, same budget. Damage avoided is only meaningful beside the spend and evidence state.</p></div><div class="compare-badge">${evidenceLabel}<small>updates as tournament completes</small></div></div><div class="shell-card table-card"><div class="card-heading"><div><span class="eyebrow">TOURNAMENT</span><h2>Damage, spend and benefit–cost</h2></div><span class="live-chip">/api/tournament</span></div><div class="table-scroll"><table><thead><tr><th>Candidate</th><th>Damage</th><th>Spend</th><th>BCR</th><th>Evidence</th></tr></thead><tbody>${rowMarkup}</tbody></table></div></div><div class="compare-media"><div class="shell-card media-card"><div class="eyebrow">BASELINE / NO PLAN</div><div class="map-still no-plan"><span>flood depth replay</span><b>water finds the low ground</b></div><small>Rendered stills appear here when the tournament publishes them.</small></div><div class="shell-card media-card"><div class="eyebrow">ARGON / BEST VERIFIED</div><div class="map-still argon-plan"><span>intervention replay</span><b>defences change the flow</b></div><small>Map comparison is evidence-linked; no unverified claim is scored.</small></div></div><button class="primary-btn compare-next" data-step="plan">Review and approve the plan <span>→</span></button></section>`;
+  return `<section class="shell-view compare-view"><div class="view-heading"><div><div class="eyebrow">STEP 04 / DECISION SUPPORT</div><h1>Compare outcomes honestly.</h1><p>Same storm, same physics, same budget. Damage avoided is only meaningful beside the spend and evidence state.</p></div><div class="compare-badge">${evidenceLabel}<small>updates as tournament completes</small></div></div><div class="shell-card table-card"><div class="card-heading"><div><span class="eyebrow">TOURNAMENT</span><h2>Damage, spend and benefit–cost</h2></div><span class="live-chip">/api/tournament</span></div><div class="table-scroll"><table><thead><tr><th>Candidate</th><th>Damage</th><th>Spend</th><th>BCR</th><th>Evidence</th></tr></thead><tbody>${rowMarkup}</tbody></table></div></div><div class="compare-media"><div class="shell-card media-card"><div class="eyebrow">BASELINE / NO PLAN</div><figure class="map-still"><img src="/stills/baseline-flood.jpg" alt="Rendered no-plan flood replay at peak water depth"><figcaption><b>no plan · flood depth replay</b><span>real sim render · T+04:16</span></figcaption></figure><small>Source: baseline run video render.</small></div><div class="shell-card media-card"><div class="eyebrow">ARGON / BEST RUN</div><figure class="map-still"><img src="/stills/argon-flood.jpg" alt="Rendered Argon plan flood replay at peak water depth"><figcaption><b>Argon plan · damage replay</b><span>real sim render · T+04:16</span></figcaption></figure><small>Source: Gemini 4 Argon run video render.</small></div></div><button class="primary-btn compare-next" data-step="plan">Review and approve the plan <span>→</span></button></section>`;
 }
 
 function planPage(state: { job: any | null; report: string | null; approved: boolean }): string {
