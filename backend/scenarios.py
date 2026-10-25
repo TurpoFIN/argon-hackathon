@@ -102,6 +102,12 @@ class ScenarioStore:
             self.state = {"scenario_id": "baseline", "parameters": Parameters().model_dump(),
                 "status": "ready", "error": None, "revision": 1,
                 "playback": {"time_seconds": 2100, "playing": True, "speed": 15, "anchor_ms": time.time()*1000}}
+        self.state.pop("pending_parameters", None)
+        self.state["requested_parameters"] = self.state["parameters"]
+        self._pending = None
+        self._running = False
+        self._request_version = self.state.get("request_version", 0)
+        self.state["request_version"] = self._request_version
 
     def save(self):
         temporary = self.path.with_suffix(".tmp")
@@ -114,33 +120,60 @@ class ScenarioStore:
 
     def submit(self, parameters: Parameters):
         with self.lock:
-            if self.state["status"] == "computing":
-                raise RuntimeError("A simulation is already running")
             if not (DATA / "model-inputs.npz").exists():
                 raise FileNotFoundError("Run data preparation before changing parameters")
-            self.state.update(status="computing", error=None, pending_parameters=parameters.model_dump())
-            self.executor.submit(self._run, parameters)
-            return self.snapshot()
-
-    def _run(self, parameters):
-        identity = uuid.uuid4().hex[:12]
-        folder = DATA / "scenarios" / identity
-        try:
-            calculate(parameters, folder)
-            with self.lock:
-                self.state.update(scenario_id=identity, parameters=parameters.model_dump(), status="ready", error=None,
-                    revision=self.state["revision"]+1,
-                    playback={"time_seconds": 2100, "playing": self.state["playback"]["playing"], "speed": self.state["playback"]["speed"], "anchor_ms": time.time()*1000})
+            values = parameters.model_dump()
+            if values == self.state["requested_parameters"] and self.state["status"] != "failed":
+                return self.snapshot()
+            self._request_version += 1
+            self.state["request_version"] = self._request_version
+            self.state["requested_parameters"] = values
+            if values == self.state["parameters"]:
+                # Returning to the displayed scenario cancels any obsolete work.
+                self._pending = None
+                self.state.update(status="ready", error=None)
                 self.state.pop("pending_parameters", None)
                 self.save()
-                # Only remove owned old scenario outputs; bound local cache to four runs.
-                history = sorted((DATA / "scenarios").iterdir(), key=lambda p:p.stat().st_mtime, reverse=True)
-                for stale in history[4:]:
-                    shutil.rmtree(stale)
-        except Exception as error:
+                return self.snapshot()
+            self._pending = (self._request_version, parameters)
+            self.state.update(status="computing", error=None, pending_parameters=values)
+            if not self._running:
+                self._running = True
+                self.executor.submit(self._run)
+            return self.snapshot()
+
+    def _run(self):
+        while True:
             with self.lock:
-                self.state.update(status="failed", error=str(error))
-                self.state.pop("pending_parameters", None)
+                if self._pending is None:
+                    self._running = False
+                    return
+                version, parameters = self._pending
+                self._pending = None
+            identity = uuid.uuid4().hex[:12]
+            folder = DATA / "scenarios" / identity
+            try:
+                calculate(parameters, folder)
+                with self.lock:
+                    if version != self._request_version:
+                        # Never publish an intermediate result after newer edits.
+                        shutil.rmtree(folder)
+                        continue
+                    self.state.update(scenario_id=identity, parameters=parameters.model_dump(), status="ready", error=None,
+                        revision=self.state["revision"]+1)
+                    self.state.pop("pending_parameters", None)
+                    # Preserve playback position and camera when parameters change.
+                    self.save()
+                    history = sorted((DATA / "scenarios").iterdir(), key=lambda p:p.stat().st_mtime, reverse=True)
+                    for stale in history[4:]:
+                        shutil.rmtree(stale)
+            except Exception as error:
+                with self.lock:
+                    if version == self._request_version:
+                        self.state.update(status="failed", error=str(error))
+                        self.state.pop("pending_parameters", None)
+                if folder.exists():
+                    shutil.rmtree(folder)
 
     def playback(self, update: PlaybackUpdate):
         with self.lock:

@@ -14,10 +14,12 @@ document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme: dark)'
 let state:ScenarioState,manifest:Manifest,grid:Float32Array,flood:Float32Array,loadedId='';
 let field:Field='flood',dirty=false,view:Map2D,count=0,nx=0,ny=0,selectedCell=0;
 let GeoPoint:Constructor;
-const form=$<HTMLFormElement>('#parameters'),run=$<HTMLButtonElement>('#run'),fields=$<HTMLFieldSetElement>('#parameter-fields');
+const form=$<HTMLFormElement>('#parameters'),fields=$<HTMLFieldSetElement>('#parameter-fields');
 const banner=$<HTMLParagraphElement>('#run-status'),canvas=$<HTMLCanvasElement>('#field'),ctx=canvas.getContext('2d')!;
 const raster=document.createElement('canvas'),rctx=raster.getContext('2d')!;
 let redrawRaster=true,lastFrame=-1,lastDraw=0;
+let editVersion=0,sending=false,sendAgain=false;
+let updateTimer:ReturnType<typeof setTimeout>;
 
 function showError(error:unknown):void {banner.textContent=error instanceof Error?error.message:String(error);banner.dataset.error='true';}
 function fillForm(values:Parameters):void {
@@ -28,25 +30,40 @@ function readForm():Parameters {
 }
 function labelState(next:ScenarioState):void {
   const computing=next.status==='computing';
-  fields.disabled=computing;run.disabled=computing;
-  run.textContent=computing?'Computing…':'Run simulation';
-  if(computing)banner.textContent='Computing a new result. The previous result stays visible.';
+  fields.disabled=false;
+  if(dirty)return;
+  if(computing){banner.textContent='Updating simulation… you can keep editing.';banner.dataset.error='false';}
   else if(next.status==='failed'){showError(next.error??'Simulation failed; previous result retained.');return;}
-  else {banner.textContent=`Scenario ${next.revision} applied to both views.`;banner.dataset.error='false';}
-  if(!dirty)fillForm(next.pending_parameters??next.parameters);
-  $('#draft-state').textContent=dirty?'Unapplied':'';
+  else {banner.textContent=`Live · scenario ${next.revision} synced to both views.`;banner.dataset.error='false';}
+  fillForm(next.pending_parameters??next.parameters);
+  $('#draft-state').textContent=computing?'Updating':'';
 }
 
-form.addEventListener('input',()=>{dirty=true;$('#draft-state').textContent='Unapplied';});
-form.addEventListener('submit',async event=>{
-  event.preventDefault();if(!form.reportValidity())return;
+async function sendLatest():Promise<void> {
+  if(sending){sendAgain=true;return;}
+  if(!form.checkValidity()){banner.textContent='Finish entering valid values to update.';banner.dataset.error='false';return;}
   const values=readForm();
   if(values.gust_mps<values.wind_mps){showError('Gust speed must be at least the mean wind speed.');return;}
-  run.disabled=true;banner.textContent='Submitting scenario…';banner.dataset.error='false';
-  try{const next=await request<ScenarioState>('/api/scenarios',values);dirty=false;state=next;labelState(next);}
-  catch(error){run.disabled=false;showError(error);}
-});
-$('#restore').addEventListener('click',()=>{fillForm(defaults);dirty=true;$('#draft-state').textContent='Unapplied';});
+  const submittedVersion=editVersion;sending=true;
+  banner.textContent='Updating simulation…';banner.dataset.error='false';
+  try{
+    const next=await request<ScenarioState>('/api/scenarios',values);
+    if(submittedVersion===editVersion)dirty=false;
+    state=next;labelState(next);
+  }catch(error){showError(error);}
+  finally{
+    sending=false;
+    if(sendAgain||editVersion!==submittedVersion){sendAgain=false;clearTimeout(updateTimer);updateTimer=setTimeout(()=>{void sendLatest();},150);}
+  }
+}
+function scheduleUpdate():void {
+  dirty=true;editVersion++;clearTimeout(updateTimer);
+  $('#draft-state').textContent='Editing';banner.textContent='Changes update automatically…';banner.dataset.error='false';
+  updateTimer=setTimeout(()=>{void sendLatest();},400);
+}
+form.addEventListener('input',scheduleUpdate);
+form.addEventListener('submit',event=>{event.preventDefault();clearTimeout(updateTimer);void sendLatest();});
+$('#restore').addEventListener('click',()=>{fillForm(defaults);scheduleUpdate();});
 document.querySelectorAll<HTMLButtonElement>('[data-field]').forEach(button=>button.addEventListener('click',()=>{
   field=button.dataset.field as Field;
   document.querySelectorAll('[data-field]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
@@ -141,6 +158,7 @@ function draw():void {
 }
 
 async function receive(next:ScenarioState):Promise<void> {
+  if(state&&(next.request_version??0)<(state.request_version??0))return;
   state=next;labelState(next);
   if(loadedId!==next.scenario_id){
     const data=await loadResult(next.scenario_id);manifest=data.manifest;grid=data.grid;flood=data.flood;loadedId=next.scenario_id;
@@ -176,7 +194,7 @@ async function main():Promise<void> {
     const x=Math.round((dx*vy-dy*vx)/det),y=Math.round((dy*ux-dx*uy)/det);
     if(x>=0&&x<nx&&y>=0&&y<ny)selectedCell=y*nx+x;
   });
-  $('#map-status').hidden=true;fields.disabled=false;run.disabled=false;
+  $('#map-status').hidden=true;fields.disabled=false;
   document.documentElement.dataset.analysisReady='true';updateLegend();
   followState(receive,showError);draw();
 }

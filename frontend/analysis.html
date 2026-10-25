@@ -13,7 +13,7 @@
     <aside class="controls">
       <form id="parameters">
         <div class="section-heading"><h1>Scenario parameters</h1><span id="draft-state" class="muted"></span></div>
-        <p class="intro">Change the inputs, then run the model. Both views use the same result.</p>
+        <p class="intro">Changes update the simulation automatically. Both views stay in sync.</p>
         <fieldset id="parameter-fields" disabled>
           <section><h2>Rainfall</h2><label for="rain_mm_h">Intensity <span>mm/h</span></label><input id="rain_mm_h" name="rain_mm_h" type="number" min="0" max="150" step="1" required><p class="hint">Reference: 32 mm/h · NOAA 100-year, one-hour rainfall.</p></section>
           <section><h2>Wind</h2><div class="pair"><div><label for="wind_mps">Mean <span>m/s</span></label><input id="wind_mps" name="wind_mps" type="number" min="0" max="50" step="0.1" required></div><div><label for="gust_mps">Gust <span>m/s</span></label><input id="gust_mps" name="gust_mps" type="number" min="0" max="80" step="0.1" required></div></div><label for="wind_from_deg">From direction <span>degrees</span></label><input id="wind_from_deg" name="wind_from_deg" type="number" min="0" max="360" step="1" required><p class="hint">0° north · 90° east · recorded reference from 138°.</p></section>
@@ -21,7 +21,7 @@
           <section><h2>Drainage</h2><div class="pair"><div><label for="drain_capacity_lps">Inlet capacity <span>L/s</span></label><input id="drain_capacity_lps" name="drain_capacity_lps" type="number" min="0" max="50" step="1" required></div><div><label for="blockage_pct">Blocked <span>%</span></label><input id="blockage_pct" name="blockage_pct" type="number" min="0" max="100" step="5" required></div></div><p class="hint">Assumed capacities at real drain locations. No pipe network is modeled.</p></section>
           <details><summary>Surface assumptions</summary><label for="runoff_coefficient">Runoff fraction <span>0–1</span></label><input id="runoff_coefficient" name="runoff_coefficient" type="number" min="0" max="1" step="0.05" required><label for="roughness">Manning roughness</label><input id="roughness" name="roughness" type="number" min="0.01" max="0.2" step="0.005" required></details>
         </fieldset>
-        <div class="apply"><button id="run" type="submit" disabled>Run simulation</button><button id="restore" type="button" class="quiet">Restore reference values</button><p id="run-status" role="status">Loading shared scenario…</p></div>
+        <div class="apply"><p id="run-status" role="status">Loading shared scenario…</p><button id="restore" type="button" class="quiet">Restore reference values</button></div>
       </form>
       <details class="source-details"><summary>Data and limitations</summary><p id="source-counts"></p><p>Real USGS terrain and DataSF structures/drains. Rain and wind reference NOAA data. Scenario choices are editable above; results are not a forecast.</p><a href="/api/manifest" target="_blank" rel="noreferrer">Original source manifest ↗</a></details>
     </aside>

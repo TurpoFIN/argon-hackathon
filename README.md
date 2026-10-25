@@ -121,14 +121,17 @@ or structural loading becomes part of the scope.
 - `/` is the 3D view with only the view switch and source attribution.
 - `/analysis` is a top-down analytical map with flood depth, wind speed and
   rainfall fields, wind arrows, a cell-value readout and a shared time slider.
-- Set rain intensity, mean/gust wind, wind direction, added coastal rise, inlet
-  capacity and blockage in Analysis, then select **Run simulation**. Advanced
-  surface assumptions expose runoff fraction and Manning roughness.
+- Change rain intensity, mean/gust wind, wind direction, added coastal rise,
+  inlet capacity or blockage in Analysis. Valid edits automatically update
+  after a 400 ms pause; no Run button is needed. Advanced surface assumptions
+  expose runoff fraction and Manning roughness. Inputs remain editable during
+  computation; the worker keeps only the latest queued values and discards
+  superseded results.
 - Inputs are validated by Python. The old result remains visible during a run;
   failed runs preserve it and show the error. The latest applied parameters and
   playback state persist locally in `data/scenario-state.json`.
 - Both routes poll the same scenario state. A finished run updates both views
-  without resetting the 3D camera. Time, playback speed, and play/pause also sync
+  without resetting the 3D camera or current playback position. Time, playback speed, and play/pause also sync
   between tabs. The 2D field selection is local to the analytical view.
 - The selected rain intensity is spatially uniform over the modeled land area;
   it is not a radar rainfall map. Wind maps show the diagnostic mean field;

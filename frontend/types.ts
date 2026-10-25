@@ -18,6 +18,8 @@ export interface Parameters {
 export interface Playback {time_seconds:number; playing:boolean; speed:number; anchor_ms:number;}
 export interface ScenarioState {
   scenario_id:string; revision:number; parameters:Parameters; pending_parameters?:Parameters;
+  requested_parameters?:Parameters;
+  request_version?:number;
   status:'ready'|'computing'|'failed'; error:string|null; playback:Playback;
 }
 export interface Layer { load(): Promise<Layer>; }
