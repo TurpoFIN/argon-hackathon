@@ -733,3 +733,4 @@ select { background: rgba(19, 44, 57, .7) !important; color: #bdd2dc !important;
 .bar-now, .fb span, .stack span { background: #5be0ff !important; } .bar-base { background: rgba(149, 207, 227, .14) !important; }
 .code, .code .ln { background: rgba(4, 16, 26, .6) !important; color: #c9dbe5 !important; }
 #card-watch .watch-row { border-left-color: #5be0ff !important; background: rgba(91, 224, 255, .05) !important; }
+.badge.real { color: var(--good); border: 1px solid rgba(100, 243, 162, .4); background: rgba(100, 243, 162, .06); }
