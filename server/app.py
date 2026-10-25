@@ -182,17 +182,46 @@ async def api_events(job_id: str, request: Request, since: int = -1):
         if not p.exists():
             raise HTTPException(404, "no such job")
 
-        async def replay():
-            for line in p.read_text().splitlines():
-                try:
-                    ev = json.loads(line)
-                except Exception:
-                    continue
-                if ev.get("seq", 0) > since:
-                    yield f"id: {ev['seq']}\nevent: {ev['type']}\ndata: {line}\n\n"
-        return StreamingResponse(replay(), media_type="text/event-stream")
+        async def replay():  # follows the JSONL live (jobs from other processes / CLI) until 'done' or idle 2 h
+            import asyncio
+            pos, last, idle = 0, since, 0.0
+            while idle < 7200:
+                with open(p) as fh:
+                    fh.seek(pos)
+                    chunk = fh.read()
+                    pos = fh.tell()
+                done = False
+                for line in chunk.splitlines():
+                    try:
+                        ev = json.loads(line)
+                    except Exception:
+                        continue
+                    if ev.get("seq", 0) > last:
+                        last = ev["seq"]
+                        yield f"id: {ev['seq']}\nevent: {ev['type']}\ndata: {line}\n\n"
+                    done = done or ev.get("type") == "done"
+                if done:
+                    return
+                if not chunk:
+                    idle += 0.5
+                    if int(idle * 2) % 30 == 0:
+                        yield ": keepalive\n\n"
+                else:
+                    idle = 0.0
+                await asyncio.sleep(0.5)
+        return StreamingResponse(replay(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
     return StreamingResponse(sse_stream(j, since), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/jobs/{job_id}/briefing")
+def api_briefing(job_id: str):
+    from agent.briefing import build_briefing
+    try:
+        return build_briefing(job_id)
+    except FileNotFoundError:
+        raise HTTPException(404, "no such job")
 
 
 @app.post("/api/jobs/{job_id}/approve")

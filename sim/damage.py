@@ -79,12 +79,36 @@ def vehicle_pct(depth_m):
 
 def _restoration_days(occ, depth_ff_m):
     df, _ = ref()
-    rows = df["restoration_days"]["rows"].get(occ) or df["restoration_days"]["rows"].get("COM1")
+    R = df["restoration_days"]["rows"]
+    rows = R.get(occ) or R.get(occ + "A")   # Hazus splits RES3 into RES3A-F (identical rows)
+    if rows is None:
+        raise KeyError(f"no Hazus restoration rows for {occ}")
     dft = depth_ff_m / FT
     for lo, hi, dmin, dmax in rows:
         if lo < dft <= hi or (dft > 24 and hi >= 24):
             return dmin
     return 0.0
+
+
+def _ffh(b):
+    """First-floor height above grade: Hazus default for the foundation type (no foundation data in the SF inventory
+    -> slab-on-grade, 1 ft). A building-specific value is used only if the inventory flags it as surveyed."""
+    df, _ = ref()
+    f = df["flood"]["first_floor_height"]
+    if b.get("first_floor_surveyed"):
+        return float(b["first_floor_m"])
+    return float(f["by_foundation_m"][b.get("foundation") or f["default_foundation"]])
+
+
+def storey_exposure(b, depth_ff_m):
+    """Affected storeys / total storeys (min 1 storey), USACE NACCS (2015) per-storey approach.
+    Storey height from the building's own lidar height / floors."""
+    floors = max(1, int(b.get("floors") or 1))
+    if floors == 1:
+        return 1.0
+    sh = max(2.5, float(b.get("height_m") or 3.5 * floors) / floors)
+    n_aff = max(1, math.ceil(max(depth_ff_m, 0.0) / sh - 1e-9))
+    return min(1.0, n_aff / floors)
 
 
 def _econ(occ):
@@ -232,7 +256,6 @@ def assess(grid, buildings, water_result, tree_result=None, cars_result=None, wi
     cmult = dict(_g(plan, "contents_mult", {}) or {})
     fproof = dict(_g(plan, "floodproofed", {}) or {})
     removed_cars = set(int(c) for c in (_g(plan, "removed_cars", []) or []))
-    n_store = float(df["flood"].get("exposed_storeys", 2))
 
     def add_b(bid, usd):
         if usd > 0:
@@ -254,7 +277,7 @@ def assess(grid, buildings, water_result, tree_result=None, cars_result=None, wi
             if h <= 0.02:
                 continue
             bid = int(b.get("id", i))
-            ffh = float(b.get("first_floor_m") or 0.3)
+            ffh = _ffh(b)
             fp = float(fproof.get(bid, fproof.get(str(bid), 0.0)) or 0.0)
             depth_ff = h - ffh
             if fp > 0 and depth_ff <= fp:   # dry floodproofed up to fp above first floor: no entry
@@ -263,7 +286,7 @@ def assess(grid, buildings, water_result, tree_result=None, cars_result=None, wi
             occ = str(b.get("occupancy") or "RES1").upper()
             m = float(dmult.get(bid, dmult.get(str(bid), 1.0)))
             mc = m * float(cmult.get(bid, cmult.get(str(bid), 1.0)))
-            expo = min(1.0, n_store / max(1, int(b.get("floors") or 1)))  # street water reaches the lowest storeys only
+            expo = storey_exposure(b, depth_ff)  # USACE NACCS: value share of the storeys the water reaches
             ds = float(ddf_pct(st_tab, key_s, depth_ff)) / 100.0 * float(b.get("value_structure") or 0) * m * expo
             dc = float(ddf_pct(ct_tab, _curve_key(b, ct_tab), depth_ff)) / 100.0 * float(b.get("value_contents") or 0) * mc * expo
             fa_sqft = float(b.get("floor_area_m2") or b.get("area_m2", 0) * max(1, int(b.get("floors") or 1))) * SQFT * expo
@@ -271,7 +294,7 @@ def assess(grid, buildings, water_result, tree_result=None, cars_result=None, wi
             bi = rel = 0.0
             if depth_ff > 0:
                 n_flooded += 1
-                days = _restoration_days("RES3" if occ.startswith("RES3") else occ, depth_ff)
+                days = _restoration_days("RES3A" if occ.startswith("RES3") else occ, depth_ff)
                 bi = fa_sqft * e.get("IncomePerSqftPerDay", 0) * days * (1 - e.get("PctIncomeRecapture", 0))
                 own = e.get("PctOwnerOccupied", 50) / 100.0
                 rel = fa_sqft * (e.get("RentalCostsPerSqFtPerDay", 0) * days * (1 - own) + e.get("DisruptionCostsPerSqFt", 0) * own)

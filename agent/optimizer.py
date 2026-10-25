@@ -231,7 +231,20 @@ class PlanningCell:
 
     # ---- events
     def emit(self, type, **kw):
+        if type == "text":
+            self._since_run = getattr(self, "_since_run", "") + (kw.get("text") or "")
+        elif type in ("run_result", "run_error"):
+            self._since_run, self._crit_run = "", kw.get("run_index")
         return self.job.emit(type, model=self.model, **kw)
+
+    def _critique(self, change):
+        """Structured 'critique' event: the model's reaction to the last replay + the change it makes next."""
+        n = getattr(self, "_crit_run", None)
+        if n is None:
+            return
+        txt = (getattr(self, "_since_run", "") or "").strip()
+        self.emit("critique", run=n, text=txt[:1500], change=change)
+        self._crit_run, self._since_run = None, ""
 
     def set_phase(self, p, title):
         if self.phase != p:
@@ -433,6 +446,8 @@ class PlanningCell:
 
     def dispatch(self, call, forced_submit=False):
         name, args = call.name, dict(call.arguments or {})
+        if name in ("run_storm", "submit"):
+            self._critique(args.get("note") or ("submitted final plan" if name == "submit" else None))
         shown = {k: (v if k not in ("plan_code", "code") else f"<{len(v)} chars>") for k, v in args.items()}
         self.emit("tool_call", name=name, args=shown, code=args.get("code") if name == "query" else None)
         media, submitted = [], False
@@ -573,6 +588,12 @@ class PlanningCell:
         out = REPO / "runs" / "_jobs" / f"{self.job.id}.final.json"
         out.write_text(json.dumps(final, indent=1, default=str))
         self.emit("final", report=final)
+        try:
+            from agent.briefing import build_briefing
+            build_briefing(self.job.id)
+            self.emit("briefing", url=f"/api/jobs/{self.job.id}/briefing")
+        except Exception as e:
+            self.emit("status", status=f"briefing failed: {e}")
         self.job.status = "awaiting_approval" if self.submitted else self.job.status
         return final
 

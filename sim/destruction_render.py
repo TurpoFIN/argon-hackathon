@@ -92,6 +92,12 @@ def render_png(res, path, assets=None):
     if ld:
         ax.scatter([s["x"] - x0 for s in ld], [s["y"] - y0 for s in ld], s=30, c="#ffffff", marker="v", lw=0)
 
+    rb = res.get("road_blocks") or []
+    if rb:
+        ax.scatter([r["x"] - x0 for r in rb], [r["y"] - y0 for r in rb], s=46, marker="X", c="#ff2d55", edgecolors="#ffffff", linewidths=0.6, zorder=6)
+    ts = res.get("tree_strikes") or []
+    if ts:
+        ax.scatter([r["x"] - x0 for r in ts], [r["y"] - y0 for r in ts], s=40, marker="D", c="#f644b9", edgecolors="#ffffff", linewidths=0.5, zorder=6)
     S = res["summary"]
     L = res["ledger"]
     ax.set_xlim(ext[0], ext[1]); ax.set_ylim(ext[2], ext[3])
@@ -105,7 +111,8 @@ def render_png(res, path, assets=None):
              f"power: {S['power_poles_down']} poles, {S['power_spans_down']} spans down, {S['customers_out']} customers out | "
              f"Muni wire: {S['ocs_spans_down']} spans down, {S['ocs_route_km_out']} km de-energised\n"
              f"{S['signals_damaged']} signals damaged, {S['signals_dark']} dark | {S['shelters_smashed']} shelters | "
-             f"{S['streetlights_down']} streetlights down | destruction ledger ${L['total_usd'] / 1e6:.2f}M")
+             f"{S['streetlights_down']} streetlights down | {S.get('roads_blocked', 0)} roads blocked | "
+             f"{S.get('trees_into_buildings', 0)} trees into buildings | destruction ledger ${L['total_usd'] / 1e6:.2f}M")
     ax.set_title(title, color="#eee", fontsize=10, loc="left")
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
@@ -117,7 +124,9 @@ def render_png(res, path, assets=None):
             Line2D([], [], color="#e0e0e0", lw=1, label="PG&E overhead distribution (OSM)"),
             Line2D([], [], color="#ffd166", lw=1, label="roof-debris flight (dot = facade hit)"),
             Line2D([], [], color="#ff6d00", marker="^", lw=0, label="signal heads / mast arm damaged"),
-            Line2D([], [], color="#f644b9", marker="s", lw=0, label="bus shelter smashed")]
+            Line2D([], [], color="#f644b9", marker="s", lw=0, label="bus shelter smashed"),
+            Line2D([], [], color="#ff2d55", marker="X", lw=0, markeredgecolor="#fff", label="road blocked (fallen tree / pole / light / live wire)"),
+            Line2D([], [], color="#f644b9", marker="D", lw=0, markeredgecolor="#fff", label="tree fell into a building")]
     ax.legend(handles=leg, loc="lower right", fontsize=8, facecolor="#222", edgecolor="#444", labelcolor="#ddd")
     fig.tight_layout()
     fig.savefig(path, facecolor=fig.get_facecolor())

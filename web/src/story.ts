@@ -148,7 +148,7 @@ export function buildStory(run: Run, s: RunStats, tile: TileFrame, opts: { isPla
     ev.push({ t: Math.max(300, bb * bin + bin / 2), text: `${nf(cnt)} trees down — worst near ${placeName(tile, sx / idx.length, sy / idx.length)}`, kind: 'trees', marker: 'Trees down peak', color: '#ffe15d', pri: 2 });
   }
   const pf = s.peakF;
-  ev.push({ t: Math.max(1200, at(pf)), text: `Peak · ${s.maxDepth[pf].toFixed(1)} m of water · ${nf(s.atRisk[pf])} people at risk · ${nf(s.flooded[pf])} buildings flooded`, kind: 'peak', marker: 'Peak', color: '#ff4d4d', pri: 3 });
+  ev.push({ t: Math.max(1200, at(pf)), text: `Peak flooding · ${s.maxDepth[pf].toFixed(1)} m of water · ${nf(s.atRisk[pf])} people at risk · ${nf(s.flooded[pf])} buildings flooded`, kind: 'peak', marker: 'Peak flooding', color: '#ff4d4d', pri: 3 });
   const tEnd = s.t[s.nF - 1];
   const dmg = run.info.total_usd;
   let endTxt = `Aftermath · ${usdS(dmg)} in damage · ${nf(Math.max(...s.flooded))} buildings flooded · ${nf(s.treeT.length)} trees down`;

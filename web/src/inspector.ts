@@ -54,8 +54,9 @@ export class Inspector {
     this.card.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('.ic-x')) { this.pin(null); this.onClose?.(); } });
   }
   setItems(items: InspItem[], who: string, planCost = 0) {
-    this.items = items; this.rows.clear(); this.pin(null); this.el.classList.toggle('empty', !items.length);
-    if (!items.length) { this.el.innerHTML = ''; return; }
+    this.items = items; this.rows.clear(); this.pin(null);
+    this.el.classList.toggle('empty', !items.length);
+    if (!items.length) { this.el.innerHTML = `<div class="i-h"><b>NO PLAN</b><span>nothing deployed — the city faces the storm as-is</span></div>`; return; }
     const total = planCost || items.reduce((s, it) => s + (it.o.cost_usd || 0), 0); this.total = total;
     this.el.innerHTML = `<div class="i-h"><button class="i-col" title="collapse">‹</button><b>${esc(who)}’S PLAN</b><span>${items.length} actions · <em class="i-tot">${usd(total)}</em></span></div>
       <button class="i-tour">▶ Watch Gemini build the plan <kbd>B</kbd></button><div class="i-list"></div>`;

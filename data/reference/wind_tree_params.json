@@ -88,9 +88,9 @@
    "source": "stem volume = f * pi/4 * d^2 * H, form factor ~0.4-0.5 for broadleaves (Husch, Beers & Kershaw 2003, Forest Mensuration, 4th ed.)"
   },
   "uproot_creg_nm_per_kg": {
-   "value": 160.0,
+   "value": 120.0,
    "unit": "N m / kg",
-   "source": "Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883: critical turning moment M_crit = Creg x stem fresh weight, Creg ~100-200 N m/kg by soil/rooting (GALES, Gardiner et al. 2000/2008). 160 chosen inside that range by the 31.12.2022 replay check (see calibration_check)"
+   "source": "Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883: critical turning moment M_crit = Creg x stem fresh weight, Creg ~100-200 N m/kg by soil type/rooting depth (GALES, Gardiner et al. 2000/2008). 120 (shallow, restricted street-tree rooting) chosen inside that range by the 31.12.2022 replay check (calibration_check)"
   },
   "uproot_sat_reduction": {
    "value": 0.4,
@@ -241,76 +241,96 @@
    "value": 0.5,
    "unit": "rad",
    "source": "post-peak decline of root-plate turning moment with stem rotation in tree-pulling tests (Coutts 1986, Forestry 59:173-197; Nicoll et al. 2006): residual resistance assumed to fall linearly to 0 at ~30 deg"
+  },
+  "stem_strength_ratio": {
+   "value": 0.45,
+   "unit": "-",
+   "source": "in-situ stem bending strength / clear-wood green MOR. Calibrated so sound trees (DBH>=10 cm) in the inventory break at a median crown gust of 42 m/s (Virot et al. 2016, Phys. Rev. E 93:023001); consistent with ASTM D245 strength ratios 0.4-0.6 for knotty/grain-deviated wood and the lower strength of living stems with knots and reaction wood"
   }
  },
  "calibration_check": {
   "retrieved": "2026-10-25",
-  "target": "31.12.2022 replay: 9 SF311 tree-damage reports inside the tile (data/grid/validation.json, DataSF vw6y-z8j6); coordinator band 5-40 failures; El Nino (26 m/s gust) may be several hundred",
-  "fields": "16 m LBM fields wind_225 (dec31_2022, 225 deg) and wind_200 (elnino_ar_2026, 200 deg), solver lbm-d3q19-reg-smag-v3",
+  "target": "31.12.2022 replay: 9 SF311 tree-damage reports inside the tile (data/grid/validation.json, DataSF vw6y-z8j6); accepted band 5-40; El Nino (26 m/s gust) may be several hundred",
+  "fields": "16 m LBM fields wind_225_f25eb9d3131 (dec31_2022) and wind_200_fea1594967d (elnino_ar_2026), solver lbm-d3q19-reg-smag-v4 (640 m urban-canopy buffer)",
+  "virot_check": {
+   "snap_sound_ucrit_p10_50_90_ms": [
+    19.2,
+    42.0,
+    84.3
+   ],
+   "uproot_dry_ucrit_p10_50_90_ms": [
+    19.0,
+    27.5,
+    43.8
+   ],
+   "uproot_saturated_ucrit_p10_50_90_ms": [
+    12.8,
+    18.5,
+    29.6
+   ],
+   "virot_2016_ms": 42.0,
+   "note": "crown gust speed; DBH>=10 cm; spread wider than Virot because inventory allometry is not self-similar"
+  },
   "before": {
-   "params": "load_factor 2.9 (Virot-calibrated), Creg 145, calib 1.0, saplings included",
+   "params": "load_factor 2.9, Creg 145, uproot_calib_factor 1.0 placeholder, saplings included",
    "dec31_2022": {
     "sat_synthetic": 663,
     "sat_1": 992
    },
    "elnino_ar_2026": {
     "sat_synthetic": 1393,
-    "sat_1": 1761
+    "sat_1": 1761,
+    "lead_smoke_run": 1780
    }
   },
-  "after": {
-   "params": "load_factor 1.3, Creg 160, calib 1.0, DBH >= 10 cm",
-   "dec31_2022": {
-    "sat_0.6": 7,
-    "sat_0.75": 11,
-    "sat_0.9": 21,
-    "sat_1": 25
-   },
-   "elnino_ar_2026": {
-    "sat_water_py": 146,
-    "sat_1": 264
-   }
-  },
-  "virot_cross_check": "sound trees (DBH>=10 cm) critical snapping crown gust p10/50/90 = 36/78/156 m/s at load factor 1.3 vs ~42 m/s in Virot et al. 2016: our stem-strength model is conservative, so whole-tree failures are dominated by uprooting on wet soil and by decayed stems; inventory allometry makes Uc rise with DBH (31 m/s at 10-20 cm to 91 m/s at >50 cm), unlike Virot's size independence",
-  "uproot_dry_ucrit_p10_50_90_ms": [
-   24.8,
-   35.9,
-   57.2
-  ],
-  "sweep_creg_vs_counts": {
-   "note": "elnino uses water.py saturation frames (run 20261025-214200-efae, tree-cell saturation ~0.75 at peak gust); dec31 at uniform saturation 0.6/0.75/0.9",
-   "Creg_140": {
-    "elnino": 256,
+  "sweep_creg": {
+   "note": "elnino with water.py saturation (run 20261025-214200-efae, tree-cell sat ~0.75 at peak); dec31 at uniform sat 0.6/0.75/0.9",
+   "Creg_100": {
+    "elnino": 262,
     "dec31": [
-     18,
-     22,
-     37
+     16,
+     26,
+     47
     ]
    },
-   "Creg_150": {
-    "elnino": 200,
+   "Creg_120": {
+    "elnino": 143,
     "dec31": [
-     10,
-     20,
-     25
+     9,
+     11,
+     16
+    ]
+   },
+   "Creg_140": {
+    "elnino": 63,
+    "dec31": [
+     3,
+     7,
+     9
     ]
    },
    "Creg_160": {
-    "elnino": 146,
+    "elnino": 43,
     "dec31": [
-     7,
-     11,
-     21
-    ]
-   },
-   "Creg_170": {
-    "elnino": 120,
-    "dec31": [
-     4,
-     7,
-     16
+     2,
+     2,
+     4
     ]
    }
-  }
+  },
+  "after": {
+   "params": "load_factor 1.3, stem_strength_ratio 0.45, Creg 120, DBH >= 10 cm",
+   "dec31_2022_sat0.7": {
+    "failed": 11,
+    "snap": 1,
+    "uproot": 10
+   },
+   "elnino_ar_2026_water_sat": {
+    "failed": 143,
+    "snap": 0,
+    "uproot": 143
+   }
+  },
+  "known_bias": "failures concentrate in the low-rise Mission/Potrero strip near the upwind (S/W) tile edges, partly real (N-S streets aligned with SSW winds), partly inflow adjustment"
  }
 }
