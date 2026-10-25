@@ -27,6 +27,11 @@ REPO = Path(__file__).resolve().parent.parent
 EVIDENCE = REPO / "evidence"
 STORM = "elnino_ar_2026"
 BUDGET = 50_000_000.0
+SUPPLIED = {
+    "flash": "/home/ubuntu/work/argonhack/runs/20261025-224324-c87e-final-gemini-3-8-flash/plan_code.py",
+    "argon": "/home/ubuntu/work/argonhack/runs/20261025-224323-61b5-final-gemini-4-argon/plan_code.py",
+    "walls": "/home/ubuntu/work/argonhack/runs/20261025-224322-3b01-final-walls-everywhere/plan_code.py",
+}
 
 
 def _hash(code: str | None) -> str:
@@ -252,6 +257,60 @@ def _no_plan(base_dir: Path, base: dict, budget: float) -> dict:
             "within_budget": True, "by_cause": s.get("by_cause") or {}, "wall_time_s": 0}
 
 
+def _score_supplied_process(args):
+    name, model, code, storm, budget = args
+    runner.ensure_video = lambda run_dir, log=None: None
+    r = runner.execute_run(storm, code, label=f"tournament supplied {name}", budget=budget)
+    _, base = runner.baseline(storm)
+    return _entry_from_run(name, model, code, r, base, budget, 0, "supplied_final")
+
+
+def run_supplied(storm: str = STORM, budget: float = BUDGET, candidate_limit: int = 1) -> dict:
+    """Re-score the lead's frozen final plans on this checkout's recalibrated sim."""
+    EVIDENCE.mkdir(parents=True, exist_ok=True)
+    runner.ensure_video = lambda run_dir, log=None: None
+    os.environ["NUMBA_NUM_THREADS"] = os.environ.get("TOURNAMENT_NUMBA_THREADS", "8")
+    os.environ["STORMSIM_WATER_THREADS"] = os.environ.get("TOURNAMENT_NUMBA_THREADS", "8")
+    base_dir, base = runner.baseline(storm)
+    entries = [_no_plan(base_dir, base, budget)]
+    candidates = _candidate_pack()[:max(1, candidate_limit)]
+    measured = []
+    for c in candidates:
+        r = runner.execute_run(storm, c["code"], label=f"tournament greedy {c['name']}", budget=budget)
+        measured.append(_entry_from_run(c["name"], None, c["code"], r, base, budget, 0, "greedy_candidate"))
+    chosen = [c for c, r in zip(candidates, measured) if r.get("status") == "scored" and
+              float(r.get("damage_avoided_usd") or 0) > 0 and float(r.get("plan_cost_usd") or 0) <= budget]
+    code = _plan("\n\n".join(c["body"] for c in chosen)) if chosen else _plan("pass")
+    greedy_run = runner.execute_run(storm, code, label="tournament fair greedy", budget=budget)
+    greedy = _entry_from_run("FAIR greedy multi-hazard", "deterministic greedy", code, greedy_run, base, budget, 0, "greedy")
+    greedy.update({"candidate_count": len(candidates), "candidate_measurements": measured,
+                   "selection_rule": "one-at-a-time damage avoided / sourced cost; affordable candidates only"})
+    entries.append(greedy)
+    supplied = []
+    for key, path in SUPPLIED.items():
+        p = Path(path)
+        if p.exists():
+            supplied.append(("Walls everywhere" if key == "walls" else ("Gemini 3.8 Flash" if key == "flash" else "Gemini 4 Argon"),
+                             None if key == "walls" else f"gemini-{key.replace('argon', '4-argon').replace('flash', '3.8-flash')}", p.read_text()))
+    args = [(n, m, c, storm, budget) for n, m, c in supplied]
+    with cf.ProcessPoolExecutor(max_workers=min(3, len(args)), mp_context=mp.get_context("spawn")) as pool:
+        entries.extend(pool.map(_score_supplied_process, args))
+    evidence = {"schema_version": 1, "status": "done", "storm": storm, "budget_usd": budget,
+                "started_utc": _utc(), "finished_utc": _utc(), "mock_sim": runner.get_run_storm()[1],
+                "baseline_run_id": base_dir.name, "provenance": {"source": "lead final_runs.py supplied plans",
+                "plan_paths": SUPPLIED}, "entries": entries}
+    greedy_rec = next((e for e in entries if e.get("kind") == "greedy"), None)
+    argon_rec = next((e for e in entries if e.get("model") == "gemini-4-argon"), None)
+    if argon_rec and greedy_rec and argon_rec.get("status") == greedy_rec.get("status") == "scored":
+        delta = float(argon_rec.get("damage_avoided_usd") or 0) - float(greedy_rec.get("damage_avoided_usd") or 0)
+        evidence["headline"] = f"Argon avoids ${abs(delta)/1e6:.1f}M {'more' if delta >= 0 else 'less'} damage than the best measured no-AI rule at the same $50M budget."
+    else:
+        evidence["headline"] = "Current-sim model re-score incomplete; see status and provenance for the completed rows."
+    (EVIDENCE / "tournament.json").write_text(json.dumps(evidence, indent=2, default=str) + "\n")
+    _write_report(evidence)
+    return evidence
+
+
 def _write_report(evidence: dict):
     entries = evidence.get("entries", [])
     lines = ["# StormSim SF tournament evidence", "", f"Storm: `{evidence['storm']}`; budget: **$50M**; all entries use the locked cost planner.", "",
@@ -334,8 +393,11 @@ def main():
     ap.add_argument("--sim-workers", type=int, default=2)
     ap.add_argument("--candidate-limit", type=int, default=4)
     ap.add_argument("--no-llm", action="store_true")
+    ap.add_argument("--supplied", action="store_true", help="re-score lead final plan files on this checkout")
     a = ap.parse_args()
-    result = run_tournament(**vars(a))
+    vals = vars(a)
+    supplied = vals.pop("supplied")
+    result = run_supplied(**{k: vals[k] for k in ("storm", "budget")} if supplied else run_tournament(**vals)) if supplied else run_tournament(**vals)
     print(json.dumps({"evidence": str(EVIDENCE / "tournament.json"), "entries": result["entries"]}, indent=1, default=str))
 
 
