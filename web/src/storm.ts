@@ -80,7 +80,7 @@ export class StormDriver {
     const peak = Math.max(0, (this.rn * this.gn - 0.3) / 0.7);
     return { rain: t < 0 ? this.rn * mr : rain, gust: t < 0 ? this.gn * mg : gust, tide, rn: this.rn, gn: this.gn,
       /** 0 bright overcast .. 1 darkest storm */ dark: Math.min(1, 0.15 + 0.85 * Math.max(this.rn, this.gn * 0.8)),
-      /** expected lightning strikes per real second (only near the peak) */ lightningRate: 0.9 * Math.pow(peak, 1.5) };
+      /** expected lightning strikes per real second (only near the peak) */ lightningRate: 0.12 * Math.pow(peak, 1.5) };
   }
 }
 
@@ -337,7 +337,7 @@ export class Trees {
   burst: THREE.Points | null = null;
   /** leaf/branch bursts streaming downwind from every failing tree */
   makeBurst() {
-    const per = 26; const n = this.failed.length * per; if (!n) return;
+    const per = 6; const n = this.failed.length * per; if (!n) return;
     const st = new Float32Array(n * 3), t0 = new Float32Array(n), rr = new Float32Array(n * 3);
     let k = 0;
     for (const f of this.failed) for (let j = 0; j < per; j++, k++) {
@@ -460,7 +460,7 @@ export class Wind {
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       uniforms: { uGust: shared.gust, uLightning: shared.lightning },
       vertexShader: 'attribute float aA; varying float vA; void main(){ vA = aA; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-      fragmentShader: 'uniform float uGust, uLightning; varying float vA; void main(){ gl_FragColor = vec4(vec3(0.55,0.85,1.0) * vA * (0.22 + 0.55*uGust + uLightning) * smoothstep(0.12, 0.45, uGust), 1.0); }',
+      fragmentShader: 'uniform float uGust, uLightning; varying float vA; void main(){ gl_FragColor = vec4(vec3(0.55,0.85,1.0) * vA * (0.10 + 0.25*uGust + 0.5*uLightning) * smoothstep(0.12, 0.45, uGust), 1.0); }',
     });
     this.lines = new THREE.LineSegments(g, mat); this.lines.frustumCulled = false; this.lines.renderOrder = 3;
   }
@@ -597,8 +597,8 @@ export class DamageView {
 }
 
 // ---------------- people ----------------
-const STATE_COLORS = [[0.55, 0.60, 0.68], [1.0, 0.86, 0.2], [0.3, 1.0, 0.5], [1.0, 0.25, 0.2], [0.3, 0.85, 1.0], [1.0, 0.4, 0.95]];
-const TRAIL = 6;
+const STATE_COLORS = [[0.75, 0.78, 0.82], [1.0, 0.9, 0.4], [0.3, 1.0, 0.45], [1.0, 0.18, 0.15], [0.3, 1.0, 0.45], [1.0, 0.18, 0.15]]; // home, moving, sheltered, at-risk, rescued(safe), stranded(at risk)
+const TRAIL = 1;
 /** People as bright dots with comet trails (state colours); shelter occupancy counts for labels. */
 export class People {
   points: THREE.Points | null = null; pos: Float32Array; col: Float32Array; lastF = -1; n: number;
@@ -609,7 +609,7 @@ export class People {
     g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
     g.setAttribute('aC', new THREE.BufferAttribute(this.col, 4).setUsage(THREE.DynamicDrawUsage));
     const mat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending,
       vertexShader: BIAS_GLSL + '\nattribute vec4 aC; varying vec4 vC; void main(){ vC = aC; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = aC.a <= 0.0 ? 0.0 : clamp(5200.0 / -mv.z, 3.0, 12.0) * (0.45 + 0.55 * aC.a); gl_Position = projectionMatrix * biasMV(mv); }',
       fragmentShader: 'varying vec4 vC; void main(){ vec2 d = gl_PointCoord - 0.5; float r = length(d); if (r > 0.5) discard; float a = smoothstep(0.5, 0.15, r) * vC.a; gl_FragColor = vec4(vC.rgb * a * 1.5, a); }',
     });
@@ -631,14 +631,15 @@ export class People {
     for (let i = 0; i < n; i++) {
       this.sample(fi, i, h);
       const c = STATE_COLORS[Math.max(0, Math.min(5, h[2]))];
-      const home = h[2] === 0 || h[2] === 2;
+      const home = h[2] === 0;
+      if (i % 2 === 1) { this.col[i * TRAIL * 4 + 3] = 0; continue; } // draw every 2nd agent
       for (let j = 0; j < TRAIL; j++) {
         const k = i * TRAIL + j;
         if (j === 0) { s[0] = h[0]; s[1] = h[1]; } else this.sample(fi - j * 0.3, i, s);
         const moved = j > 0 && Math.hypot(s[0] - h[0], s[1] - h[1]) > 1.5;
         this.pos[k * 3] = s[0]; this.pos[k * 3 + 1] = s[1]; this.pos[k * 3 + 2] = this.frame.ground(s[0], s[1]) + 3;
         this.col[k * 4] = c[0]; this.col[k * 4 + 1] = c[1]; this.col[k * 4 + 2] = c[2];
-        this.col[k * 4 + 3] = j === 0 ? (home ? 0.55 : 1.0) : moved ? (1 - j / TRAIL) * 0.7 : 0;
+        this.col[k * 4 + 3] = j === 0 ? (home ? 0.35 : 1.0) : moved ? (1 - j / TRAIL) * 0.7 : 0;
       }
     }
     this.points.geometry.getAttribute('position').needsUpdate = true; this.points.geometry.getAttribute('aC').needsUpdate = true;

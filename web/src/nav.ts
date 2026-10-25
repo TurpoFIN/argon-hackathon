@@ -14,17 +14,18 @@ export class Walker {
       this.drag = { x: e.clientX, y: e.clientY };
     });
     addEventListener('pointerup', () => (this.drag = null));
+    addEventListener('mousemove', (e) => { if (!this.active || !e.shiftKey || e.buttons) return; this.yaw = (this.yaw + e.movementX * 0.15 + 360) % 360; this.pitch = Math.max(-80, Math.min(80, this.pitch - e.movementY * 0.12)); });
     el.addEventListener('wheel', (e) => { if (!this.active) return; this.eye = Math.max(1.7, Math.min(600, this.eye * (e.deltaY > 0 ? 1.15 : 1 / 1.15))); e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false });
   }
   private key(e: KeyboardEvent) {
-    const m: Record<string, string> = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r', q: 'dn', e: 'up', shift: 'run' };
+    const m: Record<string, string> = { w: 'f', arrowup: 'f', s: 'b', arrowdown: 'b', a: 'l', arrowleft: 'l', d: 'r', arrowright: 'r', q: 'dn', e: 'up' };
     return m[e.key.toLowerCase()];
   }
   start(x: number, y: number, yaw: number) { this.active = true; this.x = x; this.y = y; this.yaw = yaw; this.pitch = -4; this.eye = 2; this.z = NaN; this.keys.clear(); }
   stop() { this.active = false; this.auto = 0; this.autoYaw = 0; this.keys.clear(); }
   /** advance; ground(x,y) returns the ground height in the caller's units. returns eye height */
   update(dt: number, ground: (x: number, y: number) => number) {
-    const K = this.keys; const sp = (K.has('run') ? 22 : 5) * (1 + this.eye / 30);
+    const K = this.keys; const sp = 5 * (1 + this.eye / 30);
     const h = this.yaw * Math.PI / 180; const fx = Math.sin(h), fy = Math.cos(h);
     let mf = (K.has('f') ? 1 : 0) - (K.has('b') ? 1 : 0), mr = (K.has('r') ? 1 : 0) - (K.has('l') ? 1 : 0);
     if (this.auto) mf += this.auto / sp;

@@ -153,7 +153,13 @@ export function pickRuns(all: RunInfo[], q: URLSearchParams): RunInfo[] {
   const isNone = (r: RunInfo) => /none|no.?plan|baseline/i.test(txt(r)) && !/walls/i.test(txt(r));
   const isFlash = (r: RunInfo) => /flash/i.test(txt(r));
   const isArgon = (r: RunInfo) => /argon/i.test(txt(r));
-  const best = (c: RunInfo[]) => [...c].sort((x, y) => (x.total_usd || Infinity) - (y.total_usd || Infinity))[0];
+  // Best plan = lowest damage + plan cost among runs within the $50M budget (else among all runs).
+  const BUDGET = +(q.get('budget') || 50e6);
+  const score = (r: RunInfo) => (r.total_usd || Infinity) + (r.plan_cost_usd || 0);
+  const best = (c: RunInfo[]) => {
+    const inBudget = c.filter((r) => (r.plan_cost_usd || 0) <= BUDGET);
+    return [...(inBudget.length ? inBudget : c)].sort((x, y) => score(x) - score(y))[0];
+  };
   if (q.get('run')) { const r = by(q.get('run')) || (q.get('run')!.startsWith('synth') ? undefined : { run_id: q.get('run')!, label: q.get('run')!, model: '', total_usd: 0, plan_cost_usd: 0, base: '/runs/' + q.get('run') + '/' }); return r ? [r] : []; }
   const src = q.get('src');
   const realNone = real.find(isNone); // API is newest-first

@@ -18,7 +18,7 @@ export class Hud {
   root = $(`<div id="hud"></div>`);
   banner = $(`<div class="banner hidden"><div class="b-tag">NWS LIVE</div><div class="b-text"></div></div>`);
   top = $(`<div class="topc"><div class="mode"><div class="m-l">NO PLAN</div><div class="m-s"></div></div>
-    <div class="runbar"><button data-r="none">No plan</button><button data-r="plan">Gemini 4 Argon plan</button><button data-r="cmp">Side by side</button></div></div>`);
+    <div class="runbar"><button data-r="none">1 · No plan</button><button data-r="plan">2 · What Gemini decided</button><button data-r="learn">3 · Benchmark</button></div></div>`);
   brand = $(`<div class="brand"><div class="b1">STORMSIM <span>SF</span></div><div class="b2">El Niño atmospheric river · Gemini 4 Argon</div>
     <div class="clock"><div class="k-t">T−72 h</div><div class="k-p"></div><div class="k-d"></div><div class="k-w"></div></div></div>`);
   kpis = $(`<div class="kpis"></div>`);
@@ -26,7 +26,7 @@ export class Hud {
     <div class="tl-bar"><div class="tl-phases"></div><div class="tl-fill"></div><div class="tl-marks"></div><div class="tl-head"></div></div></div>`);
   caption = $(`<div class="cap hidden"><div class="cap-t"></div><div class="cap-x"></div></div>`);
   legend = $(`<div class="legend"></div>`);
-  ctl = $(`<div class="ctl"><button data-c="orbit" class="on">Orbit</button><button data-c="walk">Walk <kbd>F</kbd></button><button data-c="dir">▶ Demo <kbd>P</kbd></button><div class="ctl-h">drag pan · right-drag rotate · scroll zoom · 1–5 shots</div></div>`);
+  ctl = $(`<div class="ctl"><button data-c="walk">Street level <kbd>F</kbd></button><div class="ctl-h">WASD move · Shift+mouse look · Q/E up/down</div></div>`);
   finalCard = $(`<div class="final hidden"></div>`);
   labels = $(`<div class="labels"></div>`);
   toasts = $(`<div class="toasts"></div>`);
@@ -38,7 +38,7 @@ export class Hud {
   onSeek: ((u: number) => void) | null = null;
   onPlay: (() => void) | null = null;
   onSpeed: ((s: number) => void) | null = null;
-  onRun: ((r: 'none' | 'plan' | 'cmp') => void) | null = null;
+  onRun: ((r: 'none' | 'plan' | 'cmp' | 'learn') => void) | null = null;
   onCtl: ((c: string) => void) | null = null;
 
   constructor() {
@@ -58,11 +58,11 @@ export class Hud {
   }
   showBanner(text: string) { (this.banner.querySelector('.b-text') as HTMLElement).innerHTML = text; this.banner.classList.remove('hidden'); }
   hideBanner() { this.banner.classList.add('hidden'); }
-  setMode(label: string, sub: string, cls: string, run: 'none' | 'plan' | 'cmp', planName: string) {
+  setMode(label: string, sub: string, cls: string, run: 'none' | 'plan' | 'cmp' | 'learn', planName: string) {
     const l = this.top.querySelector('.m-l') as HTMLElement; if (l.textContent !== label) { l.textContent = label; this.top.className = 'topc ' + cls; }
     (this.top.querySelector('.m-s') as HTMLElement).innerHTML = sub;
     this.top.querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.r === run));
-    (this.top.querySelector('[data-r="plan"]') as HTMLElement).textContent = planName + ' plan';
+    void planName;
     this.cols.classList.toggle('hidden', run !== 'cmp');
   }
   setClock(t: number, startDate: Date, phase: string, weather: string) {
@@ -106,10 +106,10 @@ export class Hud {
     this.caption.classList.remove('hidden'); this.caption.classList.remove('in'); void this.caption.offsetWidth; this.caption.classList.add('in');
   }
   setCtl(walk: boolean, director: boolean, tour: boolean) {
-    this.ctl.querySelector('[data-c="orbit"]')!.classList.toggle('on', !walk);
+    
     this.ctl.querySelector('[data-c="walk"]')!.classList.toggle('on', walk);
-    this.ctl.querySelector('[data-c="dir"]')!.classList.toggle('on', director);
-    (this.ctl.querySelector('.ctl-h') as HTMLElement).textContent = walk ? 'WASD / arrows move · drag look · Shift run · Q/E down/up · F exit' : tour ? 'build tour · B to stop' : director ? 'demo running · P to stop' : 'drag pan · right-drag rotate · scroll zoom · 1–5 shots';
+    void director;
+    (this.ctl.querySelector('.ctl-h') as HTMLElement).textContent = walk ? 'street level · WASD move · drag or Shift+mouse look · F exit' : director ? 'demo running · P to stop' : 'WASD move · Shift+mouse look · Q/E up/down';
     document.body.classList.toggle('walking', walk);
   }
   showFinal(html: string | null) { if (!html) { this.finalCard.classList.add('hidden'); return; } this.finalCard.innerHTML = html; this.finalCard.classList.remove('hidden'); }

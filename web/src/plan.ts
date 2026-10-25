@@ -3,6 +3,7 @@
  * listPlanObjects() -> [{id, type, category, label, cost_usd, t_s, phase, notes, center:[x,y,z], bbox:[x0,y0,z0,x1,y1,z1]}]
  *   (local metres; to screen: new Vector3(...center).applyMatrix4(frame.matrix).project(camera))
  *   category: wall | gate | wind | pump | storage | tunnel | green | shelter | evacuation | logistics | crew | closure | trees | alert | custom | other
+ * focus(id | null)             = highlightObject; the ONLY way labels appear (plan.labels is empty unless focused)
  * highlightObject(id | null)   dims the city (full-screen veil) + other plan objects, glows the target
  * buildObject(id, durationMs)  plays its rise/assemble animation (walls extrude up with sparks, beams switch on, routes draw)
  * setAllBuilt(true|false)      force everything built / back to timeline (objects build in when t passes t_s, ~1.6 s real)
@@ -53,15 +54,10 @@ void main(){ float g = clamp((uT - aT) / uGrow, 0.0, 1.0); g = 1.0 - pow(1.0 - g
   vec3 p = position; p.z = mix(p.z - aH * 1.0, p.z, 1.0) ; p.z -= (1.0 - g) * aH;
   vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(p, 1.0); vP = mv.xyz; gl_Position = projectionMatrix * biasMV(mv); }`;
 const holoFS = `uniform float uTime; uniform float uSolid; varying float vH; varying vec3 vC; varying vec3 vN; varying vec3 vP; varying float vG;
-void main(){ if (vG <= 0.001) discard; float rim = pow(1.0 - abs(dot(normalize(-vP), normalize(vN))), 2.0);
-  float scan = 0.5 + 0.5 * sin(vP.y * 0.8 + uTime * 4.0);
-  float lit = 0.35 + 0.65 * max(0.0, dot(normalize(vN), normalize(vec3(0.3, 0.6, 0.7))));
-  vec3 base = mix(vC * (0.55 + 0.35 * lit), vC * 1.4, 0.3 + 0.7 * rim);
-  float a = mix(0.6, 0.95, uSolid) * (0.8 + 0.2 * scan) + rim * 0.3;
-  vec3 col = base * 1.25 + vC * (0.3 * scan);
-  float sparkle = step(0.985, fract(sin(dot(floor(vP.xy * 0.5) + floor(uTime * 12.0), vec2(12.9898, 78.233))) * 43758.5453)) * (1.0 - vG);
-  col += (1.0 - vG) * vC * 2.5 + sparkle * 4.0;
-  gl_FragColor = vec4(col, clamp(a, 0.0, 1.0) * min(1.0, vG * 3.0)); }`;
+void main(){ if (vG <= 0.001) discard; vec3 N = normalize(vN); float rim = pow(1.0 - abs(dot(normalize(-vP), N)), 3.0);
+  float lit = 0.45 + 0.55 * max(0.0, dot(N, normalize(vec3(0.3, 0.6, 0.7))));
+  vec3 col = vC * lit * 1.15 + vC * rim * 0.35 + vC * (1.0 - vG) * 0.8;
+  gl_FragColor = vec4(col, mix(0.7, 0.97, uSolid)); }`;
 const flatVS = `${BIAS_GLSL}
 attribute float aT; attribute vec3 aC; attribute float aS; uniform float uT, uGrow; varying vec3 vC; varying float vG; varying vec2 vXY; varying float vS;
 void main(){ vG = clamp((uT - aT) / uGrow, 0.0, 1.0); vC = aC; vXY = position.xy; vS = aS; gl_Position = projectionMatrix * biasMV(modelViewMatrix * vec4(position, 1.0)); }`;
@@ -77,10 +73,10 @@ void main(){ if (vG <= 0.001) discard; float s = fract(vU / 18.0 - uTime * uSpee
   float edge = smoothstep(0.38, 0.5, abs(vV - 0.5)); float a = (0.35 + 0.65 * chevron + 0.5 * edge) * vG; gl_FragColor = vec4(vC * (0.6 + chevron), a); }`;
 
 class Batch {
-  static cur = -1; aId: number[] = [];
+  static cur = -1; static minor = new Set<number>(); aId: number[] = []; aMn: number[] = [];
   pos: number[] = []; nor: number[] = []; aT: number[] = []; aH: number[] = []; aC: number[] = []; aU: number[] = []; aV: number[] = []; aS: number[] = [];
   tri(a: number[], b: number[], c: number[], n: number[], t: number, col: THREE.Color, h: number[] = [0, 0, 0], uv: number[][] = [[0, 0], [0, 0], [0, 0]], s = 0) {
-    for (const [i, p] of [a, b, c].entries()) { this.pos.push(p[0], p[1], p[2]); this.nor.push(n[0], n[1], n[2]); this.aT.push(t); this.aH.push(h[i]); this.aC.push(col.r, col.g, col.b); this.aU.push(uv[i][0]); this.aV.push(uv[i][1]); this.aS.push(s); this.aId.push(Batch.cur); }
+    for (const [i, p] of [a, b, c].entries()) { this.pos.push(p[0], p[1], p[2]); this.nor.push(n[0], n[1], n[2]); this.aT.push(t); this.aH.push(h[i]); this.aC.push(col.r, col.g, col.b); this.aU.push(uv[i][0]); this.aV.push(uv[i][1]); this.aS.push(s); this.aId.push(Batch.cur); this.aMn.push(Batch.minor.has(Batch.cur) ? 1 : 0); }
   }
   quad(a: number[], b: number[], c: number[], d: number[], n: number[], t: number, col: THREE.Color, h = [0, 0, 1, 1], uv = [[0, 0], [1, 0], [1, 1], [0, 1]], s = 0) {
     this.tri(a, b, c, n, t, col, [h[0], h[1], h[2]], [uv[0], uv[1], uv[2]], s); this.tri(a, c, d, n, t, col, [h[0], h[2], h[3]], [uv[0], uv[2], uv[3]], s);
@@ -90,16 +86,16 @@ class Batch {
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nor, 3));
     g.setAttribute('aT', new THREE.Float32BufferAttribute(this.aT, 1)); g.setAttribute('aH', new THREE.Float32BufferAttribute(this.aH, 1));
     g.setAttribute('aC', new THREE.Float32BufferAttribute(this.aC, 3)); g.setAttribute('aU', new THREE.Float32BufferAttribute(this.aU, 1));
-    g.setAttribute('aV', new THREE.Float32BufferAttribute(this.aV, 1)); g.setAttribute('aS', new THREE.Float32BufferAttribute(this.aS, 1)); g.setAttribute('aId', new THREE.Float32BufferAttribute(this.aId, 1));
+    g.setAttribute('aV', new THREE.Float32BufferAttribute(this.aV, 1)); g.setAttribute('aS', new THREE.Float32BufferAttribute(this.aS, 1)); g.setAttribute('aId', new THREE.Float32BufferAttribute(this.aId, 1)); g.setAttribute('aMn', new THREE.Float32BufferAttribute(this.aMn, 1));
     return g;
   }
 }
 
 export interface PlanLabel { pos: THREE.Vector3; text: string; sub: string; color: string; t_s: number; kind: string; obj: PlanObject }
 export interface PlanRecord { id: string; index: number; type: string; category: string; label: string; cost_usd: number; t_s: number; phase?: string; notes?: string; center: number[]; bbox: number[] }
-const OBJ_GLSL = `attribute float aId; uniform float uHi, uBuildId, uBuildP, uAll; varying float vHi;
+const OBJ_GLSL = `attribute float aId; attribute float aMn; uniform float uHi, uBuildId, uBuildP, uAll; varying float vHi;
 float growG(float aT){ if (uAll > 0.5) return 1.0; if (abs(aId - uBuildId) < 0.5) return uBuildP; return clamp((uT - aT) / uGrow, 0.0, 1.0); }
-float hiF(){ return uHi < -0.5 ? 1.0 : (abs(aId - uHi) < 0.5 ? 2.0 : 0.12); }
+float hiF(){ bool me = abs(aId - uHi) < 0.5; if (aMn > 0.5 && !me) return 0.0; return uHi < -0.5 ? 1.0 : (me ? 2.0 : 0.12); }
 `;
 export interface PlanVisual { records: PlanRecord[]; highlightObject(id: string | null): void; buildObject(id: string, durationMs?: number): void; setAllBuilt(on: boolean): void; group: THREE.Group; labels: PlanLabel[]; alerts: { t_s: number; text: string }[]; update(t: number, time: number): void; objects: PlanObject[]; setHighlight(on: boolean): void }
 
@@ -114,9 +110,11 @@ const fmt = (v: number) => v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `
 export function buildPlan(objects: PlanObject[], frame: LocalFrame, city: City): PlanVisual {
   const group = new THREE.Group();
   const solid = new Batch(), flat = new Batch(), route = new Batch(), tunnel = new Batch(), xray = new Batch(), edge = new Batch();
-  const labels: PlanLabel[] = []; const alerts: { t_s: number; text: string }[] = [];
+  const labels: PlanLabel[] = []; const allLabels: PlanLabel[] = []; const alerts: { t_s: number; text: string }[] = [];
   const movers: { path: number[][]; len: number; t0: number; mesh: number; speed: number }[] = [];
-  const beacons: { x: number; y: number; z: number; t: number; col: THREE.Color; h: number }[] = [];
+  const beacons: { x: number; y: number; z: number; t: number; col: THREE.Color; h: number; id?: number }[] = [];
+  Batch.minor = new Set<number>();
+  const MAJOR = new Set(['wall', 'gate', 'pump', 'storage', 'tunnel', 'shelter', 'evacuation', 'custom']);
   const G = (x: number, y: number) => frame.ground(x, y);
   const centroid = (c: number[][]) => { let x = 0, y = 0; for (const p of c) { x += p[0]; y += p[1]; } return [x / c.length, y / c.length]; };
   const bIndex = new Map<number, number>(); city.buildings.forEach((b, i) => bIndex.set(b.id, i));
@@ -208,6 +206,8 @@ export function buildPlan(objects: PlanObject[], frame: LocalFrame, city: City):
   const records: PlanRecord[] = [];
   for (const [oi, o] of objects.entries()) {
     Batch.cur = oi; const recStart = labels.length;
+    if (!MAJOR.has(categoryOf(o)) || (is(o, 'evacuat') && o.kind === 'polygon')) Batch.minor.add(oi);
+    const beaconStart = beacons.length;
     const c = o.coords || []; if (!c.length && o.type !== 'alert' && !o.mesh) continue;
     const col = colorOf(o); const [cx, cy] = c.length ? centroid(c) : [frame.cx, frame.cy];
     const H = o.height || 0; let lp: number[] | null = [cx, cy, G(cx, cy) + Math.max(H, 6) + 6];
@@ -253,21 +253,21 @@ export function buildPlan(objects: PlanObject[], frame: LocalFrame, city: City):
       beacons.push({ x: cx, y: cy, z: G(cx, cy), t: o.t_s, col, h: is(o, 'medical') ? 80 : 50 });
       if (is(o, 'depot')) for (const tgt of (o.raw?.routes || [])) if (Array.isArray(tgt) && tgt.length > 1) movers.push({ path: tgt, len: 0, t0: o.t_s, mesh: 0, speed: 9 });
     }
-    if (lp && o.type !== 'alert' && o.label) labels.push({ pos: new THREE.Vector3(lp[0], lp[1], lp[2]), text: o.label || o.type.replace(/_/g, ' '), sub: [o.cost_usd ? fmt(o.cost_usd) : '', o.capacity ? `cap ${o.capacity}` : ''].filter(Boolean).join(' · '), color: '#' + col.getHexString(), t_s: o.t_s, kind: o.type, obj: o });
+    if (lp && o.type !== 'alert' && o.label) allLabels.push({ pos: new THREE.Vector3(lp[0], lp[1], lp[2]), text: o.label || o.type.replace(/_/g, ' '), sub: [o.cost_usd ? fmt(o.cost_usd) : '', o.capacity ? `cap ${o.capacity}` : ''].filter(Boolean).join(' · '), color: '#' + col.getHexString(), t_s: o.t_s, kind: o.type, obj: o });
     { const xs = c.map((q) => q[0]), ys = c.map((q) => q[1]); const z0 = c.length ? G(cx, cy) : 0;
       records.push({ id: o.id, index: oi, type: o.type, category: categoryOf(o), label: o.label || o.type.replace(/_/g, ' '), cost_usd: o.cost_usd, t_s: o.t_s, phase: o.phase, notes: o.raw?.notes,
-        center: lp ? [lp[0], lp[1], lp[2]] : [cx, cy, z0], bbox: c.length ? [Math.min(...xs), Math.min(...ys), z0, Math.max(...xs), Math.max(...ys), z0 + Math.max(6, H * 4)] : [cx, cy, 0, cx, cy, 0] }); void recStart; }
+        center: lp ? [lp[0], lp[1], lp[2]] : [cx, cy, z0], bbox: c.length ? [Math.min(...xs), Math.min(...ys), z0, Math.max(...xs), Math.max(...ys), z0 + Math.max(6, H * 4)] : [cx, cy, 0, cx, cy, 0] }); void recStart; for (let k = beaconStart; k < beacons.length; k++) beacons[k].id = oi; }
   }
   // beacons: vertical light beams
   const beam = new Batch();
-  for (const b of beacons) { const w = 3.2; for (const [dx, dy] of [[1, 0], [0, 1]]) beam.quad([b.x - dx * w, b.y - dy * w, b.z], [b.x + dx * w, b.y + dy * w, b.z], [b.x + dx * w, b.y + dy * w, b.z + b.h], [b.x - dx * w, b.y - dy * w, b.z + b.h], [dy, -dx, 0], b.t, b.col, [0, 0, 1, 1]); }
+  for (const b of beacons) { Batch.cur = b.id ?? -1; const w = 3.2; for (const [dx, dy] of [[1, 0], [0, 1]]) beam.quad([b.x - dx * w, b.y - dy * w, b.z], [b.x + dx * w, b.y + dy * w, b.z], [b.x + dx * w, b.y + dy * w, b.z + b.h], [b.x - dx * w, b.y - dy * w, b.z + b.h], [dy, -dx, 0], b.t, b.col, [0, 0, 1, 1]); }
 
   const uT = { value: -1e9 };
   const objU = { uHi: { value: -1 }, uBuildId: { value: -1 }, uBuildP: { value: 1 }, uAll: { value: 0 } };
   const mk = (b: Batch, vs: string, fs: string, opts: any, order: number, extra: any = {}) => {
     if (!b.pos.length) return null;
     vs = vs.replace(/clamp\(\(uT - aT\) ?\/ ?uGrow, 0\.0, 1\.0\)/g, 'growG(aT)').replace('void main(){', OBJ_GLSL + 'void main(){ vHi = hiF();');
-    fs = 'varying float vHi;\n' + fs.replace(/}\s*$/, ' gl_FragColor.a *= min(vHi, 1.0); gl_FragColor.rgb *= vHi > 1.5 ? 1.8 : 1.0; }');
+    fs = 'varying float vHi;\n' + fs.replace('void main(){', 'void main(){ if (vHi <= 0.01) discard;').replace(/}\s*$/, ' gl_FragColor.a *= min(vHi, 1.0); gl_FragColor.rgb *= vHi > 1.5 ? 1.8 : 1.0; }');
     extra = { ...objU, ...extra };
     const m = new THREE.Mesh(b.geo(), new THREE.ShaderMaterial({ vertexShader: vs, fragmentShader: fs, transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uT, uTime: shared.time, ...extra }, ...opts }));
     m.frustumCulled = false; m.renderOrder = order; group.add(m); return m;
@@ -288,6 +288,7 @@ export function buildPlan(objects: PlanObject[], frame: LocalFrame, city: City):
     { blending: THREE.AdditiveBlending }, 9, { uGrow });
   // trucks moving along supply routes
   let trucks: THREE.InstancedMesh | null = null;
+  movers.length = 0; // trucks off (clarity)
   if (movers.length) {
     for (const m of movers) { let l = 0; for (let i = 0; i < m.path.length - 1; i++) l += Math.hypot(m.path[i + 1][0] - m.path[i][0], m.path[i + 1][1] - m.path[i][1]); m.len = l; }
     const per = 4; trucks = new THREE.InstancedMesh(new THREE.BoxGeometry(2.6, 8, 3).translate(0, 0, 1.6), new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), movers.length * per);
@@ -299,7 +300,8 @@ export function buildPlan(objects: PlanObject[], frame: LocalFrame, city: City):
     group, labels, alerts, objects,
     records,
     setHighlight(on: boolean) { dim.visible = on; },
-    highlightObject(id: string | null) { const r = id == null ? undefined : records.find((x) => x.id === id); objU.uHi.value = r ? r.index : -1; dim.visible = !!r; },
+    highlightObject(id: string | null) { const r = id == null ? undefined : records.find((x) => x.id === id); objU.uHi.value = r ? r.index : -1; dim.visible = !!r;
+      labels.length = 0; if (r) { const l = allLabels.find((x) => x.obj.id === r.id); if (l) labels.push(l); } },
     buildObject(id: string, durationMs = 2500) { const r = records.find((x) => x.id === id); if (!r) return; build = { id: r.index, t0: performance.now(), dur: durationMs }; objU.uBuildId.value = r.index; objU.uBuildP.value = 0; },
     setAllBuilt(on: boolean) { objU.uAll.value = on ? 1 : 0; },
     update(t: number, time: number) {
@@ -332,6 +334,8 @@ export function getActivePlan() { return activePlan; }
 export function listPlanObjects(p = activePlan) { return p ? p.records.map(({ index, ...r }) => r) : []; }
 /** Dim everything else, glow the target (null clears). */
 export function highlightObject(id: string | null, p = activePlan) { p?.highlightObject(id); }
+/** Focus one object: show only its label, dim the rest (null = back to the clean overview, no labels). */
+export function focus(id: string | null, p = activePlan) { p?.highlightObject(id); }
 /** Play the rise/assemble animation for one object (ignores the timeline while it runs). */
 export function buildObject(id: string, durationMs = 2500, p = activePlan) { p?.buildObject(id, durationMs); }
 /** Force every object visible regardless of timeline t (false = back to timeline-driven build-in). */
