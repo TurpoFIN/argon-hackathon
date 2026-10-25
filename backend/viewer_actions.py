@@ -105,6 +105,8 @@ def load_pack(root,run,model,label):
     files=[folder/f'{model}.json',folder/f'{label}_layers.json',folder/'control_layers.json',assets_path]
     review=ROOT/'evidence/viewer-action-review.json'
     if review.is_file():files.append(review)
+    binding=folder/'workplan.json'
+    if binding.is_file():files.append(binding)
     return _pack(str(root),run,model,label,tuple(p.stat().st_mtime_ns for p in files))
 
 
@@ -187,9 +189,18 @@ def _pack(root,run,model,label,versions):
     if review_path.is_file():
         candidate=json.loads(review_path.read_text())
         if candidate.get('storm_id')==storm_id:review=candidate
-    return {'review':review,'run':run,'model':model,'plan':label,'storm_id':storm_id,'weather':weather,'minutes':field.minutes,
+    result={'review':review,'run':run,'model':model,'plan':label,'storm_id':storm_id,'weather':weather,'minutes':field.minutes,
             'hazards':NAMES,'actions':rows,'sources':sources,'power_sources':assets['sources'],
             'scope':'All saved plan jobs plus the full work catalogue at up to 12 exposed mapped locations per type. Additional effects are extrapolated, not included in the saved flood-loss total.'}
+    binding=folder/'workplan.json'
+    if binding.is_file():
+        saved=json.loads(binding.read_text())
+        if label in saved['entries']:
+            from .workplan import annotate
+            return annotate(result,saved,label)
+    # For archived runs, only original recorded jobs are the model's plan.
+    for a in rows:a.update(selected=a['recorded'],applied=a['recorded'],not_selected_reason='Not selected in this archived flood plan')
+    return result
 
 
 def summary(pack):

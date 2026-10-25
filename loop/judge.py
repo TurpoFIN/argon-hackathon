@@ -91,12 +91,12 @@ class _Captured(Exception):
     pass
 
 
-def build_base(use_shared_state=False, scenario=None, rain_mm_h=None):
+def build_base(use_shared_state=False, scenario=None, rain_mm_h=None, parameters=None):
     """The same world scenarios.calculate() builds. By default the benchmark pins Codex's default
     storm (Atlas 14 100-yr 1-h rain, 1 m coastal rise) so runs stay comparable; the shared UI
     sliders are used only on request."""
     data = scenarios.DATA
-    shared = json.loads((data / "scenario-state.json").read_text())["parameters"] if use_shared_state else {}
+    shared = parameters if parameters is not None else (json.loads((data / "scenario-state.json").read_text())["parameters"] if use_shared_state else {})
     # A forecast scenario sets the wind and holds the bay boundary at its forecast peak water level.
     overrides = dict(wind_mps=scenario["wind_mps"], gust_mps=scenario["gust_mps"], wind_from_deg=scenario["wind_from_deg"],
                      coastal_rise_m=0) if scenario else {}
@@ -173,17 +173,17 @@ def validate(plan: Plan, context, judge):
 
 
 class Judge:
-    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways", replay_context=None):
+    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways", replay_context=None, parameters=None):
         self.run_dir = run_dir
         self.mode = mode
         run_dir.mkdir(parents=True, exist_ok=True)
         self.forcing = json.loads(Path(forcing).read_text()) if forcing else None
         if self.forcing:
-            built = {s["name"]: build_base(use_shared_state, s, rain_mm_h) for s in self.forcing["scenarios"]}
+            built = {s["name"]: build_base(use_shared_state, s, rain_mm_h, parameters) for s in self.forcing["scenarios"]}
             self.base, self.p, self.source = built["P50"]
             self.scenarios = [dict(name=s["name"], weight=s["weight"], spec=s, base=built[s["name"]][0]) for s in self.forcing["scenarios"]]
         else:
-            self.base, self.p, self.source = build_base(use_shared_state, None, rain_mm_h)
+            self.base, self.p, self.source = build_base(use_shared_state, None, rain_mm_h, parameters)
             self.scenarios = [dict(name="design", weight=1.0, spec=None, base=self.base)]
         if replay_context is None:
             self.context, self.heuristic = codex_context(self.base)
