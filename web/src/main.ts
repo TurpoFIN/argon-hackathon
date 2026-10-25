@@ -517,6 +517,25 @@ async function main() {
     if (e > 1.5) flashT = -1; return a;
   };
 
+  // ---- cinema mode (public/cinema.js) shows the weather of the moment on this timeline ----
+  (window as any).sfCinemaHost = {
+    conditions: () => {
+      const preK = t < 0 ? Math.max(0, Math.min(1, 1 + t / (12 * 3600))) : 1;
+      const gust = Math.max(0, interp(base?.gust, t)) * preK;
+      const hour = STORM_START.getUTCHours() - 7 + STORM_START.getUTCMinutes() / 60 + t / 3600;
+      return {
+        rainMmH: Math.max(0, interp(base?.rain, t)) * preK,
+        gustMs: gust,
+        meanMs: gust / 1.45, // gust factor of the sim/storm.py forcing (El Niño peak: 25.2 / 17.4 m/s)
+        fromDeg: base?.manifest?.wind_dir_deg ?? 200, // sim/storm.py elnino_ar_2026: from 200° (SSW)
+        tideM: interp(base?.tide, t, 1),
+        localHour: ((hour % 24) + 24) % 24,
+        sun: [7.48, 18.2], // San Francisco, 27 Oct: sunrise 07:29, sunset 18:12 PDT
+        flash: shared.lightning.value,
+      };
+    },
+  };
+
   // ---- main loop ----
   refreshStory(); syncInspector(); hud.setCtl(false, false, false);
   let last = performance.now(), weatherT = 0, hudT = 0;
@@ -542,7 +561,7 @@ async function main() {
     audio.set(rn, gn, shared.time.value);
     if (!shotMode && !pre && !walker.active) { const sh = Math.max(0, gn - 0.75) * 6 + L * 1.5; container.style.transform = sh > 0.05 ? `scale(1.008) translate(${(Math.sin(now * 0.061) + Math.sin(now * 0.137)) * sh}px, ${(Math.cos(now * 0.053) + Math.sin(now * 0.171)) * sh * 0.6}px)` : ''; } else container.style.transform = '';
     if (wind && !pre) { wind.lines.visible = true; wind.update(dt, gust, uref); } else if (wind) wind.lines.visible = false;
-    if (arc && now - weatherT > 400) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
+    if (arc && now - weatherT > 400 && !(window as any).sfCinema?.state?.active) { weatherT = now; arc.setWeather(0.05 + (0.1 + 0.85 * rn) * preK, 0.55 + (0.3 + 0.15 * rn) * preK, 0); }
     // camera
     applyWalk(dt);
     if (orbit && arc && !walker.active) { const s = orbit.s; s.heading = (s.heading + dt * 1.6) % 360; arc.setCamera(shotCam(s)); }

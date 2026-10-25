@@ -79,10 +79,18 @@ export async function createArcgis(container: HTMLElement, tile: TileFrame, opts
       (renderer as any).setRenderTarget = (target: any, a?: number, b?: number) => { orig(target, a, b); if (target == null && fbo) gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); };
       webgl.renderCoordinateTransformAt(view, [tile.lon0, tile.lat0, 0], SpatialReference.WGS84, local);
     },
-    render() {
+    render(inputs: any[]) {
       const gl: WebGL2RenderingContext = this.gl;
       if (!renderer) this.setup();
-      const out = this.bindRenderTarget();
+      // Cinema mode (public/cinema.js) grades the photoreal city first; the storm layer then draws on top.
+      const cinema = (window as any).sfCinema;
+      let out;
+      if (cinema?.state?.active && cinema.post) {
+        const input = inputs.find((i: any) => i.name === 'composite-color');
+        out = this.acquireOutputFramebuffer();
+        cinema.post(this, input);
+        out.attachDepth(input.getAttachment(gl.DEPTH_STENCIL_ATTACHMENT));
+      } else out = this.bindRenderTarget();
       fbo = gl.getParameter(gl.FRAMEBUFFER_BINDING);
       if (renderFn && renderer) {
         const c = this.camera;

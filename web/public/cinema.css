@@ -75,3 +75,18 @@ body.cinema .esri-attribution { background: rgba(0, 0, 0, .45); color: #9aa3aa; 
 .cinema-select option { color: #000; }
 .cinema-select:focus-visible { outline: 1px solid #a4a4a4; outline-offset: 2px; }
 .cinema-phase .cinema-button:not(:first-child):not(:last-child) { border-radius: 0; margin-left: -1px; }
+
+/* Inside the StormSim app (web/): no letterbox, the app keeps its HUD and timeline. The toggle and the
+   light switch join the app's control row (Orbit · Walk · Demo), and the app's own CSS grade, vignette,
+   flash and canvas filter step aside while cinema mode is on. */
+body.cinema-hosted .cinema-frame { display: none; }
+body.cinema-hosted .ctl .cinema-toggle {
+  position: static; height: auto; padding: 6px 12px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 4px;
+  background: transparent; box-shadow: none; color: #c9d6e2; font-size: 13px; font-weight: 600; line-height: 1.2;
+}
+body.cinema-hosted.cinema .ctl .cinema-toggle { background: var(--accent, #5fe1ff); border-color: var(--accent, #5fe1ff); color: #06121a; }
+body.cinema-hosted .ctl .cinema-dock { display: flex; }
+body.cinema-hosted .ctl .cinema-dock[hidden] { display: none; }
+body.cinema-hosted.cinema .ctl-h { display: none; }
+body.cinema-hosted.cinema .grade, body.cinema-hosted.cinema .vignette, body.cinema-hosted.cinema .flash { display: none; }
+body.cinema-hosted.cinema #scene canvas { filter: none; }

@@ -70,7 +70,11 @@
   }
   // San Francisco in late December: sunrise about 07:23, sunset about 17:00 PST; blend through civil twilight.
   const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
-  const darknessAt = (hour) => (hour === null ? 0 : 1 - smooth(6.9, 7.7, hour) * (1 - smooth(16.75, 17.55, hour)));
+  const darknessAt = (hour, sun) => {
+    if (hour === null) return 0;
+    const [rise, set] = sun ?? [7.38, 17.0];
+    return 1 - smooth(rise - 0.48, rise + 0.32, hour) * (1 - smooth(set - 0.25, set + 0.55, hour));
+  };
 
   // ---------------------------------------------------------------------------------------------
   // Shader: one full-screen pass over the composite colour and depth of the SceneView.
@@ -114,6 +118,7 @@ uniform int boltN;
 uniform float boltA;
 uniform float night;     // 0 = storm daylight, 1 = night
 uniform float waterLevel; // bay surface above the elevation model's zero, m
+uniform float windows;   // 1 = add lit windows, 0 = the host draws its own
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 const vec3 FLASH = vec3(0.80, 0.86, 1.0);
@@ -186,7 +191,7 @@ vec3 shade(vec2 st, vec3 albedo, vec3 P, vec3 N, float flashGlow) {
     // minority switched on in runs along a floor. Near the camera the facade texture gates the glow,
     // since glass reads darker than the wall around it.
     float facade = 1.0 - smoothstep(0.25, 0.45, abs(up));
-    if (facade > 0.0 && h > waterLevel + 3.0) {
+    if (windows > 0.5 && facade > 0.0 && h > waterLevel + 3.0) {
       vec3 t = normalize(cross(upV, N));
       float s = dot(en, vec2(dot(t, eastV), dot(t, northV)));
       vec2 nEN = normalize(vec2(dot(N, eastV), dot(N, northV)) + 1e-5);
@@ -320,7 +325,9 @@ void main() {
   t1 = min(t1, t0 + 9000.0);
   float tCloud = 1.0;
   vec3 sCloud = vec3(0.0);
-  if (t1 > t0) {
+  // From an overview camera high above the deck the city stays readable: the deck thins as you climb.
+  float deckK = 1.0 - smoothstep(cloudBase + 150.0, cloudBase + 700.0, eyeAlt);
+  if (t1 > t0 && deckK > 0.0) {
     float dt = (t1 - t0) / 16.0;
     for (int i = 0; i < 16; i++) {
       float t = t0 + (float(i) + jitter) * dt;
@@ -328,7 +335,7 @@ void main() {
       vec2 q = eyeEN + dirEN * t - windEN * time * (6.0 + 1.5 * windMs);
       float base = cloudBase - 80.0 + 150.0 * vnoise(q / 170.0 + time * 0.03);
       float band = smoothstep(base, base + 110.0, h) * (1.0 - smoothstep(top - 260.0, top, h));
-      float dens = band * (smoothstep(0.28, 0.66, fbm(q / 650.0)) * 0.011 + 0.0013);
+      float dens = band * (smoothstep(0.28, 0.66, fbm(q / 650.0)) * 0.011 + 0.0013) * deckK;
       if (dens <= 0.0) continue;
       float hb = clamp((h - cloudBase) / (top - cloudBase), 0.0, 1.0);
       // By night the underside of the deck is lit orange-grey by the city below.
@@ -362,7 +369,7 @@ void main() {
   }
 
   // Rain: streaks on world-anchored cylinders around the camera, each hidden behind nearer geometry.
-  if (rain > 0.005) {
+  if (rain > 0.005 && eyeAlt < 900.0) {
     float hl = max(length(vec2(dot(dir, fwdH), dot(dir, rightH))), 1e-3);
     float theta = atan(dot(dir, rightH), dot(dir, fwdH)) + heading;
     float elevT = k / hl;
@@ -386,7 +393,7 @@ void main() {
       float yy = f.y - hash(id + 9.2) * 0.45;
       float len = 0.3 + 0.35 * hash(id + 2.3);
       float seg = smoothstep(0.0, 0.1, yy) * (1.0 - smoothstep(len - 0.15, len, yy));
-      col += rainCol * line * seg * occ * steep * (0.09 - 0.014 * float(i)) * (0.4 + 0.6 * min(rain, 1.0));
+      col += rainCol * line * seg * occ * steep * (0.09 - 0.014 * float(i)) * (0.4 + 0.6 * min(rain, 1.0)) * (1.0 - smoothstep(300.0, 900.0, eyeAlt));
     }
   }
 
@@ -536,7 +543,9 @@ void main() {
     check();
   });
 
-  require([
+  // A host app may load the ArcGIS loader (window.require) late; start once it exists.
+  const whenLoader = (fn) => (typeof window.require === "function" && window.require.on ? fn() : setTimeout(() => whenLoader(fn), 200));
+  whenLoader(() => require([
     "esri/views/3d/webgl/RenderNode",
     "esri/views/3d/webgl",
     "esri/geometry/SpatialReference",
@@ -660,8 +669,19 @@ void main() {
     function tick(now) {
       const dt = Math.min(0.1, (now - lastFrame) / 1000);
       lastFrame = now;
-      state.link = destructionLink();
-      if (state.storm && state.t !== null) {
+      // A host app (window.sfCinemaHost) owns the storm clock: take its conditions at its current moment.
+      const host = window.sfCinemaHost;
+      if (host) {
+        const c = host.conditions();
+        state.weather = { rainMmH: c.rainMmH, meanMs: c.meanMs, gustMs: c.gustMs, fromDeg: c.fromDeg, tideM: c.tideM, rain: Math.min(1.5, Math.pow(Math.max(0, c.rainMmH) / 40, 0.6)) };
+        state.hostHour = c.localHour ?? null;
+        state.hostSun = c.sun ?? null;
+        state.hostFlash = c.flash ?? 0;
+        state.hostLabel = c.label ?? "";
+        if (now - (hud.syncedAt ?? 0) > 250) hud.sync();
+      }
+      state.link = host ? null : destructionLink();
+      if (!host && state.storm && state.t !== null) {
         // A moment set on the destruction slider (outside cinema's own controls) wins.
         const theirs = state.link ? Number(destructionSlider()?.value) : NaN;
         if (Number.isFinite(theirs) && pushedT !== null && Math.abs(theirs - pushedT) > 1) state.t = theirs;
@@ -676,7 +696,8 @@ void main() {
         state.weather = conditionsAt(state.storm, state.t, state.link?.scenario === state.scenario ? state.link.run : null);
         if (state.playing || now - (hud.syncedAt ?? 0) > 250) hud.sync();
       }
-      state.night = state.light === "night" ? 1 : state.light === "day" ? 0 : darknessAt(state.storm && state.t !== null ? localHour(state.storm, state.t) : null);
+      const hour = host ? state.hostHour : state.storm && state.t !== null ? localHour(state.storm, state.t) : null;
+      state.night = state.light === "night" ? 1 : state.light === "day" ? 0 : darknessAt(hour, host ? state.hostSun : null);
       state.nightNow += (state.night - state.nightNow) * (1 - Math.exp(-dt * 1.6));
       const t = now / 1000;
       // Gusts arrive as slow swells toward the reported gust speed.
@@ -685,7 +706,7 @@ void main() {
       const w = state.weather;
       if (sec > state.nextStrike) {
         // Lightning is rare in Bay Area atmospheric rivers: only in the heaviest rain, a minute or so apart.
-        if (state.nextStrike && w.rainMmH >= 20) strike(sec);
+        if (state.nextStrike && w.rainMmH >= 20 && !host) strike(sec);
         state.nextStrike = sec + 35 + Math.random() * 55;
       }
       for (const s of state.strikes) {
@@ -711,9 +732,9 @@ void main() {
       // The bay at the storm's tide. The elevation model is roughly mean sea level, so the surface sits
       // at the tide above MSL; land and piers above it stay dry, low ground below it floods.
       const level = Math.round(Math.max(0.4, w.tideM - MSL_NAVD88) * 20) / 20;
-      if (water && level !== appliedTide) {
+      if (level !== appliedTide) {
         appliedTide = level;
-        water.elevationInfo = { mode: "absolute-height", offset: level };
+        if (water) water.elevationInfo = { mode: "absolute-height", offset: level };
       }
       const key = `${w.meanMs > 9}|${Math.round(w.fromDeg / 15)}`;
       if (key === appliedWeather) return;
@@ -728,161 +749,159 @@ void main() {
       }
     }
 
+    // The post pass. Cinema's own RenderNode runs it; a host app with its own RenderNode can run it
+    // through sfCinema.post(node, input) before drawing its layers on top.
+    const post = {};
+    function ensurePost(gl) {
+      if (post.gl === gl) return;
+      const program = gl.createProgram();
+      gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
+      gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT));
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`Cinema shader: ${gl.getProgramInfoLog(program)}`);
+      post.program = program;
+      post.u = {};
+      const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < count; i++) {
+        const name = gl.getActiveUniform(program, i).name.replace(/\[0\]$/, "");
+        post.u[name] = gl.getUniformLocation(program, name);
+      }
+      post.vao = gl.createVertexArray();
+      gl.bindVertexArray(post.vao);
+      post.buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, post.buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const position = gl.getAttribLocation(program, "position");
+      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(position);
+      gl.bindVertexArray(null);
+      post.boltData = new Float32Array(40 * 3);
+      post.gl = gl;
+    }
+
+    function drawPost(gl, cam, colorTex, depthTex) {
+      const now = performance.now();
+      ensurePost(gl);
+      gl.disable(gl.BLEND);
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.useProgram(post.program);
+      const u = post.u;
+
+      // Local frame at the eye, rotated into view space.
+      const eye = cam.eye;
+      const up = normalize(eye);
+      const east = normalize([-up[1], up[0], 0]);
+      const north = cross(up, east);
+      const upV = rotate(cam.viewMatrix, up);
+      const fwd = [0, 0, -1];
+      let fwdH = normalize(fwd.map((c, i) => c - upV[i] * dot(fwd, upV)));
+      if (!Number.isFinite(fwdH[0]) || Math.abs(dot(fwd, upV)) > 0.999) fwdH = normalize(rotate(cam.viewMatrix, north));
+      const rightH = normalize(cross(fwdH, upV));
+      const radius = Math.hypot(...eye);
+      const lat = Math.asin(eye[2] / radius), lon = Math.atan2(eye[1], eye[0]);
+      const eyeEN = [
+        (lon - ORIGIN.lon * Math.PI / 180) * EARTH * Math.cos(ORIGIN.lat * Math.PI / 180),
+        (lat - ORIGIN.lat * Math.PI / 180) * EARTH
+      ];
+      const heading = view.camera.heading;
+      if (state.lastHeading !== null) {
+        let delta = heading - state.lastHeading;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        state.headingUnwrapped += delta;
+      }
+      state.lastHeading = heading;
+
+      const w = state.weather;
+      const windMs = w.meanMs + (w.gustMs - w.meanMs) * state.gustiness;
+      const toward = (w.fromDeg + 180) * Math.PI / 180;
+      const windEN = [Math.sin(toward), Math.cos(toward)];
+      const h = heading * Math.PI / 180;
+      const crosswind = windMs * (windEN[0] * Math.cos(h) - windEN[1] * Math.sin(h));
+
+      // Lightning: flash envelope and the channel projected with this frame's camera.
+      const sec = now / 1000;
+      const calm = reducedMotion.matches ? 0.3 : 1;
+      // state.holdFlash freezes a strike at full brightness, for stills.
+      // In a host app the host's own lightning drives the flash; its channel is drawn by the host.
+      const hosted = !!window.sfCinemaHost;
+      const flash = state.holdFlash ? 1 : (hosted ? state.hostFlash : Math.min(1.6, envelope(sec, 0.07))) * calm;
+      const boltA = state.holdFlash ? 1 : Math.min(1.5, envelope(sec, 0.11)) * calm;
+      let boltN = 0;
+      let flashV = [0, 0, -1];
+      if (!hosted && state.bolt && (state.holdFlash || sec - state.bolt.t0 < 1.6)) {
+        const { render, breaks } = state.bolt;
+        const count = Math.min(40, breaks.length);
+        let mid = null;
+        for (let i = 0; i < count; i++) {
+          const o = i * 3;
+          const p = transform(cam.viewMatrix, render[o], render[o + 1], render[o + 2]);
+          const c = transform(cam.projectionMatrix, p[0], p[1], p[2]);
+          if (breaks[i] || c[3] <= 0) {
+            post.boltData.set([0, 0, -1], o);
+          } else {
+            post.boltData.set([c[0] / c[3] * 0.5 + 0.5, c[1] / c[3] * 0.5 + 0.5, Math.hypot(p[0], p[1], p[2])], o);
+            if (i === 8) mid = p;
+          }
+        }
+        boltN = count;
+        if (mid) flashV = normalize(mid);
+      }
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, colorTex);
+      gl.uniform1i(u.colorTex, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, depthTex);
+      gl.uniform1i(u.depthTex, 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniformMatrix4fv(u.proj, false, cam.projectionMatrix);
+      gl.uniformMatrix4fv(u.invProj, false, invert(cam.projectionMatrix));
+      gl.uniform3fv(u.upV, upV);
+      gl.uniform3fv(u.eastV, rotate(cam.viewMatrix, east));
+      gl.uniform3fv(u.northV, rotate(cam.viewMatrix, north));
+      gl.uniform3fv(u.fwdH, fwdH);
+      gl.uniform3fv(u.rightH, rightH);
+      gl.uniform1f(u.eyeAlt, radius - EARTH);
+      gl.uniform2fv(u.eyeEN, eyeEN);
+      gl.uniform1f(u.heading, state.headingUnwrapped * Math.PI / 180);
+      gl.uniform1f(u.radPerPx, cam.fovY / cam.viewport[3]);
+      gl.uniform1f(u.time, (sec % 3600));
+      gl.uniform1f(u.rain, w.rain);
+      gl.uniform1f(u.rainTilt, Math.max(-0.85, Math.min(0.85, crosswind / 8.5)));
+      gl.uniform2fv(u.windEN, windEN);
+      gl.uniform1f(u.windMs, windMs);
+      gl.uniform1f(u.cloudBase, CLOUD_BASE);
+      gl.uniform1f(u.flash, flash);
+      gl.uniform3fv(u.flashV, flashV);
+      gl.uniform3fv(u.bolt, post.boltData);
+      gl.uniform1i(u.boltN, boltN);
+      gl.uniform1f(u.boltA, boltN ? boltA : 0);
+      gl.uniform1f(u.night, state.nightNow);
+      gl.uniform1f(u.waterLevel, appliedTide ?? 0.6);
+      // A host draws its own window lights (with real power outages), so cinema adds none there.
+      gl.uniform1f(u.windows, hosted ? 0 : 1);
+
+      gl.bindVertexArray(post.vao);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.bindVertexArray(null);
+    }
+
     const StormNode = RenderNode.createSubclass({
       constructor() {
         this.consumes = { required: ["composite-color"] };
         this.produces = "composite-color";
       },
-
-      ensure(gl) {
-        if (this.program) return;
-        const program = gl.createProgram();
-        gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
-        gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT));
-        gl.linkProgram(program);
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`Cinema shader: ${gl.getProgramInfoLog(program)}`);
-        this.program = program;
-        this.u = {};
-        const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-        for (let i = 0; i < count; i++) {
-          const name = gl.getActiveUniform(program, i).name.replace(/\[0\]$/, "");
-          this.u[name] = gl.getUniformLocation(program, name);
-        }
-        this.vao = gl.createVertexArray();
-        gl.bindVertexArray(this.vao);
-        this.buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-        const position = gl.getAttribLocation(program, "position");
-        gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(position);
-        gl.bindVertexArray(null);
-        this.boltData = new Float32Array(40 * 3);
-      },
-
       render(inputs) {
         const input = inputs.find(({ name }) => name === "composite-color");
         const gl = this.gl;
-        const color = input.getTexture();
-        const depth = input.getTexture(gl.DEPTH_STENCIL_ATTACHMENT);
         const output = this.acquireOutputFramebuffer();
-        const now = performance.now();
-        this.ensure(gl);
-        gl.disable(gl.BLEND);
-        gl.disable(gl.DEPTH_TEST);
-        gl.disable(gl.CULL_FACE);
-        gl.useProgram(this.program);
-        const u = this.u;
-        const cam = this.camera;
-
-        // Local frame at the eye, rotated into view space.
-        const eye = cam.eye;
-        const up = normalize(eye);
-        const east = normalize([-up[1], up[0], 0]);
-        const north = cross(up, east);
-        const upV = rotate(cam.viewMatrix, up);
-        const fwd = [0, 0, -1];
-        let fwdH = normalize(fwd.map((c, i) => c - upV[i] * dot(fwd, upV)));
-        if (!Number.isFinite(fwdH[0]) || Math.abs(dot(fwd, upV)) > 0.999) fwdH = normalize(rotate(cam.viewMatrix, north));
-        const rightH = normalize(cross(fwdH, upV));
-        const radius = Math.hypot(...eye);
-        const lat = Math.asin(eye[2] / radius), lon = Math.atan2(eye[1], eye[0]);
-        const eyeEN = [
-          (lon - ORIGIN.lon * Math.PI / 180) * EARTH * Math.cos(ORIGIN.lat * Math.PI / 180),
-          (lat - ORIGIN.lat * Math.PI / 180) * EARTH
-        ];
-        const heading = view.camera.heading;
-        if (state.lastHeading !== null) {
-          let delta = heading - state.lastHeading;
-          if (delta > 180) delta -= 360;
-          if (delta < -180) delta += 360;
-          state.headingUnwrapped += delta;
-        }
-        state.lastHeading = heading;
-
-        const w = state.weather;
-        const windMs = w.meanMs + (w.gustMs - w.meanMs) * state.gustiness;
-        const toward = (w.fromDeg + 180) * Math.PI / 180;
-        const windEN = [Math.sin(toward), Math.cos(toward)];
-        const h = heading * Math.PI / 180;
-        const crosswind = windMs * (windEN[0] * Math.cos(h) - windEN[1] * Math.sin(h));
-
-        // Lightning: flash envelope and the channel projected with this frame's camera.
-        const sec = now / 1000;
-        const calm = reducedMotion.matches ? 0.3 : 1;
-        // state.holdFlash freezes a strike at full brightness, for stills.
-        const flash = state.holdFlash ? 1 : Math.min(1.6, envelope(sec, 0.07)) * calm;
-        const boltA = state.holdFlash ? 1 : Math.min(1.5, envelope(sec, 0.11)) * calm;
-        let boltN = 0;
-        let flashV = [0, 0, -1];
-        if (state.bolt && (state.holdFlash || sec - state.bolt.t0 < 1.6)) {
-          const { render, breaks } = state.bolt;
-          const count = Math.min(40, breaks.length);
-          let mid = null;
-          for (let i = 0; i < count; i++) {
-            const o = i * 3;
-            const p = transform(cam.viewMatrix, render[o], render[o + 1], render[o + 2]);
-            const c = transform(cam.projectionMatrix, p[0], p[1], p[2]);
-            if (breaks[i] || c[3] <= 0) {
-              this.boltData.set([0, 0, -1], o);
-            } else {
-              this.boltData.set([c[0] / c[3] * 0.5 + 0.5, c[1] / c[3] * 0.5 + 0.5, Math.hypot(p[0], p[1], p[2])], o);
-              if (i === 8) mid = p;
-            }
-          }
-          boltN = count;
-          if (mid) flashV = normalize(mid);
-        }
-
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, color.glName);
-        gl.uniform1i(u.colorTex, 0);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, depth.glName);
-        gl.uniform1i(u.depthTex, 1);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.uniformMatrix4fv(u.proj, false, cam.projectionMatrix);
-        gl.uniformMatrix4fv(u.invProj, false, invert(cam.projectionMatrix));
-        gl.uniform3fv(u.upV, upV);
-        gl.uniform3fv(u.eastV, rotate(cam.viewMatrix, east));
-        gl.uniform3fv(u.northV, rotate(cam.viewMatrix, north));
-        gl.uniform3fv(u.fwdH, fwdH);
-        gl.uniform3fv(u.rightH, rightH);
-        gl.uniform1f(u.eyeAlt, radius - EARTH);
-        gl.uniform2fv(u.eyeEN, eyeEN);
-        gl.uniform1f(u.heading, state.headingUnwrapped * Math.PI / 180);
-        gl.uniform1f(u.radPerPx, cam.fovY / cam.viewport[3]);
-        gl.uniform1f(u.time, (sec % 3600));
-        gl.uniform1f(u.rain, w.rain);
-        gl.uniform1f(u.rainTilt, Math.max(-0.85, Math.min(0.85, crosswind / 8.5)));
-        gl.uniform2fv(u.windEN, windEN);
-        gl.uniform1f(u.windMs, windMs);
-        gl.uniform1f(u.cloudBase, CLOUD_BASE);
-        gl.uniform1f(u.flash, flash);
-        gl.uniform3fv(u.flashV, flashV);
-        gl.uniform3fv(u.bolt, this.boltData);
-        gl.uniform1i(u.boltN, boltN);
-        gl.uniform1f(u.boltA, boltN ? boltA : 0);
-        gl.uniform1f(u.night, state.nightNow);
-        gl.uniform1f(u.waterLevel, appliedTide ?? 0.6);
-
-        gl.bindVertexArray(this.vao);
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
-        gl.bindVertexArray(null);
-
+        drawPost(gl, this.camera, input.getTexture().glName, input.getTexture(gl.DEPTH_STENCIL_ATTACHMENT).glName);
         output.attachDepth(input.getAttachment(gl.DEPTH_STENCIL_ATTACHMENT));
         // Keep the storm moving even when the camera is still.
         this.requestRender();
         return output;
-      },
-
-      destroy() {
-        const gl = this.gl;
-        if (gl && this.program) {
-          gl.deleteProgram(this.program);
-          gl.deleteBuffer(this.buffer);
-          gl.deleteVertexArray(this.vao);
-        }
       }
     });
 
@@ -913,9 +932,12 @@ void main() {
       hud.sync();
       const scene = await waitForScene();
       view = scene.view;
+      // A host app runs the post pass from its own RenderNode and keeps its own clock, sound,
+      // lightning and camera; on its own, cinema mode brings all of those.
+      const host = window.sfCinemaHost;
       // Wait for the city's first full load: the storm renders every frame, which would keep the
       // view "updating" and hold scene.js's loading message up.
-      await new Promise((resolve) => {
+      if (!host) await new Promise((resolve) => {
         const check = () => (document.documentElement.dataset.sceneReady || !state.active ? resolve() : setTimeout(check, 200));
         check();
       });
@@ -932,30 +954,35 @@ void main() {
         cameraTrackingEnabled: false
       };
       appliedWeather = null;
-      // Data overlays step aside for the film; each layer's own visibility comes back on exit.
-      saved.hidden = view.map.layers.filter((layer) => layer !== scene.buildings && layer.visible).toArray();
-      saved.hidden.forEach((layer) => { layer.visible = false; });
-      water = makeWater();
       appliedTide = null;
-      view.map.add(water);
-      // Take the scenario and moment already set on the destruction timeline, if any.
-      const link = destructionLink();
-      const theirs = link ? Number(destructionSlider()?.value) : NaN;
-      pushedT = Number.isFinite(theirs) ? theirs : null;
-      if (link) selectScenario(link.scenario, Number.isFinite(theirs) ? theirs : undefined).catch(console.error);
-      else if (!state.storm) selectScenario(state.scenario).catch(console.error);
+      saved.hidden = [];
+      if (!host) {
+        // Data overlays step aside for the film; each layer's own visibility comes back on exit.
+        saved.hidden = view.map.layers.filter((layer) => layer !== scene.buildings && layer.visible).toArray();
+        saved.hidden.forEach((layer) => { layer.visible = false; });
+        water = makeWater();
+        view.map.add(water);
+        // Take the scenario and moment already set on the destruction timeline, if any.
+        const link = destructionLink();
+        const theirs = link ? Number(destructionSlider()?.value) : NaN;
+        pushedT = Number.isFinite(theirs) ? theirs : null;
+        if (link) selectScenario(link.scenario, Number.isFinite(theirs) ? theirs : undefined).catch(console.error);
+        else if (!state.storm) selectScenario(state.scenario).catch(console.error);
+      }
       state.headingUnwrapped = 0;
       state.lastHeading = null;
       state.nextStrike = performance.now() / 1000 + 2.5;
       lastFrame = performance.now();
-      try {
-        node = new StormNode({ view });
-      } catch (error) {
-        console.error(error);
+      if (!host) {
+        try {
+          node = new StormNode({ view });
+        } catch (error) {
+          console.error(error);
+        }
+        audio.start();
+        if (view.camera.position.z > 450) view.goTo(VANTAGE, { duration: 3200, easing: "in-out-cubic" }).catch(() => {});
       }
-      audio.start();
       requestAnimationFrame(loop);
-      if (view.camera.position.z > 450) view.goTo(VANTAGE, { duration: 3200, easing: "in-out-cubic" }).catch(() => {});
       hud.sync();
     }
 
@@ -1044,13 +1071,24 @@ void main() {
       const source = el("p", "cinema-source");
       bottom.append(readouts, controls, source);
       frame.append(top, bottom);
-      document.body.append(frame, toggle);
+      // Inside a host app the letterbox stays off (the host has its own HUD); the light switch docks here.
+      const dock = el("div", "cinema-dock");
+      dock.hidden = true;
+      document.body.append(frame, dock, toggle);
 
       const one = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
       const two = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
       const sync = () => {
         hud.syncedAt = performance.now();
         const on = state.active;
+        const hosted = !!window.sfCinemaHost;
+        document.body.classList.toggle("cinema-hosted", hosted);
+        if (hosted && phase.parentElement !== dock) dock.append(phase);
+        if (!hosted && phase.parentElement !== controls) controls.insertBefore(phase, play);
+        // In the app, join its control row (Orbit · Walk · Demo) once it exists.
+        const row = hosted && document.querySelector(".ctl");
+        if (row && toggle.parentElement !== row) row.append(dock, toggle);
+        dock.hidden = !(hosted && on);
         toggle.setAttribute("aria-pressed", String(on));
         toggle.innerHTML = `${FILM_ICON}<span>${on ? "Exit cinema" : "Cinema"}</span>`;
         frame.setAttribute("aria-hidden", String(!on));
@@ -1093,9 +1131,20 @@ void main() {
       addEventListener("keydown", (event) => { if (event.key === "Escape" && state.active) disable(); });
       const hud = { sync, syncedAt: 0 };
       sync();
+      // A host app sets window.sfCinemaHost and builds its control row after its data loads.
+      const watch = setInterval(() => {
+        if (window.sfCinemaHost && document.querySelector(".ctl")) { sync(); clearInterval(watch); }
+      }, 400);
+      setTimeout(() => clearInterval(watch), 120000);
       return hud;
     })();
 
-    window.sfCinema = { enable, disable, state, conditionsAt, strike: () => strike(performance.now() / 1000), get node() { return node; } };
-  });
+    window.sfCinema = {
+      enable, disable, state, conditionsAt,
+      strike: () => strike(performance.now() / 1000),
+      // For a host app's own RenderNode: grade the composite colour into the bound output framebuffer.
+      post: (hostNode, input) => drawPost(hostNode.gl, hostNode.camera, input.getTexture().glName, input.getTexture(hostNode.gl.DEPTH_STENCIL_ATTACHMENT).glName),
+      get node() { return node; }
+    };
+  }));
 })();
