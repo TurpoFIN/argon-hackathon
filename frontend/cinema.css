@@ -93,3 +93,9 @@ body.cinema-hosted.cinema .ctl-h { display: none; }
 body.cinema-hosted.cinema .grade, body.cinema-hosted.cinema .vignette, body.cinema-hosted.cinema .flash { display: none; }
 body.cinema-hosted.cinema #scene canvas { filter: none; }
 .cinema-dock[hidden] { display: none !important; }
+
+/* Data credits must stay visible (Esri, Vantor imagery, PLW buildings terms), but as one quiet line:
+   truncated, small and translucent until hovered; the ArcGIS widget expands it on click. */
+.esri-attribution { font-size: 9px; line-height: 14px; background: rgba(0, 0, 0, .35); color: rgba(255, 255, 255, .55); }
+.esri-attribution:hover { color: rgba(255, 255, 255, .85); }
+.esri-attribution__sources { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }

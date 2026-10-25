@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Storm Prep Plan 3D</title>
 <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/dark/main.css">
+<link rel="stylesheet" href="/cinema.css">
 <style>
 :root { color-scheme: dark; --bg:#020202; --surface:#161616; --fg:#eeeeee; --muted:#a4a4a4; --edge:rgba(255,255,255,.08);
   --c1:#006cff; --c3:#f644b9; --c4:#00d1ef; --c5:#ff6d00; --c2:#f2b200; --c7:#00c769; --danger:#ed5b49; --violet:#a56aff;
@@ -43,6 +44,7 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 </style>
 <script src="https://js.arcgis.com/4.33/"></script>
 <script src="/loop/destruction-layer.js"></script>
+<script src="/cinema.js" defer></script>
 <script type="module" src="/prepViewer.js"></script>
 </head>
 <body>
@@ -133,6 +135,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     .then(layer => (destruction = layer))
     .catch(error => { console.error('Destruction layer unavailable', error); return null; });
   let showVersion = 0;
+  window.sfScene = { view, map };
   view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
   const storm = { frames: 0, minutes: [], frame: null, timer: null, layer: null };
@@ -265,6 +268,10 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     }
     folder = `/runs/${encodeURIComponent(run)}/${encodeURIComponent(model)}/`;
     const log = await fetch(folder + model + '.json').then(r => r.json());
+    // Cinema mode (cinema.js) shows the storm this run was tested against: its rain and wind, and the forecast's P50 peak water.
+    const sp = log.parameters || {}, p50 = (log.forcing?.scenarios || []).find(s => s.name === 'P50');
+    window.sfCinemaHost = { standalone: true, conditions: () => ({ rainMmH: sp.rain_mm_h ?? 0, meanMs: sp.wind_mps ?? 0,
+      gustMs: sp.gust_mps ?? sp.wind_mps ?? 0, fromDeg: sp.wind_from_deg ?? 200, tideM: p50?.peak_water_level_navd88_m ?? 2.368, localHour: null, flash: 0 }) };
     const name = log.model.includes('argon') ? 'Argon' : 'Flash';
     const rounds = log.rounds.filter(r => r.ledger);
     const best = rounds.length ? rounds.reduce((a, b) => (b.ledger.total_usd < a.ledger.total_usd ? b : a)) : null;

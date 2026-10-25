@@ -707,7 +707,7 @@ void main() {
       const w = state.weather;
       if (sec > state.nextStrike) {
         // Lightning is rare in Bay Area atmospheric rivers: only in the heaviest rain, a minute or so apart.
-        if (state.nextStrike && w.rainMmH >= 20 && !host) strike(sec);
+        if (state.nextStrike && w.rainMmH >= 20 && (!host || host.standalone)) strike(sec);
         state.nextStrike = sec + 35 + Math.random() * 55;
       }
       for (const s of state.strikes) {
@@ -826,7 +826,7 @@ void main() {
       const calm = reducedMotion.matches ? 0.3 : 1;
       // state.holdFlash freezes a strike at full brightness, for stills.
       // In a host app the host's own lightning drives the flash; its channel is drawn by the host.
-      const hosted = !!window.sfCinemaHost;
+      const hosted = !!window.sfCinemaHost && !window.sfCinemaHost.standalone;
       const flash = state.holdFlash ? 1 : (hosted ? state.hostFlash : Math.min(1.6, envelope(sec, 0.07))) * calm;
       const boltA = state.holdFlash ? 1 : Math.min(1.5, envelope(sec, 0.11)) * calm;
       let boltN = 0;
@@ -936,6 +936,8 @@ void main() {
       // A host app runs the post pass from its own RenderNode and keeps its own clock, sound,
       // lightning and camera; on its own, cinema mode brings all of those.
       const host = window.sfCinemaHost;
+      // A host with host.standalone only supplies the conditions: cinema brings its own pass and sound.
+      const ownPass = !host || host.standalone;
       // Wait for the city's first full load: the storm renders every frame, which would keep the
       // view "updating" and hold scene.js's loading message up.
       if (!host) await new Promise((resolve) => {
@@ -974,15 +976,15 @@ void main() {
       state.lastHeading = null;
       state.nextStrike = performance.now() / 1000 + 2.5;
       lastFrame = performance.now();
-      if (!host) {
+      if (ownPass) {
         try {
           node = new StormNode({ view });
         } catch (error) {
           console.error(error);
         }
         audio.start();
-        if (view.camera.position.z > 450) view.goTo(VANTAGE, { duration: 3200, easing: "in-out-cubic" }).catch(() => {});
       }
+      if (!host && view.camera.position.z > 450) view.goTo(VANTAGE, { duration: 3200, easing: "in-out-cubic" }).catch(() => {});
       requestAnimationFrame(loop);
       hud.sync();
     }
