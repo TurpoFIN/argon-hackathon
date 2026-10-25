@@ -209,7 +209,12 @@ export function mountProductShell(): void {
     page.scrollTop = 0;
     if (presenterMode && step === 'storm') page.classList.add('dismissed');
   };
-  const setStep = (next: Step) => { step = next; history.replaceState({}, '', `${location.pathname}?step=${next}`); render(); };
+  const startPresenterStorm = () => {
+    const storm = (window as any).storm;
+    if (storm?.play) storm.play();
+    else window.addEventListener('storm-ready', () => (window as any).storm?.play?.(), { once: true });
+  };
+  const setStep = (next: Step) => { step = next; history.replaceState({}, '', `${location.pathname}?step=${next}`); render(); if (presenterMode && next === 'storm') startPresenterStorm(); };
   const advance = (delta: number) => { const index = STEP_META.findIndex((s) => s.id === step); setStep(STEP_META[Math.max(0, Math.min(STEP_META.length - 1, index + delta))].id); };
   window.addEventListener('keydown', (event) => {
     if (event.key.toLowerCase() === 'p') { presenterMode = !presenterMode; document.body.classList.toggle('presenter-mode', presenterMode); render(); return; }
