@@ -13,7 +13,7 @@ from .judge import OUT, Judge
 def forcing_file(folder: Path, log):
     if not log.get("forcing"):
         return None
-    for candidate in [folder.parent / "forcing.json", *sorted(OUT.glob("forcing-*.json"))]:
+    for candidate in [folder.parent / "forcing.json", *sorted(OUT.glob("forcing-*.json")), *sorted(OUT.glob("*/forcing.json"))]:
         if candidate.is_file() and json.loads(candidate.read_text()).get("issued") == log["forcing"]["issued"]:
             return str(candidate)
     raise SystemExit("forcing file for this run not found")
