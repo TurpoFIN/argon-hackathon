@@ -40,6 +40,8 @@ DIST = REPO / "web" / "dist"
 
 app = FastAPI(title="StormSim SF")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=3)  # frames are mostly zeros: ~4x smaller over venue wifi
 
 
 class RunReq(BaseModel):
