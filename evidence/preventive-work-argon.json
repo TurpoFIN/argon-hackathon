@@ -1,0 +1,1372 @@
+[
+  {
+    "settings": {
+      "profile": "basic",
+      "minutes": 30
+    },
+    "result": {
+      "selected": [
+        {
+          "action_id": "clear-inlet@report-16282611",
+          "crew_id": "general-1",
+          "why": "Fits within the 30-minute window at an upper bound of 27 minutes (2 minutes upper travel from staging to 169 Steuart St, 10 minutes upper setup, and 15 minutes upper work) using 1 of 2 available handtool_kits. Addresses potential surface leaf and litter blockage at nearest mapped inlet 163326 (29 m from historical report 16282611) based on SFPUC operating guidance and storm mechanism, slightly faster than the 29-minute alternative at 201 Spear St. Incremental benefit is strictly conditional on actual surface debris being present and safe dry access; it does not address below-grate blockage, sewer capacity, or coastal flooding."
+        },
+        {
+          "action_id": "latch-windows@glass-1",
+          "crew_id": "general-2",
+          "why": "Fits within the 30-minute window at an upper bound of 25 minutes (5 minutes upper travel from staging to 301 Mission St, 10 minutes upper setup, and 10 minutes upper work) requiring no equipment. Addresses a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation (which found 30 of 31 broken panes at seven buildings had identifiable, mitigable causes including hardware/condition issues). Equally fast as the 350 Mission St candidate (both 25 minutes maximum), this action closes and latches up to 10 accessible operable windows if currently unlatched, though it provides zero benefit if windows are already secured and does not add impact resistance or prevent whole-building damage."
+        }
+      ],
+      "conclusion": "Within the strict 30-minute planning window and basic crew profile (two 2-person general crews, 2 handtool_kits, 20 tie-downs, 1 cart, no specialists), at most two physical packages can be completed under upper-bound time estimates: one catch-basin surface clearing by general-1 (clear-inlet@report-16282611, 27 minutes max) and one window-latching package by general-2 (latch-windows@glass-1, 25 minutes max). Serial execution and upper-bound durations prevent either crew from completing a second task within 30 minutes. Compared with doing nothing, these two actions offer conditional, low-cost physical treatment of documented local failure mechanisms (surface drain clogging and open/unlatched operable windows), provided field conditions confirm actual defects and safe access. However, no calibrated damage-reduction model exists for either task, and if the target inlet is already clear or the windows are already latched, incremental physical benefit is zero.",
+      "why_not_do_nothing": "Doing nothing expends zero labor and equipment, which avoids wasted effort if unconfirmed sites turn out to be inaccessible or already secure, and its storm loss is uncalibrated. However, doing nothing leaves all potentially active failure mechanisms untreated despite having two idle general crews and basic tools on hand. Storm evidence distinguishes several grades of justification: (1) local post-storm forensic investigation (SF DBI/WJE March 2023 glass report) identifying window hardware/condition and windborne debris as failure mechanisms; (2) external field investigations (FEMA P-942 after Sandy) showing real-storm operational benefits when backup pumps were connected to emergency power, alongside limiting failure conditions when floodgates were overtopped or transfer switches flooded, and FEMA Hurricane Michael observations showing opening protection alone does not preserve whole-building function; (3) external observational associations (UF/IFAS Hurricane Andrew study showing 73% vs 47% survival for properly pruned broad-leaved trees, which is non-causal and not a last-minute SF treatment effect); and (4) official operating guidance (SFPUC drain care, FEMA P-234 content moving and sandbagging). Deploying general-1 and general-2 on the two feasible tasks treats one flood-drainage mechanism and one wind-glazing mechanism within budget without fabricating quantified loss reductions.",
+      "remaining_gaps": "Major operational and evidence gaps remain. First, all site conditions, permissions, and current defects are unchecked (`condition: unchecked`, `prerequisites_confirmed: false`); historical 311 locations and past glazing study addresses do not confirm current hazards, hydraulic connectivity, or operable window states. Second, 37 of 41 candidate packages are infeasible (`fits: false`) in this 30-minute basic scenario: Crew-1 and Crew-2 each can only complete one job because any second job's 20-to-25-minute upper work/setup duration plus `travel_between` exceeds the remaining 3 to 5 minutes. Third, all loose-item tie-down tasks (35\u201346 min max), content moves (85 min max), route clearances (49 min max), and 21 of 23 inlet-clearing sites (31\u201386 min max) exceed the 30-minute upper bound. Fourth, high-effort flood barriers, backup power, tree pruning, structural support, and traffic cordons cannot be accomplished due to missing specialist crews (electrician, arborist, building, traffic), unstaged equipment (0 pre-fitted barriers, 0 sandbags/fill, 0 pumps/circuits/electrical kits, 0 arborist kits, 0 engineered supports, 0 traffic sets), unestablished engineering designs/authority (`design_gap: true`), and multi-hour labor requirements (40 to 420 minutes). Finally, even if the selected tasks are completed, subsurface sewer capacity, coastal surge (0.5 m), power outages, tree failures, and structural wind loads remain completely unmitigated.",
+      "result_sha256": "4d2db1b9470b61ff0031facdfc3973ac350cdc8439bf95b7dc5c7a26c1c8019c",
+      "generated_at": "2026-10-25T22:08:23.845466+00:00",
+      "model": "gemini-4-argon",
+      "fingerprint": "b266aa0f62e3d24580b6342e3eebbadda0cca1fcedd07d7b3c6c4201a865d7fd"
+    },
+    "selected": [
+      {
+        "id": "clear-inlet@report-16282611",
+        "hazard": "flood",
+        "label": "Clear one inlet surface and adjacent gutter 163326",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          15
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "handtool_kit": 1
+        },
+        "output": "One inlet surface and reachable gutter cleared of loose leaves/litter",
+        "without": "Existing surface debris stays in place, if present.",
+        "with": "Surface blockage is removed; no change is claimed to below-grate blockage, sewer capacity or coastal flooding.",
+        "evidence_grade": "Mechanism and operating guidance",
+        "evidence": "SF crews clear catch basins during storms; SFPUC specifies safe surface-clearing practice. No matched local study quantifies damage avoided per cleared inlet.",
+        "source_ids": [
+          "sf-works",
+          "sf-drain-care",
+          "drain-time"
+        ],
+        "time_basis": "10\u201315 minutes of work, anchored to an external 15-minute maintenance budget; 5\u201310 minutes for setup is a planning allowance. Crew travel is added separately.",
+        "conditions": [
+          "Actual surface debris present; if already clear, benefit is zero",
+          "Safe dry sidewalk, no storm or ponding; do not lift grate",
+          "Map point matched to actual inlet"
+        ],
+        "operation_id": "clear-inlet",
+        "site": {
+          "id": "report-16282611",
+          "label": "169 STEUART ST",
+          "position": [
+            -122.3919907,
+            37.7927017
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16282611"
+          ],
+          "dates": [
+            "2023-01-10"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "163326",
+            "position": [
+              -122.392061138,
+              37.792447297
+            ],
+            "distance_m": 29,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 25,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              1,
+              2
+            ],
+            "general-2": [
+              10,
+              18
+            ]
+          },
+          "minimum_total": 16,
+          "maximum_total": 27
+        },
+        "priority": 1,
+        "crew_id": "general-1",
+        "assignment": "General 1",
+        "start": 0,
+        "finish": 27,
+        "labor_minutes": 54,
+        "travel_minutes": 2,
+        "why": "Fits within the 30-minute window at an upper bound of 27 minutes (2 minutes upper travel from staging to 169 Steuart St, 10 minutes upper setup, and 15 minutes upper work) using 1 of 2 available handtool_kits. Addresses potential surface leaf and litter blockage at nearest mapped inlet 163326 (29 m from historical report 16282611) based on SFPUC operating guidance and storm mechanism, slightly faster than the 29-minute alternative at 201 Spear St. Incremental benefit is strictly conditional on actual surface debris being present and safe dry access; it does not address below-grate blockage, sewer capacity, or coastal flooding.",
+        "work": "Clear one inlet surface and adjacent gutter 163326",
+        "hazards": [
+          "flood"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "latch-windows@glass-1",
+        "hazard": "wind",
+        "label": "Close and latch up to 10 accessible windows",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          5,
+          10
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {},
+        "output": "Up to 10 functioning accessible windows closed and latched",
+        "without": "Any open or unlatched window stays open or unlatched.",
+        "with": "Close the addressed openings; no credit for impact resistance, repairs or whole-building collapse prevention.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "SF's glazing investigation supports correcting window hardware/condition issues; closing operable windows does not address damaged glass or roof failure.",
+        "source_ids": [
+          "sf-glass",
+          "fema-michael"
+        ],
+        "time_basis": "Planning estimate for one accessible area; hardware repairs and searching a whole tower are excluded. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and operable hardware",
+          "Actual open/unlatched windows; already-secured windows yield no additional benefit",
+          "No replacement glazing or work at height"
+        ],
+        "operation_id": "latch-windows",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 10,
+        "maximum_minutes": 20,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              7,
+              12
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 13,
+          "maximum_total": 25
+        },
+        "priority": 2,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 0,
+        "finish": 25,
+        "labor_minutes": 50,
+        "travel_minutes": 5,
+        "why": "Fits within the 30-minute window at an upper bound of 25 minutes (5 minutes upper travel from staging to 301 Mission St, 10 minutes upper setup, and 10 minutes upper work) requiring no equipment. Addresses a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation (which found 30 of 31 broken panes at seven buildings had identifiable, mitigable causes including hardware/condition issues). Equally fast as the 350 Mission St candidate (both 25 minutes maximum), this action closes and latches up to 10 accessible operable windows if currently unlatched, though it provides zero benefit if windows are already secured and does not add impact resistance or prevent whole-building damage.",
+        "work": "Close and latch up to 10 accessible windows",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      }
+    ],
+    "totals": {
+      "jobs": 2,
+      "labor_minutes": 104,
+      "latest_finish": 27
+    }
+  },
+  {
+    "settings": {
+      "profile": "staged",
+      "minutes": 120
+    },
+    "result": {
+      "selected": [
+        {
+          "action_id": "backup-pump@glass-0",
+          "crew_id": "electrician-1",
+          "why": "Uses the dedicated 2-person electrician crew and the single staged pump, backup circuit, and electrical kit within 96 upper-bound minutes (16 travel + 80 work/overhead <= 120). Supported by observed external storm outcome evidence (FEMA P-942 from Hurricane Sandy, where emergency-powered sump pumps controlled water and kept generators operational, whereas submerged supporting components elsewhere defeated backup systems). Conditional on unconfirmed site access, compatible circuit, and dry working conditions."
+        },
+        {
+          "action_id": "fit-barrier@report-16239820",
+          "crew_id": "general-1",
+          "why": "Deploys the single staged pre-fitted doorway barrier at a site with four historical 311 flood reports (100 Lombard St) using 1 handtool kit (50 travel + 30 work/overhead = 80 upper-bound minutes). Storm evidence (FEMA P-942) establishes a critical limiting condition: floodgates in Sandy failed when overtopped, so benefit is strictly conditional on water staying within the barrier's verified design limit and confirmed doorway compatibility."
+        },
+        {
+          "action_id": "move-contents@report-16239820",
+          "crew_id": "general-1",
+          "why": "Co-located at 100 Lombard St (0 minutes inter-task travel; 80 + 35 = 115 total upper-bound minutes for general-1 <= 120). Uses the single staged cart to elevate up to 10 portable boxes above the protection level. Supported by official operating guidance (FEMA P-234), though outcome benefit is unmeasured and zero if water does not reach the original level or if vulnerable contents are absent."
+        },
+        {
+          "action_id": "secure-items@glass-1",
+          "crew_id": "general-2",
+          "why": "Uses 10 of 20 staged tie-downs and 1 handtool kit at 301 Mission St (5 travel + 30 work/overhead = 35 upper-bound minutes). Directly addresses a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation, which linked windborne debris impacts to broken panes, though no quantified tie-down treatment effect was tested. Conditional on owner access and actual loose items present."
+        },
+        {
+          "action_id": "latch-windows@glass-1",
+          "crew_id": "general-2",
+          "why": "Co-located at 301 Mission St (0 inter-task travel; 35 + 20 = 55 cumulative upper-bound minutes) and requires no equipment. Targets window hardware/condition mechanisms identified in the local March 2023 glazing investigation. If windows are already latched or inoperable, incremental benefit is zero; does not prevent glass breakage from external debris or roof failure (FEMA Hurricane Michael report)."
+        },
+        {
+          "action_id": "secure-items@glass-2",
+          "crew_id": "general-2",
+          "why": "Uses the remaining 10 of 20 staged tie-downs at nearby 350 Mission St (3 travel + 30 work/overhead = 33 minutes; 55 + 33 = 88 cumulative upper-bound minutes for general-2 <= 120). Treats the second local glazing-investigation site for windborne debris sources within the tie-down stock limit."
+        }
+      ],
+      "conclusion": "Within the 120-minute upper-bound planning window and staged inventory, assigning electrician-1 to deploy the backup pump at 50 California St (96 min max), general-1 to install the fitted barrier and elevate contents at 100 Lombard St (115 min max), and general-2 to secure loose exterior items and latch windows across 301 and 350 Mission St (88 min max) maximizes diverse, defensible physical protection. Every selected action is strictly conditional on unconfirmed site access, permissions, and actual field conditions; if an opening is already latched, a doorway already protected, or loose debris absent, incremental benefit is zero. No numeric damage reduction, avoided water volume, or probability shift is claimed.",
+      "why_not_do_nothing": "Doing nothing expends zero labor, travel, or staged equipment (saving 1 cart, 1 fitted barrier, 20 tie-downs, 1 pump, and 1 backup circuit), and its storm loss is uncalibrated. However, in a scenario with 85 mm/h rain, 28 m/s gusts, and 0.5 m coastal rise, doing nothing leaves known physical failure mechanisms completely untreated despite having idle qualified crews and pre-staged equipment. Specifically, it leaves backup pumping undeployed during potential grid outages (an operational benefit observed in FEMA P-942), leaves loose exterior items and unlatched windows untreated at buildings from the March 2023 SF glazing forensic investigation, and leaves the staged doorway barrier and content-relocation cart unused at a repeat flood-report location.",
+      "remaining_gaps": "Major actions cannot be accomplished: the 100-bag sandbag wall at 100 Lombard St exceeds the 120-minute window at its upper estimate (160 minutes with travel), leaving 100 empty sandbags and sand fill unused; tree defect pruning (150\u2013300 min) lacks a 3-person arborist crew and kit; engineered structural support (210\u2013420 min) lacks a building crew, staged support package, and established engineering design; and traffic cordons lack a traffic crew, signage kit, and authority approval. Furthermore, surface inlet clearing and route debris clearing are traded off to prioritize the scarce staged barrier, cart, and tie-downs, and because surface clearing does not resolve below-grate blockages, sewer capacity limits, or coastal flooding. Evidence gaps remain substantial: all site conditions are unchecked, 311 points are historical reports rather than verified defects, tree pruning evidence (73% vs 47% survival after Hurricane Andrew) is an external observational association rather than a causal local treatment effect, and guidance-based tasks (inlet clearing, content moving, sandbagging) lack calibrated local damage-reduction measurements.",
+      "result_sha256": "6d17dfd7ba25bdfe56314503dc4ae2dfd197bfafc58c88c3ed4d037a2d1762d8",
+      "generated_at": "2026-10-25T22:10:18.473811+00:00",
+      "model": "gemini-4-argon",
+      "fingerprint": "b54af86097bc259ebe25c51a5ef6043ab1fe0489f9e3e0f1a9ee77e4d6ba3d91"
+    },
+    "selected": [
+      {
+        "id": "backup-pump@glass-0",
+        "hazard": "power",
+        "label": "Deploy one pump on an existing approved backup circuit",
+        "role": "electrician",
+        "people": 2,
+        "minutes": [
+          30,
+          60
+        ],
+        "overhead": [
+          10,
+          20
+        ],
+        "equipment": {
+          "pump": 1,
+          "backup_circuit": 1,
+          "electrical_kit": 1
+        },
+        "output": "One compatible pump connected, discharge secured and operational load test completed",
+        "without": "No added pumping capacity or backup-supported pump is deployed.",
+        "with": "Support the specified pump during a grid outage, if the complete backup chain and discharge work; do not prevent the grid outage.",
+        "evidence_grade": "Operational benefit observed in a real storm",
+        "evidence": "FEMA P-942 documents a Manhattan building where additional sump pumps were connected to emergency power before Sandy, water was controlled and generators stayed operational. Other facilities lost backup because supporting components flooded.",
+        "source_ids": [
+          "sandy",
+          "pge-storm"
+        ],
+        "time_basis": "Planning range for an already compatible pump/circuit; generator procurement, new wiring and repairs are excluded. Site test establishes real readiness. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Qualified electrician, owner approval and compatible existing circuit",
+          "Pump duty, discharge, protected switching/fuel and backup capacity confirmed",
+          "No live or flooded electrical work; no new unapproved interconnection"
+        ],
+        "operation_id": "backup-pump",
+        "site": {
+          "id": "glass-0",
+          "label": "50 California St",
+          "position": [
+            -122.397347717731,
+            37.794053218232
+          ],
+          "source_id": "sf-glass",
+          "basis": "Address for an owner survey, not evidence of structural damage, critical loads or an electrical connection."
+        },
+        "minimum_minutes": 40,
+        "maximum_minutes": 80,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "electrician-1"
+          ],
+          "travel_by_crew": {
+            "electrician-1": [
+              9,
+              16
+            ]
+          },
+          "minimum_total": 49,
+          "maximum_total": 96
+        },
+        "priority": 1,
+        "crew_id": "electrician-1",
+        "assignment": "Electrician 1",
+        "start": 0,
+        "finish": 96,
+        "labor_minutes": 192,
+        "travel_minutes": 16,
+        "why": "Uses the dedicated 2-person electrician crew and the single staged pump, backup circuit, and electrical kit within 96 upper-bound minutes (16 travel + 80 work/overhead <= 120). Supported by observed external storm outcome evidence (FEMA P-942 from Hurricane Sandy, where emergency-powered sump pumps controlled water and kept generators operational, whereas submerged supporting components elsewhere defeated backup systems). Conditional on unconfirmed site access, compatible circuit, and dry working conditions.",
+        "work": "Deploy one pump on an existing approved backup circuit",
+        "hazards": [
+          "power"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "fit-barrier@report-16239820",
+        "hazard": "flood",
+        "label": "Install one stored, pre-fitted doorway barrier",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "fitted_barrier": 1,
+          "handtool_kit": 1
+        },
+        "output": "One compatible doorway barrier installed to its existing design",
+        "without": "That doorway has no added barrier protection.",
+        "with": "Block the addressed entry path within the barrier's verified design limit; backflow, seepage and overtopping remain possible.",
+        "evidence_grade": "Storm evidence shows a limiting condition",
+        "evidence": "FEMA's Sandy investigation documented overtopped floodgates. A barrier can only receive conditional benefit within its assessed protection level; an arbitrary barrier is not credited.",
+        "source_ids": [
+          "sandy",
+          "fema234"
+        ],
+        "time_basis": "Planning estimate for deployment of an already fitted system; manufacture, delivery and new anchoring are excluded. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Stored compatible barrier and manufacturer's deployment instructions",
+          "Owner-approved entry path, design level, backflow and escape route",
+          "No field-fabricated structural flood load assumption"
+        ],
+        "operation_id": "fit-barrier",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              27,
+              50
+            ],
+            "general-2": [
+              28,
+              52
+            ]
+          },
+          "minimum_total": 42,
+          "maximum_total": 80
+        },
+        "priority": 2,
+        "crew_id": "general-1",
+        "assignment": "General 1",
+        "start": 0,
+        "finish": 80,
+        "labor_minutes": 160,
+        "travel_minutes": 50,
+        "why": "Deploys the single staged pre-fitted doorway barrier at a site with four historical 311 flood reports (100 Lombard St) using 1 handtool kit (50 travel + 30 work/overhead = 80 upper-bound minutes). Storm evidence (FEMA P-942) establishes a critical limiting condition: floodgates in Sandy failed when overtopped, so benefit is strictly conditional on water staying within the barrier's verified design limit and confirmed doorway compatibility.",
+        "work": "Install one stored, pre-fitted doorway barrier",
+        "hazards": [
+          "flood"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "move-contents@report-16239820",
+        "hazard": "flood",
+        "label": "Move up to 10 portable boxes above the protection level",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          15,
+          25
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "cart": 1
+        },
+        "output": "Up to 10 portable boxes moved to a preselected safe upper storage area",
+        "without": "Those items remain exposed at their original level, if water reaches them.",
+        "with": "Remove direct flood exposure for the relocated items only; water entry and structural risk are unchanged.",
+        "evidence_grade": "Official guidance; outcome unmeasured",
+        "evidence": "FEMA P-234 recommends moving contents above the protection level. It gives no matched storm damage-reduction estimate for this site.",
+        "source_ids": [
+          "fema234"
+        ],
+        "time_basis": "Planning range for a short, unobstructed internal move; no heavy equipment, electrical disconnection or unknown stair carry. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner selects actual vulnerable items and a suitable protection level",
+          "Dry, usable route and safe storage capacity",
+          "Small loads within crew handling limits"
+        ],
+        "operation_id": "move-contents",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "minimum_minutes": 20,
+        "maximum_minutes": 35,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              27,
+              50
+            ],
+            "general-2": [
+              28,
+              52
+            ]
+          },
+          "minimum_total": 47,
+          "maximum_total": 85
+        },
+        "priority": 3,
+        "crew_id": "general-1",
+        "assignment": "General 1",
+        "start": 80,
+        "finish": 115,
+        "labor_minutes": 70,
+        "travel_minutes": 0,
+        "why": "Co-located at 100 Lombard St (0 minutes inter-task travel; 80 + 35 = 115 total upper-bound minutes for general-1 <= 120). Uses the single staged cart to elevate up to 10 portable boxes above the protection level. Supported by official operating guidance (FEMA P-234), though outcome benefit is unmeasured and zero if water does not reach the original level or if vulnerable contents are absent.",
+        "work": "Move up to 10 portable boxes above the protection level",
+        "hazards": [
+          "flood"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "secure-items@glass-1",
+        "hazard": "wind",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "tie_down": 10,
+          "handtool_kit": 1
+        },
+        "output": "Up to 10 small, accessible loose items stored indoors or secured",
+        "without": "Accessible loose objects remain potential windborne debris, if present.",
+        "with": "Remove the addressed objects as loose-debris sources; do not claim a change to design wind or structural strength.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "The March 2023 SF glazing investigation identified debris impacts among failure mechanisms. It did not test a quantified tie-down treatment effect.",
+        "source_ids": [
+          "sf-glass",
+          "fema234"
+        ],
+        "time_basis": "Bounded planning estimate for a small two-person ground/balcony task; not a measured work rate. No roof, facade access, heavy lifting or anchors installed. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and suitable storage or rated attachment points",
+          "Only light items reachable from a safe floor; no roof or facade work",
+          "Count and attachment method confirmed before work"
+        ],
+        "operation_id": "secure-items",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              7,
+              12
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 18,
+          "maximum_total": 35
+        },
+        "priority": 4,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 0,
+        "finish": 35,
+        "labor_minutes": 70,
+        "travel_minutes": 5,
+        "why": "Uses 10 of 20 staged tie-downs and 1 handtool kit at 301 Mission St (5 travel + 30 work/overhead = 35 upper-bound minutes). Directly addresses a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation, which linked windborne debris impacts to broken panes, though no quantified tie-down treatment effect was tested. Conditional on owner access and actual loose items present.",
+        "work": "Move or tie down up to 10 loose exterior items",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "latch-windows@glass-1",
+        "hazard": "wind",
+        "label": "Close and latch up to 10 accessible windows",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          5,
+          10
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {},
+        "output": "Up to 10 functioning accessible windows closed and latched",
+        "without": "Any open or unlatched window stays open or unlatched.",
+        "with": "Close the addressed openings; no credit for impact resistance, repairs or whole-building collapse prevention.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "SF's glazing investigation supports correcting window hardware/condition issues; closing operable windows does not address damaged glass or roof failure.",
+        "source_ids": [
+          "sf-glass",
+          "fema-michael"
+        ],
+        "time_basis": "Planning estimate for one accessible area; hardware repairs and searching a whole tower are excluded. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and operable hardware",
+          "Actual open/unlatched windows; already-secured windows yield no additional benefit",
+          "No replacement glazing or work at height"
+        ],
+        "operation_id": "latch-windows",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 10,
+        "maximum_minutes": 20,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              7,
+              12
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 13,
+          "maximum_total": 25
+        },
+        "priority": 5,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 35,
+        "finish": 55,
+        "labor_minutes": 40,
+        "travel_minutes": 0,
+        "why": "Co-located at 301 Mission St (0 inter-task travel; 35 + 20 = 55 cumulative upper-bound minutes) and requires no equipment. Targets window hardware/condition mechanisms identified in the local March 2023 glazing investigation. If windows are already latched or inoperable, incremental benefit is zero; does not prevent glass breakage from external debris or roof failure (FEMA Hurricane Michael report).",
+        "work": "Close and latch up to 10 accessible windows",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "secure-items@glass-2",
+        "hazard": "wind",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "tie_down": 10,
+          "handtool_kit": 1
+        },
+        "output": "Up to 10 small, accessible loose items stored indoors or secured",
+        "without": "Accessible loose objects remain potential windborne debris, if present.",
+        "with": "Remove the addressed objects as loose-debris sources; do not claim a change to design wind or structural strength.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "The March 2023 SF glazing investigation identified debris impacts among failure mechanisms. It did not test a quantified tie-down treatment effect.",
+        "source_ids": [
+          "sf-glass",
+          "fema234"
+        ],
+        "time_basis": "Bounded planning estimate for a small two-person ground/balcony task; not a measured work rate. No roof, facade access, heavy lifting or anchors installed. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and suitable storage or rated attachment points",
+          "Only light items reachable from a safe floor; no roof or facade work",
+          "Count and attachment method confirmed before work"
+        ],
+        "operation_id": "secure-items",
+        "site": {
+          "id": "glass-2",
+          "label": "350 Mission St",
+          "position": [
+            -122.396685882656,
+            37.790885487474
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              8,
+              13
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 18,
+          "maximum_total": 35
+        },
+        "priority": 6,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 55,
+        "finish": 88,
+        "labor_minutes": 66,
+        "travel_minutes": 3,
+        "why": "Uses the remaining 10 of 20 staged tie-downs at nearby 350 Mission St (3 travel + 30 work/overhead = 33 minutes; 55 + 33 = 88 cumulative upper-bound minutes for general-2 <= 120). Treats the second local glazing-investigation site for windborne debris sources within the tie-down stock limit.",
+        "work": "Move or tie down up to 10 loose exterior items",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      }
+    ],
+    "totals": {
+      "jobs": 6,
+      "labor_minutes": 598,
+      "latest_finish": 115
+    }
+  },
+  {
+    "settings": {
+      "profile": "specialists",
+      "minutes": 480
+    },
+    "result": {
+      "selected": [
+        {
+          "action_id": "backup-pump@glass-0",
+          "crew_id": "electrician-1",
+          "why": "Uses the 2-person electrician crew (96 min max total: 16 min travel + 80 min work/overhead, well under 480 min) and commits the 1 pump, 1 backup_circuit, and 1 electrical_kit. Backed by observed external storm outcome evidence (FEMA P-942 after Hurricane Sandy, where emergency-powered sump pumps controlled water and kept generators operational, though submerged switches/pumps failed elsewhere). Conditional on an approved compatible circuit, protected switching/fuel, and actual site need at 50 California St."
+        },
+        {
+          "action_id": "prune-defect@report-16572155",
+          "crew_id": "arborist-1",
+          "why": "Uses the 3-person arborist crew and 1 arborist_kit (310 min max total: 10 min travel + 300 min work/overhead, within 480 min; a second prune job would push total time over 600 min). Supported by an external observational storm association (UF/IFAS Hurricane Andrew study showing 73% vs 47% survival for properly pruned broad-leaved trees, though not a causal or local San Francisco treatment effect). Conditional on an actual arborist-assessed defect and permission at 163 Main St."
+        },
+        {
+          "action_id": "fit-barrier@report-16239820",
+          "crew_id": "general-1",
+          "why": "First task for general-1 at 100 Lombard St (80 min max: 50 min initial walk + 30 min work/overhead), committing 1 fitted_barrier and using 1 handtool_kit. Supported by post-storm investigation evidence (FEMA P-942 Sandy report) showing floodgates provide conditional entry-path protection only within their verified design elevation before overtopping, seepage, or backflow occur."
+        },
+        {
+          "action_id": "sandbag-wall@report-16239820",
+          "crew_id": "general-1",
+          "why": "Second serial task for general-1 at the same site (0 min travel_between + 110 min max work/overhead; cumulative 190 min <= 480 min), committing all 100 empty_sandbag and 1 sand_fill. Anchored to FEMA P-234 operating guidance and labor reference (~1 hour plus contingency/setup for a complete 1x20-ft segment to divert shallow flow), complementing the doorway barrier at a site with four historical 311 flood reports."
+        },
+        {
+          "action_id": "secure-items@glass-1",
+          "crew_id": "general-2",
+          "why": "First task for general-2 at 301 Mission St (35 min max: 5 min initial walk + 30 min work/overhead), committing 10 of 20 tie_down and using the second handtool_kit. Directly targets a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation (windborne debris impact on glass), conditional on loose accessible exterior items actually being present."
+        },
+        {
+          "action_id": "secure-items@glass-2",
+          "crew_id": "general-2",
+          "why": "Second serial task for general-2 at nearby 350 Mission St (3 min max travel_between + 30 min max work/overhead; cumulative 68 min <= 480 min), committing the remaining 10 tie_down. Treats the same local March 2023 SF glazing investigation debris-impact failure mechanism at a second investigated high-rise site with minimal travel overhead."
+        }
+      ],
+      "conclusion": "Under the 480-minute planning window and specialist resource profile, the selected package deploys four distinct crews (electrician-1, arborist-1, general-1, general-2) to execute six conditional physical interventions while respecting all upper travel, setup, work-duration, and consumable stock limits. Electrician-1 uses 96 upper minutes (16 travel + 80 work/setup) to deploy the backup pump at glass-0. Arborist-1 uses 310 upper minutes (10 travel + 300 work/setup) to prune an assessed defect at report-16572155. General-1 walks to report-16239820 (100 Lombard St) and completes two co-located flood-protection tasks (fit-barrier and sandbag-wall) in 190 upper minutes (50 travel + 30 barrier + 0 travel_between + 110 sandbag wall). General-2 walks to glass-1 and then glass-2 to secure up to 20 total loose exterior items in 68 upper minutes (5 travel + 30 work/setup + 3 travel_between + 30 work/setup). All consumable stocks (1 pump, 1 backup_circuit, 1 fitted_barrier, 100 empty_sandbag, 1 sand_fill, and all 20 tie_down) are fully utilized without conflict, and both handtool_kits are used in parallel without waiting. The evidence base across these choices varies strictly by grade: backup-pump relies on an observed external storm outcome (FEMA P-942 in Hurricane Sandy); secure-items addresses a locally investigated failure mechanism (March 2023 SF DBI/WJE glazing study); fit-barrier reflects storm evidence of a limiting condition (overtopped floodgates in Sandy); prune-defect relies on an external observational association (73% vs 47% tree survival after Hurricane Andrew); and sandbag-wall rests on official guidance (FEMA P-234). Because all site conditions are currently unchecked, these actions represent conditional physical readiness rather than guaranteed damage reduction: if a site already has protections in place or lacks the targeted defect, incremental benefit is zero.",
+      "why_not_do_nothing": "Doing nothing expends zero labor minutes and commits no equipment, which avoids wasted effort if unconfirmed sites turn out to lack vulnerable items, defects, or compatible infrastructure. However, in a scenario with 85.0 mm/h rain, 20.0 m/s wind (28.0 m/s gusts), and 0.5 m coastal rise, doing nothing leaves every known physical failure mechanism untreated: emergency sump pumping is not connected before a potential grid outage, loose exterior items at investigated glazing-failure sites remain available to become windborne projectiles, flood entry paths at a multi-report location remain unblocked and unbuffered, and an reported tree defect location remains unpruned. Neither doing nothing nor acting has a calibrated local loss or avoided-damage model\u2014no cubic metres of water, percent risk reduction, or dollar savings can be claimed\u2014but conditional physical work uses idle staged resources within their safe pre-storm operating window to interrupt specific, documented failure pathways before exposure begins.",
+      "remaining_gaps": "Major operational and evidentiary gaps remain. First, two specialist crews (building-1 and traffic-1) cannot be used because their only candidate actions (engineered-support@glass-0 and install-cordon@report-16291635) have fits=false due to unestablished engineering design and traffic authority approval. Second, arborist-1 can only complete one pruning job because adding prune-defect@report-16572287 (300 min max work/setup + 31 min max travel_between) would require 641 upper minutes, exceeding the 480-minute limit. Third, because the schema caps selection at six packages, additional feasible general-crew actions\u2014such as move-contents@report-16239820 (using the cart), latch-windows at glass sites, clear-route@report-16291635, and clearing the 21 mapped catch-basin inlets\u2014must be left unselected. Fourth, all site observations (wind, trees, structure, flood, power, routes) are currently 'unchecked' with prerequisites_confirmed=false; historical 311 reports and owner survey addresses do not verify current defects, hydraulic connectivity, below-grate sewer capacity, owner permission, or hardware compatibility. Finally, no local experimental or quasi-experimental study quantifies the causal treatment effect or damage avoided per action in San Francisco.",
+      "result_sha256": "8edb96bc409bf9283352aad1098ca380fc66bff373aa70a37936ec5292346465",
+      "generated_at": "2026-10-25T22:11:11.335452+00:00",
+      "model": "gemini-4-argon",
+      "fingerprint": "2256152b8e87e55b0acf31d18ddef84e6ebc8e47fff21d2ddfd97400f55e166f"
+    },
+    "selected": [
+      {
+        "id": "backup-pump@glass-0",
+        "hazard": "power",
+        "label": "Deploy one pump on an existing approved backup circuit",
+        "role": "electrician",
+        "people": 2,
+        "minutes": [
+          30,
+          60
+        ],
+        "overhead": [
+          10,
+          20
+        ],
+        "equipment": {
+          "pump": 1,
+          "backup_circuit": 1,
+          "electrical_kit": 1
+        },
+        "output": "One compatible pump connected, discharge secured and operational load test completed",
+        "without": "No added pumping capacity or backup-supported pump is deployed.",
+        "with": "Support the specified pump during a grid outage, if the complete backup chain and discharge work; do not prevent the grid outage.",
+        "evidence_grade": "Operational benefit observed in a real storm",
+        "evidence": "FEMA P-942 documents a Manhattan building where additional sump pumps were connected to emergency power before Sandy, water was controlled and generators stayed operational. Other facilities lost backup because supporting components flooded.",
+        "source_ids": [
+          "sandy",
+          "pge-storm"
+        ],
+        "time_basis": "Planning range for an already compatible pump/circuit; generator procurement, new wiring and repairs are excluded. Site test establishes real readiness. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Qualified electrician, owner approval and compatible existing circuit",
+          "Pump duty, discharge, protected switching/fuel and backup capacity confirmed",
+          "No live or flooded electrical work; no new unapproved interconnection"
+        ],
+        "operation_id": "backup-pump",
+        "site": {
+          "id": "glass-0",
+          "label": "50 California St",
+          "position": [
+            -122.397347717731,
+            37.794053218232
+          ],
+          "source_id": "sf-glass",
+          "basis": "Address for an owner survey, not evidence of structural damage, critical loads or an electrical connection."
+        },
+        "minimum_minutes": 40,
+        "maximum_minutes": 80,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "electrician-1"
+          ],
+          "travel_by_crew": {
+            "electrician-1": [
+              9,
+              16
+            ]
+          },
+          "minimum_total": 49,
+          "maximum_total": 96
+        },
+        "priority": 1,
+        "crew_id": "electrician-1",
+        "assignment": "Electrician 1",
+        "start": 0,
+        "finish": 96,
+        "labor_minutes": 192,
+        "travel_minutes": 16,
+        "why": "Uses the 2-person electrician crew (96 min max total: 16 min travel + 80 min work/overhead, well under 480 min) and commits the 1 pump, 1 backup_circuit, and 1 electrical_kit. Backed by observed external storm outcome evidence (FEMA P-942 after Hurricane Sandy, where emergency-powered sump pumps controlled water and kept generators operational, though submerged switches/pumps failed elsewhere). Conditional on an approved compatible circuit, protected switching/fuel, and actual site need at 50 California St.",
+        "work": "Deploy one pump on an existing approved backup circuit",
+        "hazards": [
+          "power"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "prune-defect@report-16572155",
+        "hazard": "trees",
+        "label": "Prune one arborist-specified defect",
+        "role": "arborist",
+        "people": 3,
+        "minutes": [
+          120,
+          240
+        ],
+        "overhead": [
+          30,
+          60
+        ],
+        "equipment": {
+          "arborist_kit": 1
+        },
+        "output": "One assessed pruning job completed to the arborist's scope",
+        "without": "The assessed tree defect remains untreated.",
+        "with": "Address that tree's defect; no universal failure-probability reduction is assigned.",
+        "evidence_grade": "External observational storm comparison",
+        "evidence": "After Hurricane Andrew, studied properly pruned broad-leaved trees had 73% survival versus 47% for unpruned trees. This observational association does not establish a causal or San Francisco treatment effect, or justify last-minute indiscriminate pruning.",
+        "source_ids": [
+          "uf-trees",
+          "sf-tree-request"
+        ],
+        "time_basis": "Planning range for a defined small specialist job; major removals, utility isolation, access/lift delays and disposal haulage can exceed it. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Current arborist scope, tree ownership and permissions",
+          "Qualified crew, appropriate rigging and exclusion area",
+          "Utility clearance where applicable; no general-crew chainsaw work"
+        ],
+        "operation_id": "prune-defect",
+        "site": {
+          "id": "report-16572155",
+          "label": "163 MAIN ST",
+          "position": [
+            -122.393700714908,
+            37.790907276306
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16572155",
+            "16580364"
+          ],
+          "dates": [
+            "2023-03-21",
+            "2023-03-23"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard."
+        },
+        "minimum_minutes": 150,
+        "maximum_minutes": 300,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "arborist-1"
+          ],
+          "travel_by_crew": {
+            "arborist-1": [
+              6,
+              10
+            ]
+          },
+          "minimum_total": 156,
+          "maximum_total": 310
+        },
+        "priority": 2,
+        "crew_id": "arborist-1",
+        "assignment": "Arborist 1",
+        "start": 0,
+        "finish": 310,
+        "labor_minutes": 930,
+        "travel_minutes": 10,
+        "why": "Uses the 3-person arborist crew and 1 arborist_kit (310 min max total: 10 min travel + 300 min work/overhead, within 480 min; a second prune job would push total time over 600 min). Supported by an external observational storm association (UF/IFAS Hurricane Andrew study showing 73% vs 47% survival for properly pruned broad-leaved trees, though not a causal or local San Francisco treatment effect). Conditional on an actual arborist-assessed defect and permission at 163 Main St.",
+        "work": "Prune one arborist-specified defect",
+        "hazards": [
+          "trees"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "fit-barrier@report-16239820",
+        "hazard": "flood",
+        "label": "Install one stored, pre-fitted doorway barrier",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "fitted_barrier": 1,
+          "handtool_kit": 1
+        },
+        "output": "One compatible doorway barrier installed to its existing design",
+        "without": "That doorway has no added barrier protection.",
+        "with": "Block the addressed entry path within the barrier's verified design limit; backflow, seepage and overtopping remain possible.",
+        "evidence_grade": "Storm evidence shows a limiting condition",
+        "evidence": "FEMA's Sandy investigation documented overtopped floodgates. A barrier can only receive conditional benefit within its assessed protection level; an arbitrary barrier is not credited.",
+        "source_ids": [
+          "sandy",
+          "fema234"
+        ],
+        "time_basis": "Planning estimate for deployment of an already fitted system; manufacture, delivery and new anchoring are excluded. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Stored compatible barrier and manufacturer's deployment instructions",
+          "Owner-approved entry path, design level, backflow and escape route",
+          "No field-fabricated structural flood load assumption"
+        ],
+        "operation_id": "fit-barrier",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              27,
+              50
+            ],
+            "general-2": [
+              28,
+              52
+            ]
+          },
+          "minimum_total": 42,
+          "maximum_total": 80
+        },
+        "priority": 3,
+        "crew_id": "general-1",
+        "assignment": "General 1",
+        "start": 0,
+        "finish": 80,
+        "labor_minutes": 160,
+        "travel_minutes": 50,
+        "why": "First task for general-1 at 100 Lombard St (80 min max: 50 min initial walk + 30 min work/overhead), committing 1 fitted_barrier and using 1 handtool_kit. Supported by post-storm investigation evidence (FEMA P-942 Sandy report) showing floodgates provide conditional entry-path protection only within their verified design elevation before overtopping, seepage, or backflow occur.",
+        "work": "Install one stored, pre-fitted doorway barrier",
+        "hazards": [
+          "flood"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "sandbag-wall@report-16239820",
+        "hazard": "flood",
+        "label": "Fill and place a 100-bag barrier segment",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          60,
+          90
+        ],
+        "overhead": [
+          10,
+          20
+        ],
+        "equipment": {
+          "empty_sandbag": 100,
+          "sand_fill": 1,
+          "handtool_kit": 1
+        },
+        "output": "One complete 100-bag segment at the referenced one-foot by twenty-foot geometry",
+        "without": "No new barrier segment is built.",
+        "with": "A complete correctly sited segment can divert shallow flow; a partially finished wall receives no protective credit.",
+        "evidence_grade": "Official guidance; outcome unmeasured",
+        "evidence": "FEMA P-234 gives a two-person, approximately one-hour labor reference and warns that undersized or poorly built barriers fail. This is not a promise of watertightness or local damage reduction.",
+        "source_ids": [
+          "fema234",
+          "sf-sandbags"
+        ],
+        "time_basis": "60-minute published labor reference plus a 30-minute contingency and 10\u201320-minute setup allowance. Stock collection/delivery is excluded. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "100 bags and fill already at the site; ten public sandbags do not meet this bill of materials",
+          "Siting, ends, seepage, design water level and drainage assessed",
+          "Complete the segment before exposure; incomplete wall is not counted"
+        ],
+        "operation_id": "sandbag-wall",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "minimum_minutes": 70,
+        "maximum_minutes": 110,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              27,
+              50
+            ],
+            "general-2": [
+              28,
+              52
+            ]
+          },
+          "minimum_total": 97,
+          "maximum_total": 160
+        },
+        "priority": 4,
+        "crew_id": "general-1",
+        "assignment": "General 1",
+        "start": 80,
+        "finish": 190,
+        "labor_minutes": 220,
+        "travel_minutes": 0,
+        "why": "Second serial task for general-1 at the same site (0 min travel_between + 110 min max work/overhead; cumulative 190 min <= 480 min), committing all 100 empty_sandbag and 1 sand_fill. Anchored to FEMA P-234 operating guidance and labor reference (~1 hour plus contingency/setup for a complete 1x20-ft segment to divert shallow flow), complementing the doorway barrier at a site with four historical 311 flood reports.",
+        "work": "Fill and place a 100-bag barrier segment",
+        "hazards": [
+          "flood"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "secure-items@glass-1",
+        "hazard": "wind",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "tie_down": 10,
+          "handtool_kit": 1
+        },
+        "output": "Up to 10 small, accessible loose items stored indoors or secured",
+        "without": "Accessible loose objects remain potential windborne debris, if present.",
+        "with": "Remove the addressed objects as loose-debris sources; do not claim a change to design wind or structural strength.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "The March 2023 SF glazing investigation identified debris impacts among failure mechanisms. It did not test a quantified tie-down treatment effect.",
+        "source_ids": [
+          "sf-glass",
+          "fema234"
+        ],
+        "time_basis": "Bounded planning estimate for a small two-person ground/balcony task; not a measured work rate. No roof, facade access, heavy lifting or anchors installed. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and suitable storage or rated attachment points",
+          "Only light items reachable from a safe floor; no roof or facade work",
+          "Count and attachment method confirmed before work"
+        ],
+        "operation_id": "secure-items",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              7,
+              12
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 18,
+          "maximum_total": 35
+        },
+        "priority": 5,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 0,
+        "finish": 35,
+        "labor_minutes": 70,
+        "travel_minutes": 5,
+        "why": "First task for general-2 at 301 Mission St (35 min max: 5 min initial walk + 30 min work/overhead), committing 10 of 20 tie_down and using the second handtool_kit. Directly targets a local failure mechanism identified in the March 2023 SF DBI/WJE glazing investigation (windborne debris impact on glass), conditional on loose accessible exterior items actually being present.",
+        "work": "Move or tie down up to 10 loose exterior items",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      },
+      {
+        "id": "secure-items@glass-2",
+        "hazard": "wind",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "role": "general",
+        "people": 2,
+        "minutes": [
+          10,
+          20
+        ],
+        "overhead": [
+          5,
+          10
+        ],
+        "equipment": {
+          "tie_down": 10,
+          "handtool_kit": 1
+        },
+        "output": "Up to 10 small, accessible loose items stored indoors or secured",
+        "without": "Accessible loose objects remain potential windborne debris, if present.",
+        "with": "Remove the addressed objects as loose-debris sources; do not claim a change to design wind or structural strength.",
+        "evidence_grade": "Local failure mechanism",
+        "evidence": "The March 2023 SF glazing investigation identified debris impacts among failure mechanisms. It did not test a quantified tie-down treatment effect.",
+        "source_ids": [
+          "sf-glass",
+          "fema234"
+        ],
+        "time_basis": "Bounded planning estimate for a small two-person ground/balcony task; not a measured work rate. No roof, facade access, heavy lifting or anchors installed. Setup and estimated crew travel are added separately.",
+        "conditions": [
+          "Owner access and suitable storage or rated attachment points",
+          "Only light items reachable from a safe floor; no roof or facade work",
+          "Count and attachment method confirmed before work"
+        ],
+        "operation_id": "secure-items",
+        "site": {
+          "id": "glass-2",
+          "label": "350 Mission St",
+          "position": [
+            -122.396685882656,
+            37.790885487474
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "minimum_minutes": 15,
+        "maximum_minutes": 30,
+        "design_gap": false,
+        "site_status": "Site applicability and access need confirmation",
+        "feasibility": {
+          "fits": true,
+          "reasons": [],
+          "crew_ids": [
+            "general-1",
+            "general-2"
+          ],
+          "travel_by_crew": {
+            "general-1": [
+              8,
+              13
+            ],
+            "general-2": [
+              3,
+              5
+            ]
+          },
+          "minimum_total": 18,
+          "maximum_total": 35
+        },
+        "priority": 6,
+        "crew_id": "general-2",
+        "assignment": "General 2",
+        "start": 35,
+        "finish": 68,
+        "labor_minutes": 66,
+        "travel_minutes": 3,
+        "why": "Second serial task for general-2 at nearby 350 Mission St (3 min max travel_between + 30 min max work/overhead; cumulative 68 min <= 480 min), committing the remaining 10 tie_down. Treats the same local March 2023 SF glazing investigation debris-impact failure mechanism at a second investigated high-rise site with minimal travel overhead.",
+        "work": "Move or tie down up to 10 loose exterior items",
+        "hazards": [
+          "wind"
+        ],
+        "stage": "conditional"
+      }
+    ],
+    "totals": {
+      "jobs": 6,
+      "labor_minutes": 1638,
+      "latest_finish": 310
+    }
+  }
+]

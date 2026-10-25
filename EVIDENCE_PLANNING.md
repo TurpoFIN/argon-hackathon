@@ -1,6 +1,6 @@
 # Pre-storm planning: evidence and limits
 
-The default app asks Argon to choose and rank concrete site actions, allocate the first general-crew stops, and explain each priority. Owner/agency requests can proceed alongside field work. Subsequent stops queue until a crew reports back; physical repairs stay behind current inspection and qualified-resource prerequisites. All six hazards receive an explicit decision or deferral. The numerical damage comparisons have been removed from the planning surface. Hydrology and wind layers are explicitly research tools.
+The default app now compares timed physical work against doing nothing; see [PREVENTIVE_WORK.md](PREVENTIVE_WORK.md) for resource profiles, scheduling and evidence limits. The earlier site-check planner remains an internal compatibility path. Owner/agency requests can proceed alongside field work. Subsequent stops queue until a crew reports back; physical repairs stay behind current inspection and qualified-resource prerequisites. All six hazards receive an explicit decision or deferral. The numerical damage comparisons have been removed from the planning surface. Hydrology and wind layers are explicitly research tools.
 
 ## What the storm evidence establishes
 
