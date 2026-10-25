@@ -225,6 +225,7 @@ def api_approve(job_id: str, req: ApproveReq):
             # be rendered; the API exposes the exact failure for remediation.
             rec["eop_error"] = f"{type(exc).__name__}: {exc}"
             res["approval"] = rec
+            (RUNS / "_jobs" / f"{job_id}.approval.json").write_text(json.dumps(rec))
             j.emit("eop_error", error=rec["eop_error"])
     j.finish("approved" if req.approved else "rejected", res)
     j.status = "completed"
