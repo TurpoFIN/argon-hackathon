@@ -7,6 +7,18 @@ export interface Manifest {
   metrics: {wet_land_cells: number; max_land_depth_m: number; mass_balance_error_m3: number};
   assumptions: string[];
   sources: Record<string, string>;
+  parameters?: Parameters;
+  frame_metrics?: Array<{time_seconds: number; max_depth_m: number; flooded_area_m2: number; water_volume_m3: number}>;
+}
+export interface Parameters {
+  rain_mm_h:number; wind_mps:number; gust_mps:number; wind_from_deg:number;
+  coastal_rise_m:number; drain_capacity_lps:number; blockage_pct:number;
+  runoff_coefficient:number; roughness:number;
+}
+export interface Playback {time_seconds:number; playing:boolean; speed:number; anchor_ms:number;}
+export interface ScenarioState {
+  scenario_id:string; revision:number; parameters:Parameters; pending_parameters?:Parameters;
+  status:'ready'|'computing'|'failed'; error:string|null; playback:Playback;
 }
 export interface Layer { load(): Promise<Layer>; }
 export interface SceneView {

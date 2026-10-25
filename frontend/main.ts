@@ -1,5 +1,6 @@
-import type {Constructor, Layer, Manifest, Reactive, RenderNodeConstructor, SceneView, WebGLCoordinates} from './types';
+import type {Constructor, Layer, Reactive, RenderNodeConstructor, SceneView, WebGLCoordinates, ScenarioState} from './types';
 import {installStormRenderer} from './renderer';
+import {followState, loadResult, request, timeAt} from './session';
 
 const status = document.querySelector<HTMLParagraphElement>('#status')!;
 function fail(error: unknown): void {
@@ -7,17 +8,10 @@ function fail(error: unknown): void {
   status.hidden = false;
   status.textContent = 'Storm data could not load. Check the connection and reload.';
 }
-async function fetchChecked(path: string): Promise<Response> {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error(`${path}: ${response.status}`);
-  return response;
-}
 async function main(): Promise<void> {
-  const [manifest, gridBuffer, floodBuffer] = await Promise.all([
-    fetchChecked('/api/manifest').then(r => r.json() as Promise<Manifest>),
-    fetchChecked('/api/grid.bin').then(r => r.arrayBuffer()),
-    fetchChecked('/api/flood.bin').then(r => r.arrayBuffer())
-  ]);
+  let sharedState=await request<ScenarioState>('/api/state');
+  const {manifest,grid,flood}=await loadResult(sharedState.scenario_id);
+  let loadedId=sharedState.scenario_id;
   const modules = await new Promise<unknown[]>((resolve, reject) => window.require([
     'esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/SceneLayer',
     'esri/layers/ElevationLayer', 'esri/views/SceneView', 'esri/core/reactiveUtils',
@@ -43,9 +37,8 @@ async function main(): Promise<void> {
   window.storm = {manifest, view, frame: 0, renderedFrames: 0, wetVertices: 0, windSegments: 0, elapsedSeconds: 0};
   await view.when();
   status.textContent = 'Loading storm surface…';
-  const grid = new Float32Array(gridBuffer);
   const count = manifest.grid.nx * manifest.grid.ny;
-  if (grid.length !== count * 7 || floodBuffer.byteLength !== count * manifest.times_seconds.length * 4) {
+  if (grid.length !== count * 7 || flood.length !== count * manifest.times_seconds.length) {
     throw new Error('Simulation payload does not match the grid contract');
   }
   const points = Array.from({length: count}, (_, i) => [grid[i], grid[count + i]]);
@@ -53,11 +46,22 @@ async function main(): Promise<void> {
   // This avoids mixing renderer EGM96 heights with hydrology's NAVD88 heights.
   const sampled = await view.map.ground.queryElevation(new Multipoint({points, spatialReference: {wkid: 4326}}), {demResolution: 'finest-contiguous', noDataValue: -99999});
   if (sampled.geometry.points.some(p => !Number.isFinite(p[2]) || p[2] === -99999)) throw new Error('Display terrain has missing elevations');
-  installStormRenderer(view, RenderNode, coordinates, manifest, grid, new Float32Array(floodBuffer), sampled.geometry.points);
+  const renderer=installStormRenderer(view, RenderNode, coordinates, manifest, grid, flood, sampled.geometry.points,()=>timeAt(sharedState.playback),()=>sharedState.playback.playing);
   const layerView = await view.whenLayerView(buildings);
   await reactive.whenOnce(() => !layerView.updating);
   status.hidden = true;
   document.documentElement.dataset.stormReady = 'true';
+  document.documentElement.dataset.scenarioId=loadedId;
+  followState(async next=>{
+    sharedState=next;
+    renderer.node.requestRender();
+    if(next.scenario_id!==loadedId) {
+      const result=await loadResult(next.scenario_id);
+      renderer.update(result.manifest,result.grid,result.flood);
+      loadedId=next.scenario_id;
+      document.documentElement.dataset.scenarioId=loadedId;
+    }
+  },error=>console.warn('Scenario synchronization temporarily unavailable',error));
   reactive.watch(() => view.fatalError, error => {if (error) fail(error);});
 }
 main().catch(fail);

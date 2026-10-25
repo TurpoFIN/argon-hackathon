@@ -151,6 +151,10 @@ def main():
     if abs(balance_error) > 0.01:
         raise RuntimeError(f"Water budget mismatch: {balance_error} m3")
     lon, lat = inverse.transform(w + (rj + 0.5) * DX, n - (ri + 0.5) * DX)
+    np.savez_compressed(DATA / "model-inputs.npz", ground=ground, height=height,
+        buildings=buildings, ocean=ocean, lon=lon, lat=lat,
+        runoff_weights=rain_rate / (rainfall_mm / 1000 / 3600 * 0.9),
+        drain_counts=drain_rate * DX ** 2 / (0.006 * 0.35))
     arrays = np.stack([lon, lat, ground, height, u, v, ocean.astype(float)]).astype("float32")
     arrays.tofile(DATA / "grid.bin")
     np.stack(snapshots).tofile(DATA / "flood.bin")

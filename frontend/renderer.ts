@@ -1,6 +1,8 @@
 import {mat4} from 'gl-matrix';
 import type {Manifest, RenderHost, RenderNodeConstructor, SceneView, WebGLCoordinates} from './types';
 
+export interface StormRenderer {node:RenderHost; update(manifest:Manifest,grid:Float32Array,flood:Float32Array):void;}
+
 const WATER_VERTEX = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 position;
@@ -78,7 +80,7 @@ function attribute(gl: WebGL2RenderingContext, slot: number, width: number, data
 interface Particle {x:number;y:number;z:number;age:number;life:number;}
 
 export function installStormRenderer(view: SceneView, Node: RenderNodeConstructor, coordinates: WebGLCoordinates,
-  manifest: Manifest, grid: Float32Array, flood: Float32Array, sampled: number[][]): RenderHost {
+  manifest: Manifest, grid: Float32Array, flood: Float32Array, sampled: number[][], timeline?:()=>number, playing?:()=>boolean): StormRenderer {
   const {nx,ny,cell_m:cell}=manifest.grid, count=nx*ny;
   const height=grid.subarray(count*3,count*4), u=grid.subarray(count*4,count*5), v=grid.subarray(count*5,count*6);
   const ocean=grid.subarray(count*6,count*7);
@@ -101,8 +103,6 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
   const index=new Uint32Array(triangles);
   const lon=sampled[middle][0]*Math.PI/180, lat=sampled[middle][1]*Math.PI/180;
   const east=[-Math.sin(lon),Math.cos(lon),0], north=[-Math.sin(lat)*Math.cos(lon),-Math.sin(lat)*Math.sin(lon),Math.cos(lat)];
-  const theta=manifest.wind.from_deg*Math.PI/180;
-  const freeU=-manifest.wind.mean_mps*Math.sin(theta),freeV=-manifest.wind.mean_mps*Math.cos(theta);
   let seed=4321;
   const random=():number=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   const particles:Particle[]=Array.from({length:1800},()=>({x:random()*(nx-1),y:random()*(ny-1),z:12+random()*135,age:random()*6,life:3+random()*5}));
@@ -113,7 +113,7 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
   const viewMatrix=new Float64Array(16), gpuView=new Float32Array(16);
   let glReady=false,waterProgram:WebGLProgram,windProgram:WebGLProgram,waterVAO:WebGLVertexArrayObject,windVAO:WebGLVertexArrayObject;
   let depthBuffer:WebGLBuffer,windPositionBuffer:WebGLBuffer,windOppositeBuffer:WebGLBuffer,windAlphaBuffer:WebGLBuffer;
-  let last=performance.now(),elapsed=0, lastSurface=-1;
+  let last=performance.now(),elapsed=0, lastSurface=-1,lastHydroTime=-1;
   const initialize=(gl:WebGL2RenderingContext):void=>{
     waterProgram=program(gl,WATER_VERTEX,WATER_FRAGMENT); windProgram=program(gl,WIND_VERTEX,WIND_FRAGMENT);
     waterVAO=gl.createVertexArray()!;gl.bindVertexArray(waterVAO);
@@ -130,30 +130,33 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
       this.resetWebGLState();
       const output=this.bindRenderTarget(), gl=this.gl;
       if(!glReady) initialize(gl);
-      const now=performance.now(),dt=Math.min((now-last)/1000,0.05);last=now;elapsed+=dt;
+      const now=performance.now(),dt=playing?.()===false?0:Math.min((now-last)/1000,0.05);last=now;elapsed+=dt;
       // One forward 60-minute scenario, looped for viewing. Starts at 35 minutes.
-      const simulationSeconds=(2100+elapsed*15)%manifest.times_seconds.at(-1)!;
+      const simulationSeconds=timeline?.()??(2100+elapsed*15)%manifest.times_seconds.at(-1)!;
       const frame=Math.min(Math.floor(simulationSeconds/120),manifest.times_seconds.length-2),blend=(simulationSeconds%120)/120;
-      if(elapsed-lastSurface>0.08) {
+      if(elapsed-lastSurface>0.08||Math.abs(simulationSeconds-lastHydroTime)>.05) {
         let wet=0;
         for(let i=0;i<count;i++) {
           depth[i]=ocean[i]>0.5?-1:flood[frame*count+i]*(1-blend)+flood[(frame+1)*count+i]*blend;
           if(depth[i]>0.025) wet++;
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER,depthBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,depth);lastSurface=elapsed;
+        gl.bindBuffer(gl.ARRAY_BUFFER,depthBuffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,depth);lastSurface=elapsed;lastHydroTime=simulationSeconds;
         window.storm.wetVertices=wet;
       }
       // Illustrative gust envelope, bounded by the observed mean/peak gust.
       // This is animation forcing, not a reconstruction of sub-minute weather.
       const gustPulse=Math.pow(0.5+0.5*Math.sin(elapsed*0.75),3);
-      const gustFactor=1+(manifest.wind.gust_mps/manifest.wind.mean_mps-1)*gustPulse;
+      const theta=manifest.wind.from_deg*Math.PI/180;
+      const mean=manifest.wind.mean_mps,instant=mean+(manifest.wind.gust_mps-mean)*gustPulse;
+      const freeU=-(mean||instant)*Math.sin(theta),freeV=-(mean||instant)*Math.cos(theta);
+      const gustFactor=mean>0?instant/mean:1;
       for(let i=0;i<particles.length;i++) {
         const p=particles[i]; p.age+=dt;
         if(p.age>p.life||p.x<1||p.x>=nx-2||p.y<1||p.y>=ny-2) {
           p.x=1+random()*(nx-3);p.y=1+random()*(ny-3);p.z=10+random()*130;p.age=0;p.life=4+random()*5;
         }
         const j=Math.floor(p.y)*nx+Math.floor(p.x),above=Math.min(p.z/100,1);
-        const ux=(u[j]*(1-above)+freeU*above)*gustFactor,vy=(v[j]*(1-above)+freeV*above)*gustFactor;
+        const ux=(mean>0?u[j]*(1-above)+freeU*above:freeU)*gustFactor,vy=(mean>0?v[j]*(1-above)+freeV*above:freeV)*gustFactor;
         p.x+=ux*dt*2/cell;p.y-=vy*dt*2/cell;
         if(Number.isFinite(height[j])&&height[j]>0&&p.z<height[j]+5) p.z=height[j]+8;
         const tail=2.2+0.6*Math.sin(elapsed*2+i),fade=Math.min(p.age,1,p.life-p.age)*0.55;
@@ -188,17 +191,21 @@ export function installStormRenderer(view: SceneView, Node: RenderNodeConstructo
       gl.bindVertexArray(null);this.resetWebGLState();
       window.storm.frame=frame;window.storm.elapsedSeconds=simulationSeconds;window.storm.renderedFrames++;
       window.storm.windSegments=particles.length;
-      if(window.storm.renderedFrames%30===0) {
+      {
         document.documentElement.dataset.stormFrame=String(frame);
         document.documentElement.dataset.stormRenderedFrames=String(window.storm.renderedFrames);
         document.documentElement.dataset.stormWetVertices=String(window.storm.wetVertices);
         document.documentElement.dataset.stormWindSegments=String(particles.length);
       }
-      if(!document.hidden)this.requestRender();
+      if(!document.hidden&&playing?.()!==false)this.requestRender();
       return output;
     }
   });
   const node=new StormNode({view});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){last=performance.now();node.requestRender();}});
-  return node;
+  return {node,update(nextManifest,nextGrid,nextFlood){
+    manifest=nextManifest;flood=nextFlood;
+    u.set(nextGrid.subarray(count*4,count*5));v.set(nextGrid.subarray(count*5,count*6));
+    lastSurface=-1;lastHydroTime=-1;window.storm.manifest=manifest;node.requestRender();
+  }};
 }

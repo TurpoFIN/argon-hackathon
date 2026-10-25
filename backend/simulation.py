@@ -15,7 +15,7 @@ class Budget:
     coastal_exchange_m3: float = 0.0
 
 
-def advance_water(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, dt, budget):
+def advance_water(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, dt, budget, roughness=0.035):
     """Manning diffusive-wave fluxes, donor limited to preserve nonnegative water."""
     area = dx * dx
     rain = rain_rate * dt
@@ -30,7 +30,7 @@ def advance_water(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, 
     def flux(a, b, za, zb, blocked):
         head = a - b
         wet_depth = np.maximum(0.0, np.maximum(a, b) - np.maximum(za, zb))
-        q = np.sign(head) * wet_depth ** (5 / 3) / 0.035 * np.sqrt(np.abs(head) / dx)
+        q = np.sign(head) * wet_depth ** (5 / 3) / roughness * np.sqrt(np.abs(head) / dx)
         # Cap transport velocity, not water depth. dt <= dx / (4 * 3 m/s).
         q = np.clip(q, -3 * wet_depth, 3 * wet_depth) * dt / dx
         q[blocked] = 0

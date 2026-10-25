@@ -115,3 +115,30 @@ Next fidelity improvements would require a usable, connected sewer network with
 verified capacities and elevations; better coastal boundary geography; validation
 against observed flood extents; and a dedicated wind solver if local turbulence
 or structural loading becomes part of the scope.
+
+## Separate analysis and 3D views
+
+- `/` is the 3D view with only the view switch and source attribution.
+- `/analysis` is a top-down analytical map with flood depth, wind speed and
+  rainfall fields, wind arrows, a cell-value readout and a shared time slider.
+- Set rain intensity, mean/gust wind, wind direction, added coastal rise, inlet
+  capacity and blockage in Analysis, then select **Run simulation**. Advanced
+  surface assumptions expose runoff fraction and Manning roughness.
+- Inputs are validated by Python. The old result remains visible during a run;
+  failed runs preserve it and show the error. The latest applied parameters and
+  playback state persist locally in `data/scenario-state.json`.
+- Both routes poll the same scenario state. A finished run updates both views
+  without resetting the 3D camera. Time, playback speed, and play/pause also sync
+  between tabs. The 2D field selection is local to the analytical view.
+- The selected rain intensity is spatially uniform over the modeled land area;
+  it is not a radar rainfall map. Wind maps show the diagnostic mean field;
+  illustrative 3D gust trails range up to the configured gust speed.
+- Up to four generated runs are retained in `data/scenarios/`, in addition to
+  the baseline. Only generated runs owned by this checkout are pruned.
+
+The Python API adds `GET /api/state`, `POST /api/scenarios`,
+`POST /api/playback`, and versioned result files under
+`/api/results/{scenario_id}/`. Scenario computation runs in one background
+worker. The frontend includes `analysis.ts` for the 2D map and parameter editor
+and `session.ts` for shared scenario/playback access. Design tokens in
+`frontend/tokens.css` are copied from the owner's UI/UX archive.
