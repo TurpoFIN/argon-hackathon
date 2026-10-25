@@ -1,0 +1,267 @@
+{
+  "model": "gemini-4-argon",
+  "result_sha256": "c3c835f0f5950742d12d3f7581a4d73c1c9f6c48ec34e26eae959ad62bb58504",
+  "generated_at": "2026-10-25T22:34:02.983775+00:00",
+  "inputs": {
+    "storm": {
+      "rain_mm_h": 85.0,
+      "wind_mps": 20.0,
+      "gust_mps": 28.0,
+      "wind_from_deg": 168.0,
+      "coastal_rise_m": 0.5,
+      "drain_capacity_lps": 12.0,
+      "blockage_pct": 20.0,
+      "runoff_coefficient": 0.9,
+      "roughness": 0.035,
+      "debris_kg": 600.0,
+      "clearing_crews": 2,
+      "response_mode": "argon",
+      "coastal_case": "central"
+    },
+    "selected": [
+      {
+        "id": "backup-pump@glass-0",
+        "label": "Deploy one pump on an existing approved backup circuit",
+        "site": {
+          "id": "glass-0",
+          "label": "50 California St",
+          "position": [
+            -122.397347717731,
+            37.794053218232
+          ],
+          "source_id": "sf-glass",
+          "basis": "Address for an owner survey, not evidence of structural damage, critical loads or an electrical connection."
+        },
+        "harm": {
+          "metric": "water_control",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "grid outage scenario",
+            "complete power/fuel/transfer chain",
+            "pump duty and inflow",
+            "safe operating discharge"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      },
+      {
+        "id": "fit-barrier@report-16239820",
+        "label": "Install one stored, pre-fitted doorway barrier",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "harm": {
+          "metric": "water_entry",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "water and wave elevations",
+            "entry elevation",
+            "barrier rating and completeness",
+            "all other entry paths and leakage"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      },
+      {
+        "id": "move-contents@report-16239820",
+        "label": "Move up to 10 portable boxes above the protection level",
+        "site": {
+          "id": "report-16239820",
+          "label": "100 LOMBARD ST",
+          "position": [
+            -122.403556258233,
+            37.804075123103
+          ],
+          "source_id": "sf-311",
+          "report_ids": [
+            "16239820",
+            "16281311",
+            "16281823",
+            "16302887"
+          ],
+          "dates": [
+            "2022-12-31",
+            "2023-01-10",
+            "2023-01-15"
+          ],
+          "basis": "Historical public report location; not a verified failure or a current hazard.",
+          "nearby_inlet": {
+            "id": "175054",
+            "position": [
+              -122.403457815,
+              37.804146532
+            ],
+            "distance_m": 12,
+            "basis": "Nearest mapped inlet by straight-line distance; hydraulic connection and field identity need checking."
+          }
+        },
+        "harm": {
+          "metric": "contents_inundated",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "interior flood level",
+            "original and destination storage elevations"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      },
+      {
+        "id": "secure-items@glass-1",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "harm": {
+          "metric": "glazing_failure",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "observed loose-object inventory",
+            "impact trajectories and glazing resistance"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      },
+      {
+        "id": "latch-windows@glass-1",
+        "label": "Close and latch up to 10 accessible windows",
+        "site": {
+          "id": "glass-1",
+          "label": "301 Mission St",
+          "position": [
+            -122.395929667352,
+            37.790576111428
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "harm": {
+          "metric": "glazing_failure",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "current opening condition",
+            "tested glazing and envelope resistance"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      },
+      {
+        "id": "secure-items@glass-2",
+        "label": "Move or tie down up to 10 loose exterior items",
+        "site": {
+          "id": "glass-2",
+          "label": "350 Mission St",
+          "position": [
+            -122.396685882656,
+            37.790885487474
+          ],
+          "source_id": "sf-glass",
+          "basis": "Glazing failures investigated after March 2023; present condition must be checked."
+        },
+        "harm": {
+          "metric": "glazing_failure",
+          "before": null,
+          "after": null,
+          "improvement": null,
+          "support": "unavailable",
+          "source_ref": null,
+          "missing": [
+            "observed loose-object inventory",
+            "impact trajectories and glazing resistance"
+          ],
+          "storm_before": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "storm_after": "4c6d618032cabee28d2c11a12a920a042a1b7f10d03f4376f859873cb00f67e6",
+          "field_calibrated": false,
+          "limitation": "Mechanism calculation only; local damage probabilities and total losses are not calibrated."
+        }
+      }
+    ],
+    "validation": "Wave overtopping and series-system failures have mechanism checks grounded in FEMA P-942. No SF site calibration or measured site inputs exist. A missing value is not no harm or zero effect."
+  },
+  "supported_positive_action_ids": [],
+  "unidentifiable_action_ids": [
+    "backup-pump@glass-0",
+    "fit-barrier@report-16239820",
+    "move-contents@report-16239820",
+    "secure-items@glass-1",
+    "latch-windows@glass-1",
+    "secure-items@glass-2"
+  ],
+  "conclusion": "No preventive action can be verified as having a supported positive improvement. For all six selected actions, before/after harm values and computed improvements are null, and measurement support is unavailable due to missing site-specific inputs and lack of field calibration.",
+  "evidence_limits": [
+    "No San Francisco site calibration or measured site inputs exist; calculations are mechanism-only and local damage probabilities and total losses are uncalibrated.",
+    "backup-pump@glass-0 is missing grid outage scenario, complete power/fuel/transfer chain, pump duty and inflow, and safe operating discharge; site basis is an owner survey address rather than evidence of damage, critical loads, or electrical connection.",
+    "fit-barrier@report-16239820 is missing water and wave elevations, entry elevation, barrier rating and completeness, and all other entry paths and leakage; site is a historical 311 report location and nearby inlet hydraulic connection is unverified.",
+    "move-contents@report-16239820 is missing interior flood level and original and destination storage elevations; site is a historical 311 report location and nearby inlet hydraulic connection is unverified.",
+    "secure-items@glass-1 and secure-items@glass-2 are missing observed loose-object inventories, impact trajectories, and glazing resistance, and present site conditions must be checked.",
+    "latch-windows@glass-1 is missing current opening condition and tested glazing and envelope resistance, and present site condition must be checked."
+  ]
+}

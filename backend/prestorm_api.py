@@ -154,3 +154,31 @@ def compare_work(body:WorkRequest):
                 with lock:job.update(status='failed',error=str(e))
         executor.submit(run)
         return dict(job)
+
+
+class MeasurementRequest(BaseModel):
+    expected_version:int=Field(ge=0)
+    site_id:str
+    measurements:dict
+
+
+@router.put('/measurements')
+def record_measurements(body:MeasurementRequest):
+    """Attach actual site evidence; never generate missing elevations/capacities."""
+    from .harm_model import Site,ROOT
+    from pydantic import ValidationError
+    import json
+    with lock:
+        assets,catalog,parameters=context()
+        state=prestorm.load(assets,catalog)
+        if state['version']!=body.expected_version:raise HTTPException(409,'Plan changed; reload before recording measurements.')
+        allowed={s['id'] for rows in prestorm.sites(assets,catalog).values() for s in rows}
+        if body.site_id not in allowed:raise HTTPException(422,'Select a source-backed site.')
+        try:measurement=Site.model_validate(body.measurements)
+        except ValidationError as e:raise HTTPException(422,str(e))
+        path=ROOT/'data/harm/site-measurements.json';path.parent.mkdir(parents=True,exist_ok=True)
+        records=json.loads(path.read_text()) if path.exists() else {}
+        records[body.site_id]=measurement.model_dump(mode='json')
+        temporary=path.with_suffix('.tmp');temporary.write_text(json.dumps(records,indent=2));temporary.replace(path)
+        state['version']+=1;prestorm.persist(state)
+        return prestorm.public(state,parameters,assets,catalog)

@@ -241,9 +241,11 @@ def public(state,parameters,options,evidence):
         studies.append(dict(settings=config.model_dump(),label=PROFILES[config.profile]['label'],jobs=len(jobs),
                             work=[c['label']+' · '+c['site']['label'] for c in jobs],
                             labor_minutes=sum(c['labor_minutes'] for c in jobs),conclusion=study['result']['conclusion']))
+    from . import harm_model
+    candidates_with_harm,selected=harm_model.annotate(ctx['candidates'],selected,parameters)
     return dict(settings=settings.model_dump(),profiles={k:dict(label=v['label'],description=v['description']) for k,v in PROFILES.items()},studies=studies,
                 resources=ctx['resources'],equipment_names=EQUIPMENT,current=current,
-                baseline=ctx['baseline'],candidates=ctx['candidates'],selected=selected,
+                baseline=ctx['baseline'],candidates=candidates_with_harm,selected=selected,
                 result=saved if current else None,sources=ctx['source_findings'],
                 totals=dict(jobs=len(selected),labor_minutes=sum(c['labor_minutes'] for c in selected),latest_finish=max((c['finish'] for c in selected),default=0)),
                 interpretation='Scheduled quantities are planned work scope, not completed work or avoided damage. Timing ranges are planning estimates, except specifically cited task references. No calibrated local damage benefit is available.')

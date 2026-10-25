@@ -19,7 +19,9 @@ export const workFacts:Record<string,Fact>={
 };
 
 export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:WorkFindings){
-  const fact=workFacts[work.operation_id],planned=data.selected.find(s=>s.id===work.id);
+  const fact=workFacts[work.operation_id],planned=data.selected.find(s=>s.id===work.id),harm=work.harm;
+  const metric:Record<string,string>={water_entry:'Water entry',contents_inundated:'Contents inundation',water_control:'Floodwater control',glazing_failure:'Glazing failure',tree_failure:'Tree failure',structural_failure:'Structural failure',route_impassable:'Blocked access'};
+  const state=(value:boolean|null|undefined)=>value==null?'Unverified':value?'Yes':'No';
   const root=document.createElement('section');root.className='work-evidence-block';
   const comparison=document.createElement('div');comparison.className='work-before-after';comparison.setAttribute('aria-label','Do nothing versus planned work');
   const side=(title:string,value:string,cost:string,cls:string)=>{
@@ -28,15 +30,16 @@ export function workEvidence(work:WorkCandidate,data:WorkComparison,findings:Wor
     heading.textContent=title;body.textContent=value;resource.textContent=cost;block.append(heading,body,resource);return block;
   };
   comparison.append(
-    side('Do nothing',fact?.without??work.without,'0 person-min · no added equipment','work-state-before'),
-    side('After planned work',planned?(fact?.benefit??work.with):'Not scheduled — no change',planned?`${planned.labor_minutes} person-min · ${planned.people} people`:'No crew or equipment assigned','work-state-after'),
+    side('Do nothing',(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.before),'0 person-min · no added equipment','work-state-before'),
+    side('After planned work',(metric[harm?.metric??'']??'Local harm')+': '+state(harm?.after),planned?`${planned.labor_minutes} person-min · ${planned.people} people`:'No crew or equipment assigned','work-state-after'),
   );root.append(comparison);
-  const qualifier=document.createElement('p');qualifier.className='work-comparison-qualifier';qualifier.textContent=planned?'Same storm. After assumes this work is completed.':'Potential if made feasible: '+(fact?.benefit??work.with);root.append(qualifier);
+  const qualifier=document.createElement('p');qualifier.className='work-comparison-qualifier';qualifier.textContent=harm?.improvement==null?'No supported local harm difference established.':harm.improvement>0?'Conditional harm reduction; not field validated.':harm.improvement<0?'Conditional increase in harm; not field validated.':'No change in the specified consequence.';root.append(qualifier);
   const evidenceList=document.createElement('dl');evidenceList.className='work-evidence-inline';root.append(evidenceList);
   const add=(label:string,value:string)=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;evidenceList.append(dt,dd);return dd;};
   const evidence=add('Evidence',fact?.evidence??work.evidence_grade);
   const source=data.sources.find(s=>s.id===(fact?.source??work.source_ids[0]));
   if(source){const a=document.createElement('a');a.textContent=(fact?.sourceLabel??source.title)+' ↗';a.href=source.url;a.target='_blank';a.rel='noreferrer';a.title=source.title;evidence.append(' ',a);}
+  if(harm&&harm.improvement==null&&harm.missing.length)add('Missing',harm.missing.join('; '));
   const finding=findings[work.hazard];
   const applies=finding?.site_id===work.site.id&&finding.condition!=='unchecked'&&finding.note.trim();
   const label=applies?(finding.condition==='clear'?'No concern found':'Site reviewed'):'Inspect first';

@@ -1,0 +1,42 @@
+{
+  "scope": "Mechanism checks, not local risk calibration or proof of avoided losses",
+  "local_calibration": false,
+  "site_measurements_present": false,
+  "source": {
+    "title": "FEMA P-942, Hurricane Sandy in New Jersey and New York",
+    "url": "https://www.govinfo.gov/content/pkg/GOVPUB-HS5_100-PURL-gpo110213/pdf/GOVPUB-HS5_100-PURL-gpo110213.pdf",
+    "pages": "Printed 4-21 to 4-23; PDF 119 to 121"
+  },
+  "checks": [
+    {
+      "name": "Floodgate overtopping includes wave crest",
+      "observed": "42-inch floodgates near stillwater level were overtopped by an additional 1\u20132 ft wave action; subgrade spaces flooded",
+      "status": "Mechanism reproduced; observed approximate levels are not precise capacity calibration"
+    },
+    {
+      "name": "Backup is a series system",
+      "observed": "Protected fuel/pumping supported operation; flooded supporting components defeated other backup systems",
+      "status": "Failure dependency reproduced; component rates and local service probability unvalidated"
+    },
+    {
+      "name": "Pumping is not inferred from installed equipment",
+      "observed": "Six >=100-gpm pumps kept basement below 3 inches, but inflow was not reported",
+      "status": "Local avoided water depth cannot be identified from that observation; model returns unavailable without inflow/duty"
+    }
+  ],
+  "unsupported_local_effects": [
+    "glazing failure probability",
+    "tree failure probability",
+    "structural collapse probability",
+    "building grid outage probability",
+    "avoided casualties",
+    "local avoided flood loss"
+  ],
+  "removed_from_authoritative_comparison": [
+    "random glass/structure strength thresholds",
+    "random tree anchorage threshold",
+    "nearest-feeder outage inference",
+    "fixed 0.15m door and 0.6m barrier assumptions",
+    "task completion counted as avoided harm"
+  ]
+}
