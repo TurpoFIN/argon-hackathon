@@ -1,3 +1,4 @@
+import {installRunActions} from './runActions';
 import {installCameraControls, type CameraView} from './cameraControls';
 
 declare global { interface Window {planView?: CameraView;} }
@@ -11,3 +12,5 @@ function connect(){
 }
 window.addEventListener('prep-view-ready',connect);
 connect();
+
+installRunActions();

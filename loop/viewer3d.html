@@ -71,7 +71,7 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
 const params = new URLSearchParams(location.search);
 let run = params.get('run'), model = params.get('model') || 'argon', folder;
 const panel = document.getElementById('panel'), showPlan = document.getElementById('show-plan');
-function setPlanVisible(visible) { panel.hidden = !visible; showPlan.hidden = visible; (visible ? document.getElementById('hide-plan') : showPlan).focus(); }
+function setPlanVisible(visible) { panel.hidden = !visible; showPlan.hidden = visible; window.dispatchEvent(new CustomEvent('prep-panel-visibility',{detail:visible})); (visible ? document.getElementById('hide-plan') : showPlan).focus(); }
 document.getElementById('hide-plan').onclick = () => setPlanVisible(false);
 showPlan.onclick = () => setPlanVisible(true);
 document.addEventListener('keydown', event => {
@@ -104,7 +104,10 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
   window.planView = view;
   view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
-  const storm = { frames: 0, minutes: [], frame: null, timer: null, layer: null };
+  const storm = { userMoved: false, frames: 0, minutes: [], frame: null, timer: null, layer: null };
+  window.addEventListener('prep-user-navigation',()=>{storm.userMoved=true;});
+  view.container.addEventListener('pointerdown',()=>{storm.userMoved=true;});
+  view.container.addEventListener('wheel',()=>{storm.userMoved=true;},{passive:true});
   const floodRenderer = field => ({ type: 'class-breaks', field, classBreakInfos: [
     [0.03, 0.15, '#9cc5ff', .62], [0.15, 0.3, '#5c9dff', .72], [0.3, 0.6, '#2f7bff', .8], [0.6, 1.0, '#006cff', .86], [1.0, 99, '#0041a3', .9]
   ].map(([min, max, color, a]) => ({ minValue: min, maxValue: max, label: `${min}–${max} m`,
@@ -116,6 +119,7 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     storm.layer.renderer = floodRenderer(k === null ? 'depth' : 'd' + k);
     scrub.value = k === null ? scrub.max : k;
     clock.textContent = k === null ? 'Peak water' : `Storm minute ${storm.minutes[k] ?? k * 2} of 60`;
+    window.dispatchEvent(new CustomEvent('prep-frame-change',{detail:{index:k,minute:k===null?60:storm.minutes[k]}}));
   }
   function stop() { clearInterval(storm.timer); storm.timer = null; toggle.textContent = '▶ Play the storm'; }
   toggle.addEventListener('click', () => {
@@ -141,8 +145,8 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     storm.minutes = layers.frame_minutes || [];
     const walls = { type: 'FeatureCollection', features: layers.walls.map(w => ({ type: 'Feature',
       geometry: { type: 'LineString', coordinates: w.path }, properties: { height: w.height_m } })) };
-    const points = (list, props) => ({ type: 'FeatureCollection', features: list.map(([lon, lat]) => ({ type: 'Feature',
-      geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props })) });
+    const points = (list, props) => ({ type: 'FeatureCollection', features: list.map(([lon, lat], job_index) => ({ type: 'Feature',
+      geometry: { type: 'Point', coordinates: [lon, lat] }, properties: { ...props, job_index } })) });
     const buildings = { type: 'FeatureCollection', features: layers.buildings.map(b => ({ type: 'Feature',
       geometry: { type: 'Point', coordinates: [b.lon, b.lat] }, properties: b })) };
     const wallSymbol = h => ({ type: 'line-3d', symbolLayers: [{ type: 'path', profile: 'quad', width: 1.6, height: Math.max(1.2, h * 4),
@@ -158,8 +162,8 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
         renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
           uniqueValueInfos: [0.3048, 0.6096, 0.9144].map(h => ({ value: h, symbol: wallSymbol(h) })) } }),
       // The pump's real footprint in the model: the one 12 m grid cell it drains.
-      new GeoJSONLayer({ url: blob({ type: 'FeatureCollection', features: layers.pumps.map(([lon, lat]) => ({ type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties: {} })) }), title: 'Pump cells', geometryType: 'polygon',
+      new GeoJSONLayer({ url: blob({ type: 'FeatureCollection', features: layers.pumps.map(([lon, lat], job_index) => ({ type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties: { job_index } })) }), title: 'Pump cells', geometryType: 'polygon',
         elevationInfo: { mode: 'on-the-ground' }, renderer: { type: 'simple', symbol: { type: 'polygon-3d', symbolLayers: [{ type: 'fill',
           material: { color: [246, 68, 185, 0.95] }, outline: { color: [255, 255, 255, 1], size: 1 } }] } } }),
       new GeoJSONLayer({ url: blob(points(layers.pumps, { kind: 'pump' })), title: 'Pumps', geometryType: 'point', elevationInfo: { mode: 'on-the-ground' },
@@ -185,6 +189,8 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     ]);
     scrub.max = Math.max(0, storm.frames - 1);
     setFrame(keep === null || keep === undefined ? null : Math.min(keep, storm.frames - 1));
+    window.prepRunContext={run,model,label:option.label,map,view,planLayer:plan,frame:storm.frame};
+    window.dispatchEvent(new CustomEvent('prep-plan-shown',{detail:window.prepRunContext}));
     const control = log.control.ledger.total_usd, total = option.entry.ledger.total_usd;
     document.getElementById('total').textContent = usd(total);
     document.getElementById('delta').textContent = option.label === 'control' ? 'No preparation' : `${usd(total - control)} vs no preparation (${((total - control) / control * 100).toFixed(0)}%)`;
@@ -197,10 +203,10 @@ require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/Scene
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     // Frame the plan's placements once, on the first plan that has any; later switches keep the camera
     // so before and after compare from the same spot.
-    if (!storm.framed) {
+    if (!storm.framed && !storm.userMoved) {
       const targets = plan.layers.filter(l => l.title === 'Pumps' || l.title === 'Cleared drains').toArray();
       const features = (await Promise.all(targets.map(l => l.queryFeatures({ where: '1=1', returnGeometry: true })))).flatMap(r => r.features);
-      if (features.length) {
+      if (features.length && !storm.userMoved) {
         storm.framed = true;
         await view.goTo({ target: features, heading: 325, tilt: 60 }, { animate: false });
       }
