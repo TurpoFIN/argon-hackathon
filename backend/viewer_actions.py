@@ -118,7 +118,7 @@ def _pack(root,run,model,label,versions):
     p50=next((s for s in (log.get('forcing') or {}).get('scenarios',[]) if s['name']=='P50'),{})
     weather.update({k:p50[k] for k in ('wind_mps','gust_mps','wind_from_deg') if k in p50})
     storm_id=hashlib.sha256(json.dumps({'parameters':weather,'forcing':log.get('forcing')},sort_keys=True).encode()).hexdigest()
-    assets=risk_assets.load();field=Field(layers);basefield=Field(control)
+    assets=json.loads((risk_assets.FOLDER/'assets.json').read_text());field=Field(layers);basefield=Field(control)
     operations=json.loads((ROOT/'evidence/preventive-work.json').read_text())['operations']
     byop={o['id']:o for o in operations}
     byop['portable-pump']={**byop['backup-pump'],'id':'portable-pump','hazard':'flood','label':'Deploy portable pump at recorded cell','role':'pump crew','people':2,'minutes':[30,60],'overhead':[10,20],

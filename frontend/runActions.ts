@@ -67,7 +67,7 @@ export function installRunActions(){
     const patch=(x:number,y:number,w:number,d:number,h:number,color:any,kind:string)=>add({type:'polygon',rings:[[[-w/2,-d/2],[-w/2,d/2],[w/2,d/2],[w/2,-d/2],[-w/2,-d/2]].map(([u,v])=>xy(x+u,y+v,.1))],hasZ:true,spatialReference:{wkid:4326}},{type:'polygon-3d',symbolLayers:[{type:'extrude',size:Math.max(.03,h),material:{color}}]},kind);
     const roof=0;
     if(baseZ)path([[0,0,-baseZ],[0,0,0]],.08,'#a4a4a4','site-connector');
-    
+
     const op=active.operation_id;
     if(op==='backup-pump')for(const line of active.power_lines??[]){
       const paths=line.geometry.type==='LineString'?[line.geometry.coordinates]:line.geometry.coordinates;
