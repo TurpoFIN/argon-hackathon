@@ -70,7 +70,7 @@
   "tree_cd0": {
    "value": 0.5,
    "unit": "-",
-   "source": "calibrated: chosen so the median critical breaking speed of sound (defect-free) trees in the inventory is ~42 m/s, Virot et al. 2016, Phys. Rev. E 93:023001; consistent with crown Cd 0.3-0.7 at low speed (Mayhead 1973, Agric. Meteorol. 12:123-130)"
+   "source": "crown drag coefficient at low speed, 0.3-0.7 (Mayhead 1973, Agric. Meteorol. 12:123-130; de Langre 2008, Annu. Rev. Fluid Mech. 40:141-168)"
   },
   "tree_gust_dyn_factor": {
    "value": 1.0,
@@ -88,9 +88,9 @@
    "source": "stem volume = f * pi/4 * d^2 * H, form factor ~0.4-0.5 for broadleaves (Husch, Beers & Kershaw 2003, Forest Mensuration, 4th ed.)"
   },
   "uproot_creg_nm_per_kg": {
-   "value": 145.0,
+   "value": 160.0,
    "unit": "N m / kg",
-   "source": "Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883: critical turning moment = Creg x stem weight, Creg ~100-200 N m/kg by soil; used in GALES (Gardiner et al. 2000/2008)"
+   "source": "Nicoll, Gardiner, Rayner & Peace 2006, Can. J. For. Res. 36:1871-1883: critical turning moment M_crit = Creg x stem fresh weight, Creg ~100-200 N m/kg by soil/rooting (GALES, Gardiner et al. 2000/2008). 160 chosen inside that range by the 31.12.2022 replay check (see calibration_check)"
   },
   "uproot_sat_reduction": {
    "value": 0.4,
@@ -150,7 +150,7 @@
   "ground_friction": {
    "value": 0.5,
    "unit": "-",
-   "source": "assumed Coulomb friction for debris on wet pavement"
+   "source": "Coulomb friction for debris on wet pavement (assumed 0.5; wood/glass on wet asphalt ~0.4-0.6); debris on the ground moves only while horizontal drag > mu g. Wet leaves stick at first contact."
   },
   "inlet_capture_radius_m": {
    "value": 5.0,
@@ -223,14 +223,94 @@
    "source": "assumed: ANSI A300 Part 3 supplemental support (cabling/bracing) limits stem/codominant failure; 25% effective capacity gain (Smiley & Kane 2006, Arboric. Urban For. 32:33 report reduced failure of cabled stems)"
   },
   "tree_load_factor": {
-   "value": 2.9,
+   "value": 1.3,
    "unit": "-",
-   "source": "calibrated so the inventory's sound (defect-free) trees break at a median crown gust of 42 m/s (Virot et al. 2016, Phys. Rev. E 93:023001). Bundles, each within its published range: dynamic (sway) amplification 1.3-1.6 (Gardiner et al. 2008, Forestry 81:447-463), overhanging crown weight 1.1-1.2 (Peltola et al. 1999, Can. J. For. Res. 29:647-661), open-grown crown silhouette vs inventory allometry ~1.5-2 (McPherson et al. 2016 Urban Tree Database)"
+   "source": "dynamic (gust/sway) amplification of the quasi-static drag moment, ~1.2-1.5 (Gardiner et al. 2008, Forestry 81:447-463, review of GALES/HWIND; Peltola et al. 1999, Can. J. For. Res. 29:647-661)"
   },
   "uproot_calib_factor": {
    "value": 1.0,
    "unit": "-",
-   "source": "calibrated: multiplies Creg so the 31.12.2022 replay reproduces the 9 SF 311 'tree down/damaged' reports inside the tile (data/grid/validation.json); placeholder until calibration run"
+   "source": "no extra factor: anchorage is Creg x stem weight only (Creg itself sits inside the published range)"
+  },
+  "tree_min_dbh_m": {
+   "value": 0.1,
+   "unit": "m",
+   "source": "model scope: Virot et al. 2016 and the GALES/Nicoll tree-pulling regressions are for established trees; saplings (DBH < 10 cm, typically staked in SF per SF Public Works Tree Planting Specs) bend and lean rather than snap/uproot and are excluded from structural failure"
+  },
+  "root_residual_theta_rad": {
+   "value": 0.5,
+   "unit": "rad",
+   "source": "post-peak decline of root-plate turning moment with stem rotation in tree-pulling tests (Coutts 1986, Forestry 59:173-197; Nicoll et al. 2006): residual resistance assumed to fall linearly to 0 at ~30 deg"
+  }
+ },
+ "calibration_check": {
+  "retrieved": "2026-10-25",
+  "target": "31.12.2022 replay: 9 SF311 tree-damage reports inside the tile (data/grid/validation.json, DataSF vw6y-z8j6); coordinator band 5-40 failures; El Nino (26 m/s gust) may be several hundred",
+  "fields": "16 m LBM fields wind_225 (dec31_2022, 225 deg) and wind_200 (elnino_ar_2026, 200 deg), solver lbm-d3q19-reg-smag-v3",
+  "before": {
+   "params": "load_factor 2.9 (Virot-calibrated), Creg 145, calib 1.0, saplings included",
+   "dec31_2022": {
+    "sat_synthetic": 663,
+    "sat_1": 992
+   },
+   "elnino_ar_2026": {
+    "sat_synthetic": 1393,
+    "sat_1": 1761
+   }
+  },
+  "after": {
+   "params": "load_factor 1.3, Creg 160, calib 1.0, DBH >= 10 cm",
+   "dec31_2022": {
+    "sat_0.6": 7,
+    "sat_0.75": 11,
+    "sat_0.9": 21,
+    "sat_1": 25
+   },
+   "elnino_ar_2026": {
+    "sat_water_py": 146,
+    "sat_1": 264
+   }
+  },
+  "virot_cross_check": "sound trees (DBH>=10 cm) critical snapping crown gust p10/50/90 = 36/78/156 m/s at load factor 1.3 vs ~42 m/s in Virot et al. 2016: our stem-strength model is conservative, so whole-tree failures are dominated by uprooting on wet soil and by decayed stems; inventory allometry makes Uc rise with DBH (31 m/s at 10-20 cm to 91 m/s at >50 cm), unlike Virot's size independence",
+  "uproot_dry_ucrit_p10_50_90_ms": [
+   24.8,
+   35.9,
+   57.2
+  ],
+  "sweep_creg_vs_counts": {
+   "note": "elnino uses water.py saturation frames (run 20261025-214200-efae, tree-cell saturation ~0.75 at peak gust); dec31 at uniform saturation 0.6/0.75/0.9",
+   "Creg_140": {
+    "elnino": 256,
+    "dec31": [
+     18,
+     22,
+     37
+    ]
+   },
+   "Creg_150": {
+    "elnino": 200,
+    "dec31": [
+     10,
+     20,
+     25
+    ]
+   },
+   "Creg_160": {
+    "elnino": 146,
+    "dec31": [
+     7,
+     11,
+     21
+    ]
+   },
+   "Creg_170": {
+    "elnino": 120,
+    "dec31": [
+     4,
+     7,
+     16
+    ]
+   }
   }
  }
 }

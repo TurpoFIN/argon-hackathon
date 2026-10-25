@@ -1,0 +1,1842 @@
+{
+ "generated_utc": "2026-10-25T22:02:57Z",
+ "runtime_s": 134.2,
+ "n_tests": 14,
+ "n_pass": 8,
+ "replay_cache": "water_dec31_2022.npz",
+ "replay_cache_current": true,
+ "tests": [
+  {
+   "id": "1",
+   "name": "Lake at rest over bumpy terrain + island + building (well-balanced)",
+   "reference": "exact: u = 0, \u03b7 = const (Audusse et al. 2004 well-balanced property)",
+   "result": "max |u| 1.1e-07 m/s, max |\u0394\u03b7| 6.0e-08 m after 1 h; 1b perturbed pool surface range 1.5e+00 m (alpha 0.7); HLL option: lake max |u| 8.2e-14 m/s, pool range 8.4e-07 m",
+   "tolerance": "|u| < 1e-3 m/s, |\u0394\u03b7| < 1 mm; 1b: 1 mm bump stays < 2 mm",
+   "pass": false,
+   "plot": "t01_lake_at_rest.png",
+   "metrics": {
+    "max_speed_ms": 1.0654142227175429e-07,
+    "max_deta_m": 5.967196603506864e-08,
+    "volume_drift_m3": 0.0,
+    "steps": 6236,
+    "perturbed_pool_range_m_every_300s": [
+     0.6378557685437187,
+     0.9408361690644973,
+     1.485064925078934,
+     1.0587804766171967
+    ],
+    "alpha": 0.7,
+    "same_with_alpha_0.6": [
+     4.052392043485398e-06,
+     1.2203065027360793e-06,
+     1.1223554909900457e-06,
+     4.2888153450881816e-07
+    ],
+    "hll_pool_range_m": [
+     8.399296347327834e-07,
+     1.448603981213381e-07,
+     4.7736952835109037e-08,
+     2.2820367373554973e-08
+    ],
+    "hll_lake_max_speed_ms": 8.175405225002109e-14
+   },
+   "notes": "Wet/dry fronts around the island and a solid building included. 1b exposes a CFL instability at alpha = 0.7 (validation/BUGS.md B1); alpha <= 0.6 is stable.",
+   "runtime_s": 32.7
+  },
+  {
+   "id": "2",
+   "name": "Mass conservation, real grid, full dec31_2022 storm",
+   "reference": "rain in = surface + sewer storage + infiltration + treatment + CSO + edge + bay exchange",
+   "result": "closure 2.1e-09 % of 1.25 Mm\u00b3 rain; rain vs independent integral -0.000 %; surface vs frames +0.00 %",
+   "tolerance": "< 1 % each",
+   "pass": true,
+   "plot": "t02_mass_balance.png",
+   "metrics": {
+    "rain_in_m3_solver": 1252145.7732910374,
+    "rain_in_m3_independent": 1252145.773291038,
+    "rain_rel_diff_pct": -3.718906354519994e-14,
+    "surface_end_m3_solver": 350831.4381592985,
+    "surface_end_m3_from_frames": 350830.79043293,
+    "surface_rel_diff_pct": 0.00018462643136567302,
+    "terms_m3": {
+     "rain_total": 1252145.8,
+     "rain_on_roofs": 516230.7,
+     "roof_to_sewer": 229061.0,
+     "roof_spill_to_street": 287169.7,
+     "infiltration": 134754.7,
+     "inlet_capture": 696805.3,
+     "sewer_backflow": 255687.0,
+     "dry_weather_flow": 8911.0,
+     "upstream_sewer_inflow": 0.0,
+     "sewer_to_treatment": 55693.8,
+     "sewer_cso_to_bay": 561137.3,
+     "tunnel_to_bay": 0.0,
+     "plan_storage": 0.0,
+     "pumped_to_bay": 0.0,
+     "bay_to_land": -48967.7,
+     "edge_outflow": 47412.5,
+     "surface_end": 350831.4,
+     "sewer_end": 75119.4,
+     "clamp": 0.0,
+     "roof_retained": -0.0,
+     "mass_error_m3": -0.0
+    },
+    "closure_error_m3": -2.6833207812160254e-05,
+    "closure_error_pct": 2.062326415113994e-09
+   },
+   "notes": "Closure uses the solver's own flux ledger; rain input and final surface storage are re-derived independently (hyetograph integral x land area; sum of the saved final depth frame). Replay parameters: scheme inertial, i_design 10.3 mm/h, alpha 0.7"
+  },
+  {
+   "id": "3",
+   "name": "1D dam break vs Stoker (wet bed) / Ritter (dry bed), both water schemes",
+   "reference": "Stoker 1957 / Ritter 1892 analytic; local-inertial expected weaker at high Froude (Bates 2010; de Almeida & Bates 2013 WRR 49)",
+   "result": "inertial: h_r/h_l 0.5 err 3.5 %/front -10 %, h_r/h_l 0.1 err 10.8 %/front -28 %, h_r/h_l 0.0 err 12.3 %/front -58 %; hll: h_r/h_l 0.5 err 1.0 %/front -0 %, h_r/h_l 0.1 err 1.2 %/front -2 %, h_r/h_l 0.0 err 1.2 %/front -15 %",
+   "tolerance": "mean |err| < 5 % of h_l and bore position within 10 %; verdict on the production scheme ('inertial'), subcritical case h_r/h_l = 0.5",
+   "pass": false,
+   "plot": "t03_dam_break.png",
+   "metrics": {
+    "inertial": {
+     "hr_0.5": {
+      "mean_abs_err_over_h1": 0.035184722607462006,
+      "front_sim_m": 106.0,
+      "front_ref_m": 118.316724807501,
+      "front_rel_err": -0.1040996091426641,
+      "Fr_middle": 0.3457760798508756,
+      "steps": 45
+     },
+     "hr_0.1": {
+      "mean_abs_err_over_h1": 0.10834171183319051,
+      "front_sim_m": 90.0,
+      "front_ref_m": 124.20534602688394,
+      "front_rel_err": -0.27539350858118683,
+      "Fr_middle": 1.1775073424717197,
+      "steps": 45
+     },
+     "hr_0.0": {
+      "mean_abs_err_over_h1": 0.12264702350838477,
+      "front_sim_m": 90.0,
+      "front_ref_m": 212.98225278177523,
+      "front_rel_err": -0.5774295800494921,
+      "Fr_middle": 2.0,
+      "steps": 45
+     }
+    },
+    "hll": {
+     "hr_0.5": {
+      "mean_abs_err_over_h1": 0.010235587827835992,
+      "front_sim_m": 118.0,
+      "front_ref_m": 118.316724807501,
+      "front_rel_err": -0.0026769233852298453,
+      "Fr_middle": 0.3457760798508756,
+      "steps": 80
+     },
+     "hr_0.1": {
+      "mean_abs_err_over_h1": 0.012261850646518255,
+      "front_sim_m": 122.0,
+      "front_ref_m": 124.20534602688394,
+      "front_rel_err": -0.01775564496560883,
+      "Fr_middle": 1.1775073424717197,
+      "steps": 93
+     },
+     "hr_0.0": {
+      "mean_abs_err_over_h1": 0.01218613910384833,
+      "front_sim_m": 182.0,
+      "front_ref_m": 212.98225278177523,
+      "front_rel_err": -0.14546870632230613,
+      "Fr_middle": 2.0,
+      "steps": 107
+     }
+    },
+    "grid_refinement_hr_0.5": {
+     "inertial": [
+      {
+       "dx_m": 4.0,
+       "mean_abs_err_over_h1": 0.035184722607462006
+      },
+      {
+       "dx_m": 2.0,
+       "mean_abs_err_over_h1": 0.03456998624475004
+      },
+      {
+       "dx_m": 1.0,
+       "mean_abs_err_over_h1": 0.034812751521191836
+      }
+     ],
+     "hll": [
+      {
+       "dx_m": 4.0,
+       "mean_abs_err_over_h1": 0.010235587827835992
+      },
+      {
+       "dx_m": 2.0,
+       "mean_abs_err_over_h1": 0.006234355681095709
+      },
+      {
+       "dx_m": 1.0,
+       "mean_abs_err_over_h1": 0.0036506713361577577
+      }
+     ]
+    },
+    "production_scheme": "inertial"
+   },
+   "notes": "Local-inertial drops the advection term, so it converges to a slightly different PDE: its error does not shrink with dx (dx 4 m 3.52 %, dx 2 m 3.46 %, dx 1 m 3.48 %) and grows with Froude; the dry-bed front is far too slow. The full-SWE HLL option (Audusse 2004 hydrostatic reconstruction) fixes this: dx 4 m 1.02 %, dx 2 m 0.62 %, dx 1 m 0.37 % on the same case, and it captures the dry-bed front. Urban ponding (the damage driver) is low-Froude.",
+   "runtime_s": 1.8
+  },
+  {
+   "id": "4",
+   "name": "Steady uniform flow on a sloped channel vs Manning normal depth, both schemes",
+   "reference": "Manning: h_n = (q n / \u221aS)^(3/5)",
+   "result": "inertial: Fr 0.30 -0.0 %, Fr 0.68 -0.0 %, Fr 0.53 -0.0 %, Fr 0.93 -16.7 % (oscillating), Fr 1.40 -33.7 % (oscillating); hll: Fr 0.30 -1.7 %, Fr 0.68 +0.7 %, Fr 0.53 +0.1 %, Fr 0.93 +2.8 %, Fr 1.40 +9.8 %",
+   "tolerance": "subcritical (Fr < 0.8): |err| < 1 % and steady; verdict on production scheme 'inertial'",
+   "pass": true,
+   "plot": "t04_manning.png",
+   "metrics": {
+    "inertial": [
+     {
+      "S0": 0.002,
+      "n": 0.035,
+      "q_m2s": 0.05,
+      "h_normal_m": 0.14305855384245705,
+      "h_sim_m": 0.14303259257671985,
+      "err_pct": -0.018147300556239948,
+      "temporal_std_m": 1.6688176226290796e-09,
+      "Fr": 0.2950290323642787,
+      "outflow_over_inflow": 0.9999999770713369
+     },
+     {
+      "S0": 0.002,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.13042046873284657,
+      "h_sim_m": 0.13039184598233247,
+      "err_pct": -0.02194651713200948,
+      "temporal_std_m": 3.91328512232889e-06,
+      "Fr": 0.6778706979035676,
+      "outflow_over_inflow": 0.9999999954472333
+     },
+     {
+      "S0": 0.001,
+      "n": 0.015,
+      "q_m2s": 0.2,
+      "h_normal_m": 0.243373200198881,
+      "h_sim_m": 0.24335947573080216,
+      "err_pct": -0.0056392684435388795,
+      "temporal_std_m": 4.0368347265856394e-06,
+      "Fr": 0.5318465700053113,
+      "outflow_over_inflow": 1.0000000087648397
+     },
+     {
+      "S0": 0.004,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.10593433826215812,
+      "h_sim_m": 0.08826868206884268,
+      "err_pct": -16.67604337093968,
+      "temporal_std_m": 0.06530385939305701,
+      "Fr": 0.9259986622104706,
+      "outflow_over_inflow": 1.2453806066351383
+     },
+     {
+      "S0": 0.01,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.08047384559998257,
+      "h_sim_m": 0.0533815104010746,
+      "err_pct": -33.66601284792315,
+      "temporal_std_m": 0.10384473505042863,
+      "Fr": 1.3985672787674164,
+      "outflow_over_inflow": 0.592737642535
+     }
+    ],
+    "hll": [
+     {
+      "S0": 0.002,
+      "n": 0.035,
+      "q_m2s": 0.05,
+      "h_normal_m": 0.14305855384245705,
+      "h_sim_m": 0.14064396983714564,
+      "err_pct": -1.6878291723614591,
+      "temporal_std_m": 2.564022940072784e-07,
+      "Fr": 0.2950290323642787,
+      "outflow_over_inflow": 1.0004542742067557
+     },
+     {
+      "S0": 0.002,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.13042046873284657,
+      "h_sim_m": 0.1313271245504993,
+      "err_pct": 0.6951790822880144,
+      "temporal_std_m": 1.6910469101607935e-07,
+      "Fr": 0.6778706979035676,
+      "outflow_over_inflow": 1.0000279988242649
+     },
+     {
+      "S0": 0.001,
+      "n": 0.015,
+      "q_m2s": 0.2,
+      "h_normal_m": 0.243373200198881,
+      "h_sim_m": 0.24353747267010184,
+      "err_pct": 0.06749817608783225,
+      "temporal_std_m": 1.6572130551646082e-07,
+      "Fr": 0.5318465700053113,
+      "outflow_over_inflow": 1.0000106844424075
+     },
+     {
+      "S0": 0.004,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.10593433826215812,
+      "h_sim_m": 0.10888860010686868,
+      "err_pct": 2.7887669788426734,
+      "temporal_std_m": 5.666361799106282e-07,
+      "Fr": 0.9259986622104706,
+      "outflow_over_inflow": 1.000049673331999
+     },
+     {
+      "S0": 0.01,
+      "n": 0.015,
+      "q_m2s": 0.1,
+      "h_normal_m": 0.08047384559998257,
+      "h_sim_m": 0.08837088324234744,
+      "err_pct": 9.81317294269654,
+      "temporal_std_m": 1.2070722708464788e-06,
+      "Fr": 1.3985672787674164,
+      "outflow_over_inflow": 1.0000723408178298
+     }
+    ],
+    "production_scheme": "inertial"
+   },
+   "notes": "Local-inertial: exact (0.0x %) for subcritical flow; at Fr \u2265 ~0.9 (steep SF streets, thin sheet flow) spurious roll-wave oscillations and a mean depth 15-35 % low (BUGS.md B2). HLL: always steady, but first-order hydrostatic reconstruction over-predicts thin flow on steep slopes (a known issue when h << slope x dx, Delestre et al. 2012; BUGS.md B4) and is 1.7 % low on the rough mild case. Ponding that drives damage is subcritical.",
+   "runtime_s": 30.9
+  },
+  {
+   "id": "5",
+   "name": "EA 2D benchmark Test 1/Test 2-type (disconnected water body; filling depressions)",
+   "reference": "N\u00e9elz & Pender 2013 (EA SC120002) test behaviours; own DEMs, exact level-pool answers",
+   "result": "(a) pond peak 10.367 m vs 10.35, final 10.010 m vs 10.00; (b) end levels A -1.0 cm, B +1.2 cm, C +0.9 cm, D -0.1 cm; volume err 4.5e-04 %",
+   "tolerance": "(a) peak \u00b15 cm, final \u00b12 cm; (b) levels \u00b12 cm, volume \u00b10.1 %",
+   "pass": true,
+   "plot": "t05_ea_tests.png",
+   "metrics": {
+    "a_peak_m": 10.367224552286729,
+    "a_final_m": 10.01014209257838,
+    "b_levels_sim": {
+     "A": 0.9896438298451072,
+     "B": 0.8117775357827066,
+     "C": 0.6089397597507393,
+     "D": 0.38902858430299236
+    },
+    "b_levels_ref": {
+     "A": 1.0,
+     "B": 0.8,
+     "C": 0.6,
+     "D": 0.3903774739357499
+    },
+    "b_volume_err": 4.490330937637958e-06
+   },
+   "notes": "Same test logic as EA Tests 1 and 2 but on our own DEMs (the official DEMs/reference results were not loaded in time); the answers are exact by construction (level pool).",
+   "runtime_s": 26.6
+  },
+  {
+   "id": "6a",
+   "name": "Replay vs SFPUC 100-year storm flood zone",
+   "reference": "SFPUC 100-Year Storm Flood Risk Map (DataSF jzu3-4yxp), SFPUC's own 1D-2D model",
+   "result": "CSI 0.28 (random same-area 0.05, lowest-ground 0.14); POD 0.42, FAR 0.56; AUC 0.72",
+   "tolerance": "CSI > 2x random same-area map and AUC > 0.7",
+   "pass": true,
+   "plot": "t06_replay_map.png",
+   "metrics": {
+    "POD": 0.42262661011317215,
+    "FAR": 0.5585635246320002,
+    "CSI": 0.27536933265410085,
+    "pred_km2": 0.783696,
+    "obs_km2": 0.818576,
+    "hits": 21622,
+    "misses": 29539,
+    "false_alarms": 27359,
+    "CSI_random_same_area": 0.04839269036590654,
+    "CSI_lowest_ground_same_area": 0.14016691145495327,
+    "AUC_maxdepth": 0.7204171635449774,
+    "AUC_low_ground_baseline": 0.7959556237245675
+   },
+   "notes": "The SFPUC zone is SFPUC's own model of a 100-year design storm, not an observation. The replay forcing (SFOC1 gauge: 88 mm in 6 h, 67 mm in 3 h) is ~200-yr (6 h) / ~300-yr (3 h) by NOAA Atlas 14 at SF, so the 100-yr zone should mostly flood (POD is the key number) and some extra flooding outside it is expected. Cells are 4 m open land (buildings and bay excluded). Replay parameters: scheme inertial, i_design 10.3 mm/h, alpha 0.7"
+  },
+  {
+   "id": "6b",
+   "name": "Replay vs 311 flooding + sewage reports, 31.12.2022",
+   "reference": "150 SF 311 reports in the tile (DataSF vw6y-z8j6), random street-cell placement baseline",
+   "result": "83% within 30 m of sim flooding vs 60% random (p = 0.0001); depth AUC 0.64 (p = 3.3e-09)",
+   "tolerance": "permutation p < 0.01 at 30 m",
+   "pass": true,
+   "plot": "t06_311_distance.png",
+   "metrics": {
+    "n_reports": 150,
+    "n_flooding": 133,
+    "n_sewage": 17,
+    "curves": {
+     "radius_m": [
+      0,
+      15,
+      30,
+      50,
+      100,
+      150,
+      200
+     ],
+     "reports": [
+      0.24666666666666667,
+      0.64,
+      0.8333333333333334,
+      0.9466666666666667,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "random_mean": [
+      0.089996,
+      0.317726,
+      0.5968700000000001,
+      0.8347146666666667,
+      0.9863433333333335,
+      0.9974993333333332,
+      0.9980766666666666
+     ],
+     "random_p95": [
+      0.13333333333333333,
+      0.38,
+      0.66,
+      0.88,
+      1.0,
+      1.0,
+      1.0
+     ],
+     "p_value": [
+      9.999000099990002e-05,
+      9.999000099990002e-05,
+      9.999000099990002e-05,
+      9.999000099990002e-05,
+      0.1232876712328767,
+      0.6865313468653135,
+      0.7475252474752525
+     ],
+     "sfpuc_map_reports": [
+      0.26666666666666666,
+      0.44666666666666666,
+      0.5666666666666667,
+      0.58,
+      0.6533333333333333,
+      0.6866666666666666,
+      0.7533333333333333
+     ],
+     "sfpuc_map_random": [
+      0.09382066666666668,
+      0.10861200000000001,
+      0.125274,
+      0.14239200000000002,
+      0.18629400000000002,
+      0.23339333333333334,
+      0.27746333333333334
+     ]
+    },
+    "median_dist_report_m": 11.313708498984761,
+    "median_dist_random_m": 24.331050121192877,
+    "AUC_maxdepth30m": 0.6367515325546265,
+    "AUC_p_value": 3.29469673765459e-09,
+    "AUC_low_ground_baseline": 0.6588045954704285
+   },
+   "notes": "311 points are geocoded to street addresses (not the exact flooded spot) and reflect where people report, so a hit radius is needed. 10,000 random placements give the null distribution. Replay parameters: scheme inertial, i_design 10.3 mm/h, alpha 0.7"
+  },
+  {
+   "id": "7",
+   "name": "Poiseuille channel flow (wind LBM kernel)",
+   "reference": "Analytic Poiseuille parabola u = F/(2 nu) (2 H z - z^2), nu = (tau - 1/2)/3",
+   "result": "L2 0.10 % (tau 0.800), L2 0.04 % (tau 0.600), L2 0.56 % (tau 0.506)",
+   "tolerance": "L2 relative error < 2 %",
+   "pass": true,
+   "plot": "wind_poiseuille.png",
+   "metrics": {
+    "tau0.800": {
+     "l2_rel": 0.0009649922157934418,
+     "umax_rel_err": 0.0007577401848420136,
+     "steps": 9556,
+     "nz": 16
+    },
+    "tau0.600": {
+     "l2_rel": 0.0003804531554981587,
+     "umax_rel_err": 0.0003962541828366106,
+     "steps": 28668,
+     "nz": 16
+    },
+    "tau0.506": {
+     "l2_rel": 0.005555282222534866,
+     "umax_rel_err": 0.004204984892589167,
+     "steps": 119450,
+     "nz": 8
+    },
+    "wall_s_cum": 8.7
+   },
+   "notes": "Laminar check of the production lbm_step (regularized BGK, half-way bounce-back floor, specular lid) with Smagorinsky off (cs2=0) and a body force added outside the kernel; 16 cells across the half channel. Verifies collision viscosity and wall placement, not the turbulence model."
+  },
+  {
+   "id": "8",
+   "name": "Log-law inflow profile upstream of an obstacle",
+   "reference": "U(z)/U10 = ln((z+z0)/z0)/ln((10+z0)/z0), z0 = 0.7 m; horizontal homogeneity requirement of Blocken, Stathopoulos & Carmeliet 2007 (Atmos. Environ. 41:238)",
+   "result": "max deviation 10-200 m: 5.7 % at 3H upstream (4.9 % at inlet)",
+   "tolerance": "< 10 % over 10-200 m at 3H upstream",
+   "pass": true,
+   "plot": "wind_loglaw.png",
+   "metrics": {
+    "max_rel_dev_inlet": 0.04938447684592906,
+    "max_rel_dev_3H_upstream": 0.05686791661925705,
+    "wall_s_cum": 8.7
+   },
+   "notes": "Profiles are spanwise means from the cube run (5H = 320 m fetch from the domain inflow through the 96 m buffer). The first fluid cell (4 m) is below the 10 m band. The 3H station is also affected by the cube's upstream blockage near the ground."
+  },
+  {
+   "id": "9",
+   "name": "Flow around a surface-mounted cube (full wind solver)",
+   "reference": "Reattachment X_R = 1.61 H (Martinuzzi & Tropea 1993, J. Fluids Eng. 115:85, thin-BL channel); the recirculation shortens in a thick turbulent BL (Castro & Robins 1977, JFM 79:307). Front-face Cp_max ~0.7-0.9 on U_H (Castro & Robins 1977; Richards et al. 2001 Silsoe cube)",
+   "result": "X_R 2.96 H; front Cp_max 0.93; Cd 0.69; grid study X_R 2.50 (8/H), 2.10 (16/H)",
+   "tolerance": "X_R in 1.0-2.5 H; front Cp_max in 0.5-1.0",
+   "pass": false,
+   "plot": "wind_cube.png",
+   "metrics": {
+    "reattachment_H": 2.9618741765480894,
+    "cp_front_max": 0.9297940385490562,
+    "cp_back_mean": -0.1598588945390921,
+    "cd_pressure": 0.6944153334888259,
+    "U_H_over_U10": 1.6710728930961374,
+    "runtime_s": 556.473388671875,
+    "n_steps": 4365,
+    "cells_per_H": 8,
+    "cached": true,
+    "grid_convergence": [
+     {
+      "cells_per_H": 8,
+      "dx_m": 8.0,
+      "xr_H": 2.5004796242392167,
+      "cd": 0.829254867108745,
+      "cp_front_max": 1.0199320407816916,
+      "runtime_s": 125.0035400390625,
+      "stale_vs_current_wind_py": true,
+      "status": "ok"
+     },
+     {
+      "cells_per_H": 16,
+      "dx_m": 4.0,
+      "xr_H": 2.1002971662228984,
+      "cd": 0.8096989141497386,
+      "cp_front_max": 0.8819950420278939,
+      "runtime_s": 643.9185180664062,
+      "stale_vs_current_wind_py": true,
+      "status": "ok"
+     },
+     {
+      "cells_per_H": 24,
+      "dx_m": 2.6666666666666665,
+      "xr_H": null,
+      "cd": null,
+      "cp_front_max": null,
+      "status": "not run: 2.2 M cells x 7.5k steps needs ~1 h on the shared box, did not fit before code freeze"
+     }
+    ],
+    "wind_py_version": "4bfef96951",
+    "stale_vs_current_wind_py": true,
+    "wall_s_cum": 8.7
+   },
+   "notes": "Grid convergence (same 64 m cube, dx = 64/n m, smaller 8.5H x 6H x 2.5H domain, ~7 % blockage): 8 cells/H: X_R 2.50 H, Cd 0.83; 16 cells/H: X_R 2.10 H, Cd 0.81; 24 cells/H: not run: 2.2 M cells x 7.5k steps needs ~1 h on the shared box, did not fit before code freeze. X_R falls with every refinement (2.50 -> 2.10 H) towards the 1.61 H measurement, consistent with the base-case excess being a resolution error (only 2 levels, so no Richardson extrapolation claimed). The base run's longer X_R in the larger domain also shows some domain sensitivity. Same run_lbm as the city (8 m voxels, Smagorinsky LES, log-law inflow z0 0.7 m, wall-modelled floor, time-averaged field). 64 m cube = 8 cells per H, coarse by LES standards (Martinuzzi & Tropea is Re 4e4 in a channel with a thin BL; our inflow is a deep urban log-law BL), so agreement is expected only within the stated band. Cd from front minus back mean Cp (pressure drag, U_H reference). If X_R is long, the likely causes are the coarse 8 cells/H resolution with Smagorinsky dissipation (a too-laminar shear layer reattaches late, as in standard k-epsilon RANS, which gives ~2.5-3 H; cf. Rodi 1997, J. Wind Eng. 69-71:55) and the free-slip + wall-model floor. Impact on the product: street-level speeds in building wakes (sheltered zones) are less reliable than speeds in open canyons and at facades."
+  },
+  {
+   "id": "10",
+   "name": "Tree critical breaking wind speed (calibration consistency)",
+   "reference": "Virot, Ponomarenko, Dehandschoewercker, Quere & Clanet 2016, Phys. Rev. E 93:023001: trunks break at ~42 m/s nearly independent of species and size",
+   "result": "median 77.5 m/s (p10 35.5, p90 155.8); log-log slope vs height 0.16",
+   "tolerance": "median within 42 +/- 8 m/s (calibrated) and weak size dependence |d ln Uc / d ln H| < 0.5 (independent)",
+   "pass": false,
+   "plot": "trees_virot.png",
+   "metrics": {
+    "n": 16705,
+    "median_ms": 77.54570264405069,
+    "p10_50_90": [
+     35.5,
+     77.5,
+     155.8
+    ],
+    "uproot_dry_p10_50_90": [
+     23.7,
+     34.3,
+     54.6
+    ],
+    "corr_log_uc_log_h": 0.108,
+    "slope_log_uc_log_h": 0.16349938023778823,
+    "wall_s_cum": 8.7
+   },
+   "notes": "HONEST LIMIT: the median is not a prediction: tree_load_factor (2.9) and tree_cd0 in data/reference/wind_tree_params.json were calibrated to put it at 42 m/s. The independent part is the size dependence (Virot: near-universal Uc) and that each bundled factor sits in its published range; our p10-p90 spread (species wood strength, crown shape) is much wider than Virot's. Dry-soil uprooting thresholds are far lower (see validation/BUGS.md W1). Computed for sound wood (decay factor removed) on the real tile inventory, exactly as sim.trees.virot_check. Virot's 42 m/s is a 10-min-ish mean speed at the crown from storm records; our Uc is the crown speed from the drag/Vogel model. Decayed trees and uprooting on saturated soil fail at lower speeds in the sim by design."
+  },
+  {
+   "id": "11",
+   "name": "Hazus FAST depth-damage cross-check, building by building",
+   "reference": "FEMA Hazus FAST lookup tables (Hazus 4.0 riverine DDFs, restoration, econ params), computed by hand",
+   "result": "60 curves identical to FEMA rows; 33/36 building x depth cases exact to the cent; mismatches: RES3 relocation (BUGS.md B3)",
+   "tolerance": "exact (to the cent)",
+   "pass": false,
+   "plot": "t11_hazus_fast.png",
+   "metrics": {
+    "curves": [
+     {
+      "table": "structure",
+      "key": "RES1_1",
+      "ddf_id": 129,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES1_2",
+      "ddf_id": 107,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES1_3",
+      "ddf_id": 109,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES2",
+      "ddf_id": 189,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES3",
+      "ddf_id": 204,
+      "match": true,
+      "occupancy_ok": false
+     },
+     {
+      "table": "structure",
+      "key": "RES4",
+      "ddf_id": 209,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES5",
+      "ddf_id": 214,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "RES6",
+      "ddf_id": 215,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM1",
+      "ddf_id": 217,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM2",
+      "ddf_id": 341,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM3",
+      "ddf_id": 375,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM4",
+      "ddf_id": 431,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM5",
+      "ddf_id": 467,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM6",
+      "ddf_id": 474,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM7",
+      "ddf_id": 475,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM8",
+      "ddf_id": 493,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM9",
+      "ddf_id": 532,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "COM10",
+      "ddf_id": 543,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND1",
+      "ddf_id": 545,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND2",
+      "ddf_id": 559,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND3",
+      "ddf_id": 575,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND4",
+      "ddf_id": 586,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND5",
+      "ddf_id": 591,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "IND6",
+      "ddf_id": 592,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "AGR1",
+      "ddf_id": 616,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "REL1",
+      "ddf_id": 624,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "GOV1",
+      "ddf_id": 631,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "GOV2",
+      "ddf_id": 640,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "EDU1",
+      "ddf_id": 643,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "structure",
+      "key": "EDU2",
+      "ddf_id": 652,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES1_1",
+      "ddf_id": 45,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES1_2",
+      "ddf_id": 23,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES1_3",
+      "ddf_id": 25,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES2",
+      "ddf_id": 74,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES3",
+      "ddf_id": 81,
+      "match": true,
+      "occupancy_ok": false
+     },
+     {
+      "table": "contents",
+      "key": "RES4",
+      "ddf_id": 85,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES5",
+      "ddf_id": 88,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "RES6",
+      "ddf_id": 89,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM1",
+      "ddf_id": 90,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM2",
+      "ddf_id": 195,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM3",
+      "ddf_id": 240,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM4",
+      "ddf_id": 280,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM5",
+      "ddf_id": 304,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM6",
+      "ddf_id": 309,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM7",
+      "ddf_id": 312,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM8",
+      "ddf_id": 322,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM9",
+      "ddf_id": 352,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "COM10",
+      "ddf_id": 357,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND1",
+      "ddf_id": 358,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND2",
+      "ddf_id": 384,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND3",
+      "ddf_id": 408,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND4",
+      "ddf_id": 433,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND5",
+      "ddf_id": 442,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "IND6",
+      "ddf_id": 443,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "AGR1",
+      "ddf_id": 460,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "REL1",
+      "ddf_id": 467,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "GOV1",
+      "ddf_id": 472,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "GOV2",
+      "ddf_id": 477,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "EDU1",
+      "ddf_id": 480,
+      "match": true,
+      "occupancy_ok": true
+     },
+     {
+      "table": "contents",
+      "key": "EDU2",
+      "ddf_id": 485,
+      "match": true,
+      "occupancy_ok": true
+     }
+    ],
+    "cases": [
+     {
+      "bldg_id": 33,
+      "occupancy": "RES1",
+      "floors": 4,
+      "depth_m": 0.45,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 101832.62401574804,
+       "contents": 85985.11535433072,
+       "bi": 0.0,
+       "relocation": 7322.764590224999
+      },
+      "sim": {
+       "structure": 101832.62,
+       "contents": 85985.12,
+       "bi": 0.0,
+       "relocation": 7322.76
+      },
+      "max_rel_diff": 6.268431740472503e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 33,
+      "occupancy": "RES1",
+      "floors": 4,
+      "depth_m": 1.0,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 212001.69790026246,
+       "contents": 167430.57979002624,
+       "bi": 0.0,
+       "relocation": 7322.764590224999
+      },
+      "sim": {
+       "structure": 212001.7,
+       "contents": 167430.58,
+       "bi": 0.0,
+       "relocation": 7322.76
+      },
+      "max_rel_diff": 6.268431740472503e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 33,
+      "occupancy": "RES1",
+      "floors": 4,
+      "depth_m": 1.8,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 342207.1401574803,
+       "contents": 195308.16338582677,
+       "bi": 0.0,
+       "relocation": 9728.05222935
+      },
+      "sim": {
+       "structure": 342207.14,
+       "contents": 195308.16,
+       "bi": 0.0,
+       "relocation": 9728.05
+      },
+      "max_rel_diff": 2.2916714960016608e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 0,
+      "occupancy": "RES3",
+      "floors": 3,
+      "depth_m": 0.45,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 268763.495144357,
+       "contents": 155315.87118110235,
+       "bi": 0.0,
+       "relocation": 9061.079006140002
+      },
+      "sim": {
+       "structure": 268763.5,
+       "contents": 155315.87,
+       "bi": 0.0,
+       "relocation": 17005.22
+      },
+      "max_rel_diff": 0.8767323393248045,
+      "exact": false
+     },
+     {
+      "bldg_id": 0,
+      "occupancy": "RES3",
+      "floors": 3,
+      "depth_m": 1.0,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 449145.8053543307,
+       "contents": 291393.70202974626,
+       "bi": 0.0,
+       "relocation": 9061.079006140002
+      },
+      "sim": {
+       "structure": 449145.81,
+       "contents": 291393.7,
+       "bi": 0.0,
+       "relocation": 17005.22
+      },
+      "max_rel_diff": 0.8767323393248045,
+      "exact": false
+     },
+     {
+      "bldg_id": 0,
+      "occupancy": "RES3",
+      "floors": 3,
+      "depth_m": 1.8,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 535068.162887139,
+       "contents": 352909.89727034123,
+       "bi": 0.0,
+       "relocation": 13033.151856340002
+      },
+      "sim": {
+       "structure": 535068.16,
+       "contents": 352909.9,
+       "bi": 0.0,
+       "relocation": 20977.3
+      },
+      "max_rel_diff": 0.6095339202079159,
+      "exact": false
+     },
+     {
+      "bldg_id": 193,
+      "occupancy": "RES4",
+      "floors": 4,
+      "depth_m": 0.45,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 130662.91092519688,
+       "contents": 239548.68356299217,
+       "bi": 195481.20303684002,
+       "relocation": 342949.479012
+      },
+      "sim": {
+       "structure": 130662.91,
+       "contents": 239548.68,
+       "bi": 195481.2,
+       "relocation": 342949.48
+      },
+      "max_rel_diff": 1.553520214085655e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 193,
+      "occupancy": "RES4",
+      "floors": 4,
+      "depth_m": 1.0,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 468760.45199475065,
+       "contents": 919518.5104330707,
+       "bi": 195481.20303684002,
+       "relocation": 342949.479012
+      },
+      "sim": {
+       "structure": 468760.45,
+       "contents": 919518.51,
+       "bi": 195481.2,
+       "relocation": 342949.48
+      },
+      "max_rel_diff": 1.553520214085655e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 193,
+      "occupancy": "RES4",
+      "floors": 4,
+      "depth_m": 1.8,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 782583.7278346457,
+       "contents": 1487118.227559055,
+       "bi": 260641.60404912,
+       "relocation": 457265.972016
+      },
+      "sim": {
+       "structure": 782583.73,
+       "contents": 1487118.23,
+       "bi": 260641.6,
+       "relocation": 457265.97
+      },
+      "max_rel_diff": 1.553520214085655e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 70,
+      "occupancy": "COM1",
+      "floors": 3,
+      "depth_m": 0.45,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 234665.79244094488,
+       "contents": 656465.3906561681,
+       "bi": 41901.29658624,
+       "relocation": 91745.42137152
+      },
+      "sim": {
+       "structure": 234665.79,
+       "contents": 656465.39,
+       "bi": 41901.3,
+       "relocation": 91745.42
+      },
+      "max_rel_diff": 8.147146459766005e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 70,
+      "occupancy": "COM1",
+      "floors": 3,
+      "depth_m": 1.0,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 693642.6400699912,
+       "contents": 2193707.227156605,
+       "bi": 41901.29658624,
+       "relocation": 91745.42137152
+      },
+      "sim": {
+       "structure": 693642.64,
+       "contents": 2193707.23,
+       "bi": 41901.3,
+       "relocation": 91745.42
+      },
+      "max_rel_diff": 8.147146459766005e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 70,
+      "occupancy": "COM1",
+      "floors": 3,
+      "depth_m": 1.8,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 943154.3811023622,
+       "contents": 3670068.1988451434,
+       "bi": 52376.6207328,
+       "relocation": 112465.84276031998
+      },
+      "sim": {
+       "structure": 943154.38,
+       "contents": 3670068.2,
+       "bi": 52376.62,
+       "relocation": 112465.84
+      },
+      "max_rel_diff": 2.4543629579895523e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 68,
+      "occupancy": "COM4",
+      "floors": 4,
+      "depth_m": 0.45,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 681274.7738779527,
+       "contents": 1046317.9013385827,
+       "bi": 681512.9378714999,
+       "relocation": 139819.46047544997
+      },
+      "sim": {
+       "structure": 681274.77,
+       "contents": 1046317.9,
+       "bi": 681512.94,
+       "relocation": 139819.46
+      },
+      "max_rel_diff": 5.6922006268026015e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 68,
+      "occupancy": "COM4",
+      "floors": 4,
+      "depth_m": 1.0,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 1884039.7298425192,
+       "contents": 2963454.8747375323,
+       "bi": 681512.9378714999,
+       "relocation": 139819.46047544997
+      },
+      "sim": {
+       "structure": 1884039.73,
+       "contents": 2963454.87,
+       "bi": 681512.94,
+       "relocation": 139819.46
+      },
+      "max_rel_diff": 3.400456422269967e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 68,
+      "occupancy": "COM4",
+      "floors": 4,
+      "depth_m": 1.8,
+      "exposure_factor": 0.5,
+      "hand": {
+       "structure": 3650431.274606299,
+       "contents": 5142310.387519686,
+       "bi": 1022269.4068072498,
+       "relocation": 203978.62826669996
+      },
+      "sim": {
+       "structure": 3650431.27,
+       "contents": 5142310.39,
+       "bi": 1022269.41,
+       "relocation": 203978.63
+      },
+      "max_rel_diff": 8.497459062249011e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 353,
+      "occupancy": "COM8",
+      "floors": 2,
+      "depth_m": 0.45,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 960754.9140944883,
+       "contents": 5594443.686377953,
+       "bi": 4192769.0530151995,
+       "relocation": 475079.9466545999
+      },
+      "sim": {
+       "structure": 960754.91,
+       "contents": 5594443.69,
+       "bi": 4192769.05,
+       "relocation": 475079.95
+      },
+      "max_rel_diff": 7.04176237819229e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 353,
+      "occupancy": "COM8",
+      "floors": 2,
+      "depth_m": 1.0,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 2198346.1723884516,
+       "contents": 11222598.071496062,
+       "bi": 4192769.0530151995,
+       "relocation": 475079.9466545999
+      },
+      "sim": {
+       "structure": 2198346.17,
+       "contents": 11222598.07,
+       "bi": 4192769.05,
+       "relocation": 475079.95
+      },
+      "max_rel_diff": 7.04176237819229e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 353,
+      "occupancy": "COM8",
+      "floors": 2,
+      "depth_m": 1.8,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 3082996.63023622,
+       "contents": 14923113.410472441,
+       "bi": 5240961.316268999,
+       "relocation": 593849.93331825
+      },
+      "sim": {
+       "structure": 3082996.63,
+       "contents": 14923113.41,
+       "bi": 5240961.32,
+       "relocation": 593849.93
+      },
+      "max_rel_diff": 5.587691031501464e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 390,
+      "occupancy": "COM10",
+      "floors": 3,
+      "depth_m": 0.45,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 47128.405511811034,
+       "contents": 86402.07677165355,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "sim": {
+       "structure": 47128.41,
+       "contents": 86402.08,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "max_rel_diff": 9.523320216551108e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 390,
+      "occupancy": "COM10",
+      "floors": 3,
+      "depth_m": 1.0,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 169075.7730183727,
+       "contents": 285535.299527559,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "sim": {
+       "structure": 169075.77,
+       "contents": 285535.3,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "max_rel_diff": 1.7852189390514254e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 390,
+      "occupancy": "COM10",
+      "floors": 3,
+      "depth_m": 1.8,
+      "exposure_factor": 0.6666666666666666,
+      "hand": {
+       "structure": 252859.60503937004,
+       "contents": 396506.98503937013,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "sim": {
+       "structure": 252859.61,
+       "contents": 396506.99,
+       "bi": 0.0,
+       "relocation": 0.0
+      },
+      "max_rel_diff": 1.9618119480780856e-08,
+      "exact": true
+     },
+     {
+      "bldg_id": 196,
+      "occupancy": "IND2",
+      "floors": 1,
+      "depth_m": 0.45,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 87189.18826771654,
+       "contents": 117329.97047244095,
+       "bi": 1263.3133040640012,
+       "relocation": 6579.756792000001
+      },
+      "sim": {
+       "structure": 87189.19,
+       "contents": 117329.97,
+       "bi": 1263.31,
+       "relocation": 6579.76
+      },
+      "max_rel_diff": 2.6153955559434237e-06,
+      "exact": true
+     },
+     {
+      "bldg_id": 196,
+      "occupancy": "IND2",
+      "floors": 1,
+      "depth_m": 1.0,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 262958.1419685039,
+       "contents": 703562.6496062991,
+       "bi": 1263.3133040640012,
+       "relocation": 6579.756792000001
+      },
+      "sim": {
+       "structure": 262958.14,
+       "contents": 703562.65,
+       "bi": 1263.31,
+       "relocation": 6579.76
+      },
+      "max_rel_diff": 2.6153955559434237e-06,
+      "exact": true
+     },
+     {
+      "bldg_id": 196,
+      "occupancy": "IND2",
+      "floors": 1,
+      "depth_m": 1.8,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 453606.2713385826,
+       "contents": 1360819.0708661417,
+       "bi": 1263.3133040640012,
+       "relocation": 6579.756792000001
+      },
+      "sim": {
+       "structure": 453606.27,
+       "contents": 1360819.07,
+       "bi": 1263.31,
+       "relocation": 6579.76
+      },
+      "max_rel_diff": 2.6153955559434237e-06,
+      "exact": true
+     },
+     {
+      "bldg_id": 574,
+      "occupancy": "GOV1",
+      "floors": 6,
+      "depth_m": 0.45,
+      "exposure_factor": 0.3333333333333333,
+      "hand": {
+       "structure": 1360386.5567585304,
+       "contents": 8162319.340551181,
+       "bi": 743868.9102249999,
+       "relocation": 522691.8875847668
+      },
+      "sim": {
+       "structure": 1360386.56,
+       "contents": 8162319.34,
+       "bi": 743868.91,
+       "relocation": 522691.89
+      },
+      "max_rel_diff": 4.620758980282114e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 574,
+      "occupancy": "GOV1",
+      "floors": 6,
+      "depth_m": 1.0,
+      "exposure_factor": 0.3333333333333333,
+      "hand": {
+       "structure": 5242748.40487314,
+       "contents": 35078383.59795275,
+       "bi": 743868.9102249999,
+       "relocation": 522691.8875847668
+      },
+      "sim": {
+       "structure": 5242748.4,
+       "contents": 35078383.6,
+       "bi": 743868.91,
+       "relocation": 522691.89
+      },
+      "max_rel_diff": 4.620758980282114e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 574,
+      "occupancy": "GOV1",
+      "floors": 6,
+      "depth_m": 1.8,
+      "exposure_factor": 0.3333333333333333,
+      "hand": {
+       "structure": 7740055.3533333335,
+       "contents": 49452772.11128608,
+       "bi": 1115803.3653374997,
+       "relocation": 745852.5606522668
+      },
+      "sim": {
+       "structure": 7740055.35,
+       "contents": 49452772.11,
+       "bi": 1115803.37,
+       "relocation": 745852.56
+      },
+      "max_rel_diff": 4.178604050143898e-09,
+      "exact": true
+     },
+     {
+      "bldg_id": 73,
+      "occupancy": "REL1",
+      "floors": 1,
+      "depth_m": 0.45,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 93000.78740157482,
+       "contents": 579580.9070866142,
+       "bi": 98952.102144,
+       "relocation": 10985.636339999997
+      },
+      "sim": {
+       "structure": 93000.79,
+       "contents": 579580.91,
+       "bi": 98952.1,
+       "relocation": 10985.64
+      },
+      "max_rel_diff": 3.331623120275319e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 73,
+      "occupancy": "REL1",
+      "floors": 1,
+      "depth_m": 1.0,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 207875.36000000002,
+       "contents": 1433501.736902887,
+       "bi": 98952.102144,
+       "relocation": 10985.636339999997
+      },
+      "sim": {
+       "structure": 207875.36,
+       "contents": 1433501.74,
+       "bi": 98952.1,
+       "relocation": 10985.64
+      },
+      "max_rel_diff": 3.331623120275319e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 73,
+      "occupancy": "REL1",
+      "floors": 1,
+      "depth_m": 1.8,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 226773.12,
+       "contents": 1790823.1622047245,
+       "bi": 123690.12767999999,
+       "relocation": 12613.138019999997
+      },
+      "sim": {
+       "structure": 226773.12,
+       "contents": 1790823.16,
+       "bi": 123690.13,
+       "relocation": 12613.14
+      },
+      "max_rel_diff": 1.56979175173704e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 327,
+      "occupancy": "EDU1",
+      "floors": 1,
+      "depth_m": 0.45,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 28677.38681102363,
+       "contents": 154857.88877952757,
+       "bi": 47659.965864,
+       "relocation": 3438.6247301000003
+      },
+      "sim": {
+       "structure": 28677.39,
+       "contents": 154857.89,
+       "bi": 47659.97,
+       "relocation": 3438.62
+      },
+      "max_rel_diff": 1.3755790095413659e-06,
+      "exact": true
+     },
+     {
+      "bldg_id": 327,
+      "occupancy": "EDU1",
+      "floors": 1,
+      "depth_m": 1.0,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 88494.59204724408,
+       "contents": 494719.33535433066,
+       "bi": 47659.965864,
+       "relocation": 3438.6247301000003
+      },
+      "sim": {
+       "structure": 88494.59,
+       "contents": 494719.34,
+       "bi": 47659.97,
+       "relocation": 3438.62
+      },
+      "max_rel_diff": 1.3755790095413659e-06,
+      "exact": true
+     },
+     {
+      "bldg_id": 327,
+      "occupancy": "EDU1",
+      "floors": 1,
+      "depth_m": 1.8,
+      "exposure_factor": 1.0,
+      "hand": {
+       "structure": 115627.22362204724,
+       "contents": 788834.614488189,
+       "bi": 71489.94879599998,
+       "relocation": 4065.729544100001
+      },
+      "sim": {
+       "structure": 115627.22,
+       "contents": 788834.61,
+       "bi": 71489.95,
+       "relocation": 4065.73
+      },
+      "max_rel_diff": 1.1213239691713805e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 1156,
+      "occupancy": "COM1",
+      "floors": 11,
+      "depth_m": 0.45,
+      "exposure_factor": 0.18181818181818182,
+      "hand": {
+       "structure": 29290.85480314961,
+       "contents": 81939.64804581247,
+       "bi": 5230.395853658182,
+       "relocation": 11452.267844410908
+      },
+      "sim": {
+       "structure": 29290.85,
+       "contents": 81939.65,
+       "bi": 5230.4,
+       "relocation": 11452.27
+      },
+      "max_rel_diff": 7.927395809882516e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 1156,
+      "occupancy": "COM1",
+      "floors": 11,
+      "depth_m": 1.0,
+      "exposure_factor": 0.18181818181818182,
+      "hand": {
+       "structure": 86580.09181579575,
+       "contents": 273817.3263469339,
+       "bi": 5230.395853658182,
+       "relocation": 11452.267844410908
+      },
+      "sim": {
+       "structure": 86580.09,
+       "contents": 273817.33,
+       "bi": 5230.4,
+       "relocation": 11452.27
+      },
+      "max_rel_diff": 7.927395809882516e-07,
+      "exact": true
+     },
+     {
+      "bldg_id": 1156,
+      "occupancy": "COM1",
+      "floors": 11,
+      "depth_m": 1.8,
+      "exposure_factor": 0.18181818181818182,
+      "hand": {
+       "structure": 117724.00973514676,
+       "contents": 458095.88867573364,
+       "bi": 6537.9948170727275,
+       "relocation": 14038.727332483633
+      },
+      "sim": {
+       "structure": 117724.01,
+       "contents": 458095.89,
+       "bi": 6537.99,
+       "relocation": 14038.73
+      },
+      "max_rel_diff": 7.367813622561608e-07,
+      "exact": true
+     }
+    ],
+    "mismatches": [
+     [
+      "RES3",
+      "relocation"
+     ]
+    ],
+    "max_rel_diff": 0.8767323393248045
+   },
+   "notes": "Pure FAST for buildings of <= 2 floors. Taller buildings: the sim applies the documented NACCS lowest-2-storeys exposure factor (2/floors) on top of FAST; the hand check applies the same factor.",
+   "runtime_s": 1.6
+  },
+  {
+   "id": "12",
+   "name": "Replay damage plausibility vs reported 2022-23 winter-storm losses",
+   "reference": "SF Chronicle: >= $46M SF damage from the 2022-23 winter storms (city estimate, mostly public property)",
+   "result": "tile $250.5M flood damage (99 bldgs above first floor); area-scaled reference $5.4M -> ratio 46.2x",
+   "tolerance": "order of magnitude (0.1x-10x)",
+   "pass": false,
+   "plot": "t12_replay_damage.png",
+   "metrics": {
+    "ledger_by_cause": {
+     "flood_structure": 118091009.44,
+     "flood_contents": 110513486.23,
+     "business_interruption": 13719749.27,
+     "relocation": 4957570.99,
+     "vehicles_flood": 3222639.61,
+     "wind_glazing": 0.0,
+     "tree_strike_cars": 0.0,
+     "tree_strike_buildings": 0.0,
+     "tree_cleanup_replacement": 0.0,
+     "life_safety": 0.0
+    },
+    "total_usd": 250504455.55,
+    "buildings_flooded": 99,
+    "tile_land_km2": 14.31448,
+    "area_share": 0.11791169686985171,
+    "tile_exposed_value_usd": 306164361632.0,
+    "implied_citywide_usd": 2124508952.0380764,
+    "ratio": 46.18497721821905
+   },
+   "notes": "Weak test by nature: the $46M is the city's public-damage estimate for a multi-storm season, not insured private losses for one day; our tile holds SF's worst flood basin (17th & Folsom, Mission Creek) so area scaling understates its share. Order-of-magnitude only. Replay parameters: scheme inertial, i_design 10.3 mm/h, alpha 0.7",
+   "runtime_s": 0.9
+  },
+  {
+   "id": "13",
+   "name": "Determinism + every priced line sourced",
+   "reference": "CONTRACT v3: same storm + plan -> bit-identical ledger; every unit cost has a source",
+   "result": "water 1 vs 8 threads identical: True; damage x2 identical: True; cost x2 identical: True; 19 priced lines, 0 without URL; 47 unit costs, 0 unsourced",
+   "tolerance": "bit-identical hashes; 0 unsourced lines",
+   "pass": true,
+   "plot": null,
+   "metrics": {
+    "water_hashes_1_8_8_threads": [
+     "f6168fe60d51",
+     "f6168fe60d51",
+     "f6168fe60d51"
+    ],
+    "damage_hashes": [
+     "3d6dcad902bb",
+     "3d6dcad902bb"
+    ],
+    "cost_hashes": [
+     "40df6ba0fd8e",
+     "40df6ba0fd8e"
+    ],
+    "plan_error": null,
+    "plan_total_usd": 226809154.35,
+    "plan_lines": 19,
+    "plan_lines_without_source_url": [],
+    "unit_cost_items": 47,
+    "unit_cost_items_without_url_or_date": []
+   },
+   "notes": "Water determinism checked across thread counts (thread-order independence) on the synthetic grid (1 h storm); the full pipeline re-run is too slow for run_all.",
+   "runtime_s": 24.5
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "stormsim-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "synth": "node scripts/synth.mjs",
+    "shot": "node scripts/shot.mjs"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.170.0",
+    "puppeteer-core": "^23.11.1",
+    "typescript": "5.6",
+    "vite": "^5.4.21"
+  }
+}
