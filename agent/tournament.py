@@ -14,6 +14,7 @@ import argparse
 import concurrent.futures as cf
 import datetime as dt
 import hashlib
+import multiprocessing as mp
 import json
 import os
 import time
@@ -132,6 +133,14 @@ def _run_candidate(c: dict, storm: str, budget: float, base: dict) -> tuple[dict
     return c, rec
 
 
+def _run_candidate_process(args) -> tuple[dict, dict]:
+    """Process-isolated candidate worker (Numba state is not thread-safe)."""
+    c, storm, budget = args
+    runner.ensure_video = lambda run_dir, log=None: None
+    base_dir, base = runner.baseline(storm)
+    return _run_candidate(c, storm, budget, base)
+
+
 def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int = 3,
             candidate_limit: int | None = None) -> tuple[dict, str | None, list[dict]]:
     candidates = _candidate_pack()
@@ -145,10 +154,12 @@ def _greedy(storm: str, budget: float, base_dir: Path, base: dict, workers: int 
                     "Upgrade basin inlets", "Clear basin drains", "Deployable bay barrier"]
         by_name = {c["name"]: c for c in candidates}
         candidates = [by_name[n] for n in priority if n in by_name][:candidate_limit]
-    # One-at-a-time measurements are independent and safe to run in worker threads;
-    # the simulator itself controls its numerical determinism.
-    with cf.ThreadPoolExecutor(max_workers=max(1, min(workers, len(candidates)))) as pool:
-        measured = list(pool.map(lambda x: _run_candidate(x, storm, budget, base), candidates))
+    # Numba's simulator state is process-local; isolate measurements rather
+    # than sharing one interpreter across concurrent storm solves.
+    args = [(c, storm, budget) for c in candidates]
+    with cf.ProcessPoolExecutor(max_workers=max(1, min(workers, len(candidates))),
+                                mp_context=mp.get_context("spawn")) as pool:
+        measured = list(pool.map(_run_candidate_process, args))
     measured = [x[0] for x in measured]
     viable = [c for c in measured if c["result"].get("status") == "scored" and
               float(c["result"].get("plan_cost_usd") or 0) > 0 and
