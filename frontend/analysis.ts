@@ -30,7 +30,8 @@ let updateTimer:ReturnType<typeof setTimeout>|undefined;
 function showError(error:unknown):void {banner.textContent=error instanceof Error?error.message:String(error);banner.dataset.error='true';}
 function fillForm(values:Parameters):void {
   $<HTMLInputElement>('#gust_mps').min=String(values.wind_mps);
-  for(const [key,value] of Object.entries({...defaults,...values}))$<HTMLInputElement>(`#${key}`).value=String(value);
+  // Server parameters may include keys this form does not edit (e.g. coastal_case).
+  for(const [key,value] of Object.entries({...defaults,...values})){const input=document.querySelector<HTMLInputElement>(`#${key}`);if(input)input.value=String(value);}
   syncSliders();
 }
 function syncSliders():void {
