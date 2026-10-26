@@ -272,3 +272,20 @@ html.light .bs tr.best td { background: rgba(18,146,74,0.08) !important; }
 html.light .quad .qa { fill: #5d6b78; } html.light .quad .qq { fill: #8a96a2; } html.light .quad .qax { stroke: #c7cfd6; }
 html.light .quad circle { stroke: #fff; }
 html.light .esri-attribution { background: rgba(255,255,255,0.7) !important; color: #5d6b78 !important; }
+
+/* ---- Minimal look (?look=minimal): whiter, low-colour scene; one dark accent ---- */
+html.minimal { --accent: #222b33; --good: #2e7d4f; --bad: #b8433b; --warn: #8a6d2f; }
+html.minimal body { background: #f4f5f6; }
+html.minimal #scene canvas { filter: saturate(0.12) brightness(2.3) contrast(0.72); }
+html.minimal .kpi { border-left-color: #222b33 !important; }
+html.minimal .runbar button.on, html.minimal .runbar button.active, html.minimal .runbar button[aria-pressed="true"] { background: #222b33 !important; }
+html.minimal .quad circle { filter: saturate(0.5); }
+
+html.minimal .brand, html.minimal .mode, html.minimal .topc, html.minimal .clock { text-shadow: none !important; color: #1a2430 !important; }
+html.minimal .brand *, html.minimal .mode *, html.minimal .clock * { color: #1a2430 !important; text-shadow: none !important; }
+html.minimal .kpi b, html.minimal .kpi em, html.minimal .kpi strong, html.minimal .kpi .v, html.minimal .kpi a { color: #1a2430 !important; }
+html.minimal .tl-phases > *, html.minimal .tl-bar > * { background: #d6dbe0 !important; color: #1a2430 !important; }
+html.minimal .tl-fill { background: rgba(26,36,48,0.25) !important; }
+html.minimal .ctl, html.minimal .ctl * { color: #1a2430 !important; }
+html.minimal .kpi * { color: #1a2430 !important; } html.minimal .kpi small, html.minimal .kpi .k-s { color: #6b7782 !important; }
+html.minimal .tl, html.minimal .tl * { color: #1a2430 !important; }

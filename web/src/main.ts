@@ -17,6 +17,7 @@ import { cloudDeck, rainCurtains, spray, WindowLights, StormAudio, windDir, skyD
 
 const q = new URLSearchParams(location.search);
 if (q.get('dark') !== '1') document.documentElement.classList.add('light'); // light UI panels by default
+if (q.get('look') === 'minimal') document.documentElement.classList.add('light', 'minimal');
 const shotMode = q.has('shot');
 const STORM_START = new Date('2026-10-27T02:00:00-07:00'); // landfall used for the clock display
 
