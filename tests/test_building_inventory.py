@@ -192,3 +192,29 @@ class CollisionGridTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class BuildingWindTests(unittest.TestCase):
+    """The host 2-D field is zero inside building cells; roofs still meet the storm."""
+    def inputs(self, gust):
+        model = fixture(gust=gust)
+        w = model.world
+        # Street speed-up 0.5 everywhere, solid (zero) in the building's own 12 m cell.
+        w.walls[3, 4] = True
+        w.u, w.v = np.full(w.z.shape, .5 * w.p.wind_mps), np.zeros(w.z.shape)
+        w.u[3, 4] = 0.
+        model.a['buildings'] = [building(box(552343, 4183459, 552353, 4183469), height=12.)]
+        return Inputs(model.a, w)
+
+    def test_roof_reads_undisturbed_wind_and_inside_below_roof_reads_the_street(self):
+        wind = self.inputs(40).wind
+        at = lambda x, y, z: float(wind.speedup(np.array([x]), np.array([y]), np.array([z]))[0])
+        open_cell = (552300. + 12 * 2, 4183500. - 12 * 6)
+        self.assertAlmostEqual(at(552348., 4183464., 14.) / at(*open_cell, 14.), 2.)
+        self.assertAlmostEqual(at(552348., 4183464., 5.), at(*open_cell, 5.))
+
+    def test_building_in_a_solid_cell_is_damaged_by_a_strong_storm(self):
+        _, result = self.inputs(80).run(np.zeros((31, 8, 8)), np.arange(0, 3601, 120))
+        self.assertEqual(result['summary']['buildings_damaged'], 1)
+        calm = self.inputs(0).run(np.zeros((31, 8, 8)), np.arange(0, 3601, 120))[1]
+        self.assertEqual(calm['summary']['buildings_damaged'], 0)

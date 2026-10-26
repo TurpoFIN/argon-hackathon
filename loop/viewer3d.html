@@ -113,8 +113,10 @@ const square = (lon, lat, half) => {
 const blob = fc => URL.createObjectURL(new Blob([JSON.stringify(fc)], { type: 'application/geo+json' }));
 
 require(['esri/Map', 'esri/Basemap', 'esri/layers/TileLayer', 'esri/layers/SceneLayer', 'esri/layers/ElevationLayer',
-         'esri/layers/GeoJSONLayer', 'esri/layers/GroupLayer', 'esri/views/SceneView', 'esri/layers/GraphicsLayer', 'esri/Graphic'],
-async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupLayer, SceneView, GraphicsLayer, Graphic) => {
+         'esri/layers/GeoJSONLayer', 'esri/layers/GroupLayer', 'esri/views/SceneView', 'esri/layers/GraphicsLayer', 'esri/Graphic',
+         'esri/layers/MediaLayer', 'esri/layers/support/ImageElement', 'esri/layers/support/CornersGeoreference', 'esri/geometry/Point'],
+async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupLayer, SceneView, GraphicsLayer, Graphic,
+       MediaLayer, ImageElement, CornersGeoreference, Point) => {
   const plan = new GroupLayer({ title: 'Plan' });
   const meshLayer = new SceneLayer({ url: 'https://tiles.arcgis.com/tiles/z2tnIkrLQ2BRzr6P/arcgis/rest/services/SanFrancisco_Bldgs/SceneServer/layers/0',
                                     popupEnabled: false, copyright: 'San Francisco 3D buildings: Precision LightWorks (PLW) / Esri' });
@@ -155,16 +157,62 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   window.addEventListener('prep-user-navigation',()=>{storm.userMoved=true;});
   view.container.addEventListener('pointerdown',()=>{storm.userMoved=true;});
   view.container.addEventListener('wheel',()=>{storm.userMoved=true;},{passive:true});
-  const floodRenderer = field => ({ type: 'class-breaks', field, classBreakInfos: [
-    [0.03, 0.15, '#9cc5ff', .62], [0.15, 0.3, '#5c9dff', .72], [0.3, 0.6, '#2f7bff', .8], [0.6, 1.0, '#006cff', .86], [1.0, 99, '#0041a3', .9]
-  ].map(([min, max, color, a]) => ({ minValue: min, maxValue: max, label: `${min}–${max} m`,
-    symbol: { type: 'polygon-3d', symbolLayers: [{ type: 'fill', material: { color: [...hex(color), a] }, outline: { size: 0 } }] } })) });
+  // Flood playback paints one draped image per storm frame on the shared 12 m grid. Swapping an image is cheap;
+  // re-symbolizing thousands of 3D polygons every frame took seconds and stalled playback.
+  const floodBreaks = [[0.03, '#9cc5ff', .62], [0.15, '#5c9dff', .72], [0.3, '#2f7bff', .8], [0.6, '#006cff', .86], [1.0, '#0041a3', .9]]
+    .map(([min, color, a]) => [min, ...hex(color), Math.round(a * 255)]);
+  let gridReady = null;
+  function hostGrid() {
+    return gridReady ??= Promise.all([fetch('/api/results/baseline/manifest.json').then(r => r.json()),
+      fetch('/api/results/baseline/grid.bin').then(r => r.arrayBuffer())]).then(([manifest, buffer]) => {
+      const { nx, ny } = manifest.grid, n = nx * ny, g = new Float32Array(buffer), at = (band, c, r) => g[band * n + r * nx + c];
+      // Cell centres are affine in (column, row) to about a metre (float32 coordinates) over this 2.5 km UTM grid.
+      const o = [at(0, 0, 0), at(1, 0, 0)];
+      const dc = [(at(0, nx - 1, 0) - o[0]) / (nx - 1), (at(1, nx - 1, 0) - o[1]) / (nx - 1)];
+      const dr = [(at(0, 0, ny - 1) - o[0]) / (ny - 1), (at(1, 0, ny - 1) - o[1]) / (ny - 1)];
+      const det = dc[0] * dr[1] - dc[1] * dr[0];
+      const point = (c, r) => new Point({ longitude: o[0] + c * dc[0] + r * dr[0], latitude: o[1] + c * dc[1] + r * dr[1] });
+      const index = (lon, lat) => {
+        const x = lon - o[0], y = lat - o[1], c = Math.round((x * dr[1] - y * dr[0]) / det), r = Math.round((dc[0] * y - dc[1] * x) / det);
+        return c >= 0 && c < nx && r >= 0 && r < ny ? r * nx + c : -1;
+      };
+      return { nx, ny, n, index, georeference: new CornersGeoreference({ topLeft: point(-.5, -.5), topRight: point(nx - .5, -.5),
+        bottomRight: point(nx - .5, ny - .5), bottomLeft: point(-.5, ny - .5) }) };
+    });
+  }
+  // frames: one Float32Array of water depth per storm frame, indexed like the grid (row * nx + column).
+  function floodLayer(grid, frames) {
+    const scale = 4, peak = new Float32Array(grid.n);
+    for (const frame of frames) for (let i = 0; i < grid.n; i++) if (frame[i] > peak[i]) peak[i] = frame[i];
+    const small = Object.assign(document.createElement('canvas'), { width: grid.nx, height: grid.ny });
+    const context = small.getContext('2d'), pixels = context.createImageData(grid.nx, grid.ny), px = pixels.data;
+    // Two canvases in turn, so every frame hands the image element a new object to load.
+    const canvases = [0, 1].map(() => Object.assign(document.createElement('canvas'), { width: grid.nx * scale, height: grid.ny * scale }));
+    let turn = 0;
+    const paint = values => {
+      for (let i = 0; i < grid.n; i++) {
+        let j = floodBreaks.length - 1;
+        while (j >= 0 && !(values[i] >= floodBreaks[j][0])) j--;
+        const o = i * 4, c = floodBreaks[j];
+        if (c) { px[o] = c[1]; px[o + 1] = c[2]; px[o + 2] = c[3]; px[o + 3] = c[4]; } else px[o + 3] = 0;
+      }
+      context.putImageData(pixels, 0, 0);
+      const canvas = canvases[turn ^= 1], target = canvas.getContext('2d');
+      target.imageSmoothingEnabled = false;
+      target.clearRect(0, 0, canvas.width, canvas.height);
+      target.drawImage(small, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    };
+    const element = new ImageElement({ image: paint(peak), georeference: grid.georeference });
+    return { layer: new MediaLayer({ source: [element], title: 'Flood depth' }), grid, peak,
+      draw(k) { element.image = paint(k === null ? peak : frames[k] ?? peak); } };
+  }
   const clock = document.getElementById('clock'), scrub = document.getElementById('scrub'), toggle = document.getElementById('toggle');
   function setFrame(k, forwardPlayback = false) {
     if (!storm.layer || !storm.frames) return;
     storm.frame = k;
     destruction?.setTime(k === null ? 3600 : k * 120, forwardPlayback);
-    storm.layer.renderer = floodRenderer(k === null ? 'depth' : 'd' + k);
+    storm.layer.draw(k);
     scrub.value = k === null ? scrub.max : k;
     clock.textContent = k === null ? 'Peak water' : `Storm minute ${storm.minutes[k] ?? k * 2} of 60`;
     window.dispatchEvent(new CustomEvent('prep-frame-change',{detail:{index:k,minute:k===null?60:storm.minutes[k]}}));
@@ -178,6 +226,13 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   });
   scrub.addEventListener('input', () => { stop(); setFrame(Number(scrub.value) >= storm.frames - 1 && Number(scrub.value) == scrub.max ? null : Number(scrub.value)); });
   function hex(c) { return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+  // The flood image has no features to click: give the clicked cell's peak water, as the old flood polygons did.
+  view.on('click', async event => {
+    const flood = storm.layer;
+    if (!flood || !event.mapPoint || (await view.hitTest(event)).results.some(r => r.graphic)) return;
+    const i = flood.grid.index(event.mapPoint.longitude, event.mapPoint.latitude), peak = i < 0 ? 0 : flood.peak[i];
+    if (peak >= 0.03) view.openPopup({ title: `Peak water ${Math.round(peak * 100) / 100} m`, location: event.mapPoint });
+  });
 
   const publishedOptions=new globalThis.Map();
   let currentLog, studyFamily;
@@ -200,13 +255,11 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     const layer = await destructionReady;
     if (layer) await layer.set(damage, trees).catch(error => console.error('Destruction data unavailable', error));
     if (version !== showVersion) return;
-    const half = layers.cell_m / 2;
+    const half = layers.cell_m / 2, grid = await hostGrid();
+    if (version !== showVersion) return;
     const frames = layers.flood_frames || layers.flood.map(([lon, lat, d]) => [lon, lat, [d]]);
-    const flood = { type: 'FeatureCollection', features: frames.map(([lon, lat, series]) => {
-      const properties = { depth: Math.max(...series) };
-      series.forEach((v, k) => { properties['d' + k] = v; });
-      return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [square(lon, lat, half)] }, properties };
-    }) };
+    const depth = Array.from({ length: frames.length ? frames[0][2].length : 1 }, () => new Float32Array(grid.n));
+    for (const [lon, lat, series] of frames) { const i = grid.index(lon, lat); if (i >= 0) series.forEach((v, k) => { depth[k][i] = v; }); }
     storm.frames = layers.frame_minutes?.length || (frames.length ? frames[0][2].length : damage?.t.length || 0);
     storm.minutes = layers.frame_minutes || [];
     const walls = { type: 'FeatureCollection', features: layers.walls.map(w => ({ type: 'Feature',
@@ -222,8 +275,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     const keep = storm.frame;
     plan.layers.removeAll();
     plan.addMany([
-      storm.layer = new GeoJSONLayer({ url: blob(flood), title: 'Flood depth', geometryType: 'polygon', renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' },
-        outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }),
+      (storm.layer = floodLayer(grid, depth)).layer,
       new GeoJSONLayer({ url: blob(walls), title: 'Sandbag walls', geometryType: 'polyline', elevationInfo: { mode: 'on-the-ground' },
         renderer: { type: 'unique-value', field: 'height', defaultSymbol: wallSymbol(0.3048),
           uniqueValueInfos: [0.3048, 0.6096, 0.9144].map(h => ({ value: h, symbol: wallSymbol(h) })) } }),
@@ -309,8 +361,8 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     const root = `/api/results/${state.scenario_id}/`, get = name => fetch(root + name, { cache: 'no-store' });
     const binary = name => get(name).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${name}: ${r.status}`))).then(b => new Float32Array(b));
     const optional = name => get(name).then(r => r.ok ? r.json() : undefined).catch(() => undefined);
-    const [manifest, grid, depth, damage, trees] = await Promise.all([get('manifest.json').then(r => r.json()), binary('grid.bin'), binary('flood.bin'),
-      optional('destruction.json'), optional('destruction_street_trees.json')]);
+    const [manifest, bands, depth, damage, trees, grid] = await Promise.all([get('manifest.json').then(r => r.json()), binary('grid.bin'), binary('flood.bin'),
+      optional('destruction.json'), optional('destruction_street_trees.json'), hostGrid()]);
     if (version !== showVersion) return;
     const layer = await destructionReady;
     if (layer) await layer.set(damage, trees).catch(error => console.error('Destruction data unavailable', error));
@@ -318,22 +370,18 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     live.id = state.scenario_id;
     planPanel(true);
     // grid.bin bands: lon, lat, ground, building height, wind east, wind north, ocean. flood.bin: one depth grid per frame.
-    const n = manifest.grid.nx * manifest.grid.ny, count = depth.length / n, half = manifest.grid.cell_m / 2, features = [];
-    for (let i = 0; i < n; i++) {
-      if (grid[6 * n + i] > 0.5) continue;
-      const properties = {};
-      let peak = 0;
-      for (let k = 0; k < count; k++) { const d = Math.round(depth[k * n + i] * 100) / 100; properties['d' + k] = d; peak = Math.max(peak, d); }
-      if (peak < 0.03) continue;
-      properties.depth = peak;
-      features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [square(grid[i], grid[n + i], half)] }, properties });
-    }
+    const n = grid.n, count = depth.length / n;
+    if (manifest.grid.nx * manifest.grid.ny !== n) throw new Error('Scenario grid differs from the shared 12 m grid');
+    const frames = Array.from({ length: count }, (_, k) => {
+      const frame = depth.slice(k * n, (k + 1) * n);
+      for (let i = 0; i < n; i++) if (bands[6 * n + i] > 0.5) frame[i] = 0;
+      return frame;
+    });
     storm.frames = count;
     storm.minutes = manifest.frame_metrics.map(m => Math.round(m.time_seconds / 60));
     const keep = storm.frame;
     plan.layers.removeAll();
-    plan.add(storm.layer = new GeoJSONLayer({ url: blob({ type: 'FeatureCollection', features }), title: 'Flood depth', geometryType: 'polygon',
-      renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' }, outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }));
+    plan.add((storm.layer = floodLayer(grid, frames)).layer);
     scrub.max = Math.max(0, storm.frames - 1);
     setFrame(keep === null || keep === undefined ? null : Math.min(keep, storm.frames - 1));
     const p = manifest.parameters, last = manifest.frame_metrics[manifest.frame_metrics.length - 1];

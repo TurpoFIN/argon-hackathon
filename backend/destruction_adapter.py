@@ -6,6 +6,7 @@ the host's southward 12 m water rows without running another water solver.
 from types import SimpleNamespace
 
 import numpy as np
+from scipy.ndimage import distance_transform_edt
 from scipy.spatial import cKDTree
 from rasterio.features import rasterize
 from rasterio.transform import from_origin
@@ -86,6 +87,15 @@ class Wind:
             from .simulation import potential_wind
             u, v = potential_wind(world.walls, world.p.wind_mps, world.p.wind_from_deg, grid.host_dx)
         self.amplification = np.hypot(u, v) / world.p.wind_mps if world.p.wind_mps > 0 else np.ones_like(world.z)
+        # The 2-D field is solid (about zero) inside building cells. Below the roofs, a point there reads the nearest
+        # open cell (the street beside it); at or above the local roof the air is unobstructed (speed-up 1).
+        walls = np.asarray(world.walls, bool)
+        nearest = distance_transform_edt(walls, return_distances=False, return_indices=True)
+        self.street = self.amplification[tuple(nearest)]
+        self.walls = walls
+        self.roof_host = np.zeros(walls.size, np.float32)
+        np.maximum.at(self.roof_host, grid.water_index.ravel(), grid.bldg_h.ravel())
+        self.roof_host = self.roof_host.reshape(walls.shape)
 
     def speedup(self, x, y, z):
         ix, iy = self.grid.host_cell(x, y)
@@ -93,7 +103,11 @@ class Wind:
         def kz(height, exposure):
             return 2.01 * (np.maximum(height, p['z_min_m']) / exposure['zg_m']) ** (2 / exposure['alpha'])
         profile = np.sqrt(kz(z, p['exposure_B']) / kz(10., p['exposure_C']))
-        return self.amplification[iy, ix] * profile
+        cx, cy = self.grid.cell(x, y)
+        roof = np.where(self.grid.bldg_h[cy, cx] > 0, self.grid.bldg_h[cy, cx], self.roof_host[iy, ix])
+        above = (roof > 0) & (np.asarray(z, float) >= roof)
+        inside = self.walls[iy, ix]
+        return np.where(above, 1., np.where(inside, self.street[iy, ix], self.amplification[iy, ix])) * profile
 
 
 class Inputs:
@@ -155,7 +169,8 @@ class Inputs:
         result = engine.run_destruction(storm, plan=self.plan(actions), wind=self.wind,
             water=self.grid.water(storm), assets=self.assets, buildings=self.buildings,
             trees=self.trees, cars=[], grid=self.grid)
-        result['wind_source'] = 'Host potential_wind u,v / mean wind × ASCE 7 exposure-B height profile'
+        result['wind_source'] = ('Host potential_wind u,v / mean wind × ASCE 7 exposure-B height profile; '
+                                 'undisturbed (speed-up 1) at or above the local roof, nearest street cell inside building cells')
         result['notes'].extend([
             'Building replacement values: floor area × StormSim Hazus/RLB occupancy cost tables; assessed improvements are recorded separately.',
             'No parked-car inventory: falling-object car strikes skipped.',
