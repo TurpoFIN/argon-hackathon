@@ -1,0 +1,53 @@
+{
+ "baseline_damage": 258483456,
+ "argon": {
+  "name": "Gemini 4 Argon",
+  "tries": [
+   {
+    "damage": 18530215,
+    "cost": 853439305
+   },
+   {
+    "damage": 18160889,
+    "cost": 42672201
+   }
+  ],
+  "actions": 155,
+  "categories": 5,
+  "code_lines": 506,
+  "cats": {
+   "drainage": 16,
+   "flood_defence": 84,
+   "logistics": 5,
+   "operations": 20,
+   "emergency": 30
+  }
+ },
+ "flash": {
+  "name": "Gemini 3.8 Flash",
+  "tries": [
+   {
+    "damage": 123934491,
+    "cost": 37562862
+   },
+   {
+    "damage": 115213310,
+    "cost": 30138601
+   },
+   {
+    "damage": 115158974,
+    "cost": 30138601
+   }
+  ],
+  "actions": 101,
+  "categories": 5,
+  "code_lines": 218,
+  "cats": {
+   "drainage": 13,
+   "flood_defence": 45,
+   "operations": 7,
+   "emergency": 28,
+   "logistics": 8
+  }
+ }
+}

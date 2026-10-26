@@ -66,6 +66,19 @@ export function renderLearning(el: HTMLElement, d: { jobs: JobLine[]; board: any
 }
 
 /** Stage 3 benchmark sheet: real runs only; pending jobs show "running…". */
+let CMP: any = null; fetch('/data/compare.json').then((r) => (r.ok ? r.json() : null)).then((j) => { CMP = j; }).catch(() => {});
+function compareHtml(usdF: (v: number) => string): string {
+  const c = CMP; if (!c?.argon || !c?.flash) return '';
+  const base = +c.baseline_damage;
+  const col = (m: any) => { const tr = (m.tries || []) as any[]; const best = tr.filter((t) => t.cost <= 50e6).sort((a, b) => a.damage - b.damage)[0] || tr[tr.length - 1];
+    const per = best && best.cost > 0 ? (base - best.damage) / best.cost : NaN;
+    const path = tr.map((t, i) => `<li><b>Try ${i + 1}</b> ${usdF(t.damage)} damage · ${usdF(t.cost)}${t.cost > 50e6 ? ' <em class="no">over budget</em>' : ''}</li>`).join('');
+    return `<div class="cmp-col"><div class="cmp-n">${m.name}</div><div class="cmp-big">$${isFinite(per) ? per.toFixed(2) : '–'}<small> avoided per $1</small></div>
+      <ul class="cmp-tries">${path}</ul><div class="cmp-s">${m.actions} actions · ${m.code_lines} lines of plan code</div></div>`; };
+  const fl = c.flash.tries || []; const stuck = fl.length > 1 && Math.abs(fl[fl.length - 1].damage - fl[fl.length - 2].damage) < 1e6;
+  return `<div class="cmp"><div class="cmp-h">WHY ARGON</div><div class="cmp-row">${col(c.argon)}${col(c.flash)}</div>
+    <div class="cmp-why">Same storm, same data, same tools. Argon read the result, saw its plan was 17× over budget, and rebuilt it: same protection for 1/20th of the cost.${stuck ? ' Flash got stuck: its last try repeated the same plan.' : ''}</div></div>`;
+}
 export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] }, base: { damage: number; lives: number | null; runId: string } | null, brief: any) {
   type Row = { name: string; sub?: string; damage: number; lives: number | null; cost: number; budget: number; pending?: boolean; note?: string; runId?: string };
   const rows: Row[] = [];
@@ -119,6 +132,7 @@ export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] 
       ${ticks}${yt}<text x="${(L + W - R) / 2}" y="${H - 6}" class="qa" text-anchor="middle">plan cost (log scale)</text>
       <text x="16" y="${(T + H - B) / 2}" class="qa" transform="rotate(-90 16 ${(T + H - B) / 2})" text-anchor="middle">damage after the storm</text>${dots}</svg>`;
   })();
-  el.innerHTML = `<div class="bs-h">BENCHMARK <span>same storm · same data · real simulation runs only</span></div>
+  const cmpHtml = compareHtml(usd);
+  el.innerHTML = `<div class="bs-h">BENCHMARK <span>same storm · same data · real simulation runs only</span></div>${cmpHtml}
     ${quad}${rows.length > (base ? 1 : 0) ? `<table class="bs"><tr><th></th><th>Damage</th><th>Lives at risk</th><th>Plan cost</th><th>Within budget</th><th>Damage avoided per $1</th></tr>${body}</table>` : '<div class="lr-wait">Waiting for runs — no real model run has finished yet.</div>'}`;
 }
