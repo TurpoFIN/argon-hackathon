@@ -163,7 +163,7 @@ def run(scenario,limit=12,reuse=None):
         safe_write(folder/f'{label}_destruction_street_trees.json',tree_data)
     default=chosen['specialists']
     binding=dict(version='six-hazard-resources-1',run=run_id,model=argon.MODEL,storm_id=storm_id,water_sha256=water_id,input_digest=workplan.digest(prompt),
-        candidates=candidates,sources=sources,power_sources=assets['sources'],resources=profiles['specialists'],resource_profiles=profiles,
+        candidates=candidates,sources=sources,power_sources=assets['sources'],power_lines=assets['power_lines'],resources=profiles['specialists'],resource_profiles=profiles,
         entries=entries,selected_label=default,profile_labels=chosen,parent_labels=parent,profile_comparisons=comparisons,profile_ablations=ablations,
         decision=decision.model_dump(),proposal=proposal.model_dump(),proposal_receipt=proposal_receipt,decision_receipt=decision_receipt,
         tested=tested,single_actions=singles,feasibility=feasibility,assumptions=hw.ASSUMPTIONS,minutes=[t/60 for t in times],weather=parameters,baseline=base_summary)

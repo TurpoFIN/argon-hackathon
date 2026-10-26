@@ -1,10 +1,14 @@
 """Paired real-engine boundaries for the operational resource profiles."""
 import copy
+import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
-from backend import hazard_workplans as hw, workplan
+from backend import hazard_workplans as hw, workplan, viewer_actions
 from test_multihazard import fixture
 from test_destruction_replay import strike_model
 
@@ -21,6 +25,25 @@ def replay_inputs(model,depth=0):
 
 
 class ResourceHazards(unittest.TestCase):
+    def test_frozen_plan_loads_while_current_asset_cache_is_absent(self):
+        f=fixture();m=hw.ResourceModel(f.a,f.world);resources=hw.resource_profile(m,'specialists')
+        a=candidate('backup_power','B1',m.buildings[0]['position']);a['source_ids']=[]
+        label='work_specialists_1';line=dict(geometry={'type':'LineString','coordinates':[[0,0],[1,1]]},source='public-map')
+        binding=dict(version='six-hazard-resources-1',run='frozen',model='gemini-4-argon',storm_id='saved-weather',weather={},minutes=[0,60],
+            candidates=[a],power_lines=[line],sources=[],power_sources=[],input_digest='saved-inputs',
+            profile_labels={'specialists':label},parent_labels={label:label},selected_label=label,
+            entries={label:dict(profile='specialists',name='Selected work',reason='Tested',action_ids=[a['id']],receipt={'completed':[{'id':a['id']}]} )},
+            resource_profiles={'specialists':resources},profile_comparisons={label:{}},profile_ablations={label:{a['id']:'without'}})
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);run=root/'frozen'/'argon';run.mkdir(parents=True)
+            for name in ['argon.json',label+'_layers.json','control_layers.json']:(run/name).write_text('{}')
+            (run/'workplan.json').write_text(json.dumps(binding))
+            with patch.object(viewer_actions.risk_assets,'FOLDER',root/'absent'),patch.object(hw.risk_assets,'load',side_effect=AssertionError('mutable assets read')):
+                pack=viewer_actions.load_pack(root,'frozen','argon',label)
+            self.assertEqual(pack['storm_id'],'saved-weather')
+            self.assertEqual(pack['actions'][0]['power_lines'],[line])
+            self.assertTrue(pack['actions'][0]['selected'])
+
     def test_specialists_are_explicit_and_cannot_fit_rapid_profile(self):
         m=fixture();r=hw.ResourceModel(m.a,m.world)
         p=hw.resource_profile(r,'rapid');a=candidate('brace_structure','B1',r.buildings[0]['position'])

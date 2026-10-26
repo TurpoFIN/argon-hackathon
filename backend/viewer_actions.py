@@ -102,11 +102,15 @@ def states(op,weather,depths,minutes,*,recorded=False,control=None,cell_m=12):
 def load_pack(root,run,model,label,reference=None):
     folder=Path(root)/run/model
     assets_path=risk_assets.FOLDER/'assets.json'
-    files=[folder/f'{model}.json',folder/f'{label}_layers.json',folder/'control_layers.json',assets_path]
+    files=[folder/f'{model}.json',folder/f'{label}_layers.json',folder/'control_layers.json']
     review=ROOT/'evidence/viewer-action-review.json'
     if review.is_file():files.append(review)
     binding=folder/'workplan.json'
-    if binding.is_file():files.append(binding)
+    frozen=False
+    if binding.is_file():
+        files.append(binding)
+        frozen=json.loads(binding.read_text()).get('version')=='six-hazard-resources-1'
+    if not frozen:files.append(assets_path)
     return _pack(str(root),run,model,label,tuple(p.stat().st_mtime_ns for p in files),reference)
 
 

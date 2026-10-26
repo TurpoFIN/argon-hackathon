@@ -265,7 +265,7 @@ def public(binding,label,reference=None):
     main=binding['entries'][family];entry=binding['entries'][label];profile=main['profile']
     selected={j['id']:j for j in main['receipt']['completed']};applied=set(entry['action_ids'])
     rows=copy.deepcopy(binding['candidates'])
-    power_assets=None
+    power_assets=binding.get('power_lines',[])
     for a in rows:
         a['label']=OPERATIONS[a['kind']][2]
         primary={'wind':'sf-glass','trees':'uf-trees','structure':'fema-andrew','flood':'sandy','power':'sandy','routes':'sf-works'}[a['hazard']]
@@ -277,7 +277,6 @@ def public(binding,label,reference=None):
             # Public feeder geometry is context, never a claimed service link.
             a['source_ids']=list(dict.fromkeys([*a['source_ids'],'pge','cec']))
             from shapely.geometry import Point, shape
-            if power_assets is None:power_assets=risk_assets.load()['power_lines']
             point=Point(*a['site']['position'])
             nearest=min(power_assets,key=lambda line:shape(line['geometry']).distance(point),default=None)
             a['power_lines']=[nearest] if nearest else []
