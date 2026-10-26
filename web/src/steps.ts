@@ -86,6 +86,12 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
       <div class="st-t st-t-sm">Protect San Francisco from the El Niño storm with ${b?.budget_usd ? usd(+b.budget_usd) : '$50M'}</div>
       <div class="st-m">Plan cost <b>${usd(planCost)}</b> · ${items.length} major decisions + smaller operations</div>
       ${built ? `<div class="st-k">WHAT IT BUILT</div><ul class="st-built">${built}</ul>` : ''}
+      <div class="st-k">MAP KEY</div><div class="st-key">
+        <span><i style="background:#e8c27a"></i>tan lines · sandbag lines</span><span><i style="background:#ff8a1f"></i>orange arrows · evacuation routes</span>
+        <span><i style="background:#ffd23f"></i>yellow · flood gates & barriers</span><span><i style="background:#a9b4be"></i>grey · floodwalls</span>
+        <span><i style="background:#3a8bff"></i>blue · pumps & storage</span><span><i style="background:#5dff9d"></i>green · shelters & permeable streets</span>
+        <span><i style="background:#ff3d3d"></i>red · closed roads</span><span><i style="background:#ffb347"></i>orange areas · evacuation zones</span></div>
+
       ${stratShort ? `<div class="st-k">ITS STRATEGY</div><blockquote class="st-q">“${esc(stratShort)}”</blockquote>` : (b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`)}
       ${inputs ? `<div class="st-k">WHAT IT GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><div class="st-got">${esc(inputs)}</div>` : ''}
       <div class="st-hint">Press → to step through each decision.</div>`;

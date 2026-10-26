@@ -324,3 +324,5 @@ html.light .panel-pill { background: rgba(255,255,255,0.95); color: #16202a; bor
 .steps .st-t { font-size: 22px !important; line-height: 1.25 !important; }
 .steps, .steps p, .steps li, .steps .st-m { font-size: 14px; }
 .steps .st-nav button { padding: 5px 12px !important; font-size: 14px !important; }
+.steps .st-key { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 12px; margin: 4px 0 10px; }
+.steps .st-key i { display: inline-block; width: 12px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
