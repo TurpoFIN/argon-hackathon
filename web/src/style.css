@@ -310,3 +310,7 @@ html.light .runbar button { color: #16202a !important; } html.light .runbar butt
 html.light .quad .qa { fill: #3d4955 !important; } html.light .quad .qq { fill: #5a6672 !important; }
 html.light .quad .ql { paint-order: stroke; stroke: #fff; stroke-width: 3px; }
 html.light .hint, html.light .ctl .hint { color: #16202a !important; }
+body.panels-off :is(.steps, .brief, .learn, .insp, .icard) { display: none !important; }
+.panel-pill { position: fixed; left: 24px; top: 96px; z-index: 30; font: 600 13px Inter, system-ui, sans-serif; padding: 6px 12px; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.3); background: rgba(4,8,13,0.75); color: #fff; cursor: pointer; }
+html.light .panel-pill { background: rgba(255,255,255,0.95); color: #16202a; border-color: rgba(20,40,60,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }

@@ -387,6 +387,12 @@ async function main() {
   hud.onRun = (r) => { stopAuto(); setView(r as any); };
   hud.onSeek = (u) => { t = tOf(u); hud.resetToasts(); };
   hud.onPlay = () => { playing = !playing; if (playing && t >= tEnd) t = tStart; };
+  // Hide/show the side panels (step cards, briefing, benchmark) so the storm can be watched cleanly. Key H or the pill.
+  const panelPill = document.createElement('button'); panelPill.className = 'panel-pill'; document.body.appendChild(panelPill);
+  const setPanels = (off: boolean) => { document.body.classList.toggle('panels-off', off); panelPill.textContent = off ? 'Show panel (H)' : 'Hide panel (H)'; };
+  panelPill.onclick = () => setPanels(!document.body.classList.contains('panels-off')); setPanels(false);
+  addEventListener('keydown', (e) => { if ((e.key === 'h' || e.key === 'H') && !(e.target as HTMLElement)?.closest?.('input,textarea')) { setPanels(!document.body.classList.contains('panels-off')); e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  { const op = hud.onPlay; hud.onPlay = () => { op(); if (playing) setPanels(true); }; } // pressing Play hides the panel; H brings it back
   hud.onSpeed = (s) => { speed = s; };
   hud.onCtl = (c) => { if (c === 'walk') setWalk(!walker.active); else if (c === 'orbit') setWalk(false); };
 
