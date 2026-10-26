@@ -149,7 +149,9 @@ def run(scenario,limit=12,reuse=None):
         result=raw[label];item.update(ledger={'total_usd':round(loss['total_usd'],2)},sandbags={'total':0,'walls':[]},
             plan=dict(name=item['name'],action_ids=item['action_ids'],drain_ids=[],stage_ids=[]),family_label=parent.get(label),hazard_study=True)
         protected={a['target'] for a in candidates if a['id'] in item['action_ids'] and a['kind']=='protect_entrance'}
-        layer_buildings=[dict(fd_id=b['id'],lon=b['position'][0],lat=b['position'][1],status='dry' if b['id'] not in result['frames'][-1]['flooded_ids'] else 'flooded',usd=0,usd_p90=0,depth_m=float(water['peak'][tuple(b['cell'])]),occtype='Mapped building') for b in model.buildings]
+        # Native destruction footprints and selected job markers own this scene.
+        # An unflooded building is not a building protected by a sandbag action.
+        layer_buildings=[]
         payload=dict(label=label,plan=item['plan'],cell_m=world.cell,frame_minutes=[t/60 for t in times],flood=flood,flood_frames=flood_frames,
                      walls=[],pumps=[],drains_cleared=[],buildings=layer_buildings,total_usd=round(loss['total_usd']),action_ids=item['action_ids'],hazard_study=True)
         safe_write(folder/f'{label}_layers.json',payload)
