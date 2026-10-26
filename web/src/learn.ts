@@ -77,7 +77,7 @@ function compareHtml(usdF: (v: number) => string): string {
       <ul class="cmp-tries">${path}</ul><div class="cmp-s">${m.actions} actions · ${m.code_lines} lines of plan code</div></div>`; };
   const fl = c.flash.tries || []; const stuck = fl.length > 1 && Math.abs(fl[fl.length - 1].damage - fl[fl.length - 2].damage) < 1e6;
   return `<div class="cmp"><div class="cmp-h">WHY ARGON</div><div class="cmp-row">${col(c.argon)}${col(c.flash)}</div>
-    <div class="cmp-why">Same storm, same data, same tools. Argon read the result, saw its plan was 17× over budget, and rebuilt it: same protection for 1/20th of the cost.${stuck ? ' Flash got stuck: its last try repeated the same plan.' : ''}</div></div>`;
+    <div class="cmp-why">Same storm, data and tools. Argon saw try 1 was 17× over budget and rebuilt it for 1/20th of the cost.${stuck ? ' Flash repeated the same plan.' : ''}</div></div>`;
 }
 export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] }, base: { damage: number; lives: number | null; runId: string } | null, brief: any) {
   type Row = { name: string; sub?: string; damage: number; lives: number | null; cost: number; budget: number; pending?: boolean; note?: string; runId?: string };
@@ -107,7 +107,7 @@ export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] 
   const body = rows.map((r, i) => `<tr title="${esc(r.runId || '')}" class="${i === best ? 'best' : ''} ${r.pending ? 'pend' : ''}"><td class="nm">${esc(r.name)}${i === best ? ' <em>best</em>' : ''}</td>
     <td>${r.pending ? 'running…' : usd(r.damage)}</td><td>${r.lives != null && isFinite(+r.lives) ? Math.round(+r.lives).toLocaleString('en-US') : '–'}</td><td>${r.name === 'No plan' ? '—' : usd(r.cost)}</td>
     <td>${isFinite(r.budget) && isFinite(r.cost) ? (r.cost <= r.budget ? '<b class="ok">✓</b>' : '<b class="no">✗</b>') : '–'}</td><td>${isFinite(per(r)) ? '$' + per(r).toFixed(1) : '–'}</td></tr>
-    ${r.note ? `<tr class="nt"><td colspan="6">${esc(r.note)}</td></tr>` : ''}`).join('');
+    ${r.note ? `<tr class="nt"><td colspan="6">${esc(r.note.length > 140 ? r.note.slice(0, 139).replace(/\s+\S*$/, '') + '…' : r.note)}</td></tr>` : ''}`).join('');
   // Cost vs damage quadrant: x = plan cost (log), y = damage left after the storm. Bottom-left = cheap and effective.
   const quad = (() => {
     const pts = rows.filter((r) => !r.pending && isFinite(r.damage) && isFinite(r.cost));

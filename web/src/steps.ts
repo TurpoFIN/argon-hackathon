@@ -90,7 +90,7 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
     const inputs = (b?.inputs || []).map((x: any) => `${x.count != null ? Number(x.count).toLocaleString('en-US') + ' ' : ''}${x.name}`).join(' · ');
     const items = steps.filter((x: any) => x.kind === 'item').map((x: any) => x.objs[0]);
     const built = items.slice(0, 6).map((o: any) => `<li><span>${esc(plainName(o, tile))}</span><b>${usd(o.cost_usd)}</b></li>`).join('');
-    const strat = String(b?.strategy || ''); const stratShort = strat.length > 260 ? strat.slice(0, 257).replace(/\s+\S*$/, '') + '…' : strat;
+    const strat = String(b?.strategy || ''); const stratShort = strat.length > 170 ? strat.slice(0, 167).replace(/\s+\S*$/, '') + '…' : strat;
     body = `<div class="st-kk">WHAT ${esc(who.toUpperCase())} DECIDED</div>
       <div class="st-t st-t-sm">Protect San Francisco from the El Niño storm with ${b?.budget_usd ? usd(+b.budget_usd) : '$50M'}</div>
       <div class="st-m">Plan cost <b>${usd(planCost)}</b> · ${items.length} major decisions + smaller operations</div>
@@ -102,15 +102,14 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
         <span><i style="background:#ff3d3d"></i>red · closed roads</span><span><i style="background:#ffb347"></i>orange areas · evacuation zones</span></div>
 
       ${stratShort ? `<div class="st-k">ITS STRATEGY</div><blockquote class="st-q">“${esc(stratShort)}”</blockquote>` : (b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`)}
-      ${inputs ? `<div class="st-k">WHAT IT GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><div class="st-got">${esc(inputs)}</div>` : ''}
-      <div class="st-hint">Press → to step through each decision.</div>`;
+      `;
   } else if (s.kind === 'item') {
-    const o = s.objs[0]; const [, , does] = kindOf(o); const w = why(o, brief); const src = o.raw?.cost_source || fmtBasis(o.raw?.cost_basis) || o.raw?.source;
-    body = `<div class="st-kk">${esc(o.label || '')}</div><div class="st-t">${esc(plainName(o, tile))}</div>
-      ${does ? `<div class="st-k">WHAT IT DOES</div><div class="st-p">${esc(does)}</div>` : ''}
-      <div class="st-k">WHY — IN GEMINI'S WORDS</div><div class="st-p ${w ? 'q' : 'dim'}">${w ? '“' + esc(w) + '”' : 'Gemini gave no reason for this item.'}</div>
-      <div class="st-g"><div><span>COST</span><b>${usd(o.cost_usd)}</b>${src ? `<small>${esc(src)}</small>` : ''}</div><div><span>READY</span><b>${o.t_s < 0 ? (-o.t_s >= 72 * 3600 ? Math.round(-o.t_s / 86400) + ' days before landfall' : Math.round(-o.t_s / 3600) + ' h before landfall') : 'during storm'}</b></div></div>
-      ${optionsFor(o, brief)}`;
+    const o = s.objs[0]; const w = why(o, brief);
+    const short = (x: string, n: number) => (x.length > n ? x.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : x);
+    const ready = o.t_s < 0 ? (-o.t_s >= 72 * 3600 ? Math.round(-o.t_s / 86400) + ' days before' : Math.round(-o.t_s / 3600) + ' h before') : 'during storm';
+    body = `<div class="st-t">${esc(short(o.label || plainName(o, tile), 80))}</div>
+      ${w ? `<div class="st-p q">“${esc(short(w, 170))}”</div>` : ''}
+      <div class="st-g"><div><span>COST</span><b>${usd(o.cost_usd)}</b></div><div><span>READY</span><b>${ready}</b></div></div>`;
   } else {
     const tot = s.objs.reduce((a, o) => a + (o.cost_usd || 0), 0);
     body = `<div class="st-kk">OPERATIONS</div><div class="st-t">${s.objs.length} smaller actions · ${usd(tot)}</div>

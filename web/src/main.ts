@@ -144,6 +144,7 @@ async function main() {
   let noneIdx = Math.max(0, visuals.findIndex(isNoneV));
   const findPlan = () => { const a = visuals.findIndex((v) => /argon/i.test(v.run.info.label + v.run.info.model)); return a >= 0 ? a : Math.max(0, visuals.length - 1); };
   let planIdx = findPlan();
+  let planModel: 'argon' | 'flash' = 'argon';
   let active = q.get('view') === 'plan' ? planIdx : noneIdx;
   if (q.has('run')) active = 0;
   let compare = false;
@@ -329,7 +330,8 @@ async function main() {
     briefTried = true;
     try {
       const jobs: any[] = await (await fetch('/api/jobs')).json();
-      for (const j of jobs.filter((x) => /argon/i.test(JSON.stringify(x).slice(0, 2000)))) {
+      const mre = planModel === 'flash' ? /flash/i : /argon/i;
+      for (const j of jobs.filter((x) => mre.test(JSON.stringify(x).slice(0, 2000)))) {
         const r = await fetch(`/api/jobs/${j.id}/briefing`); if (r.ok) { const b = await r.json(); if (b && (b.goal || b.actions)) { briefing = { ...b, job: j.id }; break; } }
       }
     } catch { /* not yet */ }
@@ -385,6 +387,14 @@ async function main() {
     refreshStory(); syncInspector();
   };
   hud.onRun = (r) => { stopAuto(); setView(r as any); };
+  // Stage 2 model switch: see Argon's or Flash's plan in 3D (same storm, same tools).
+  const modelTog = document.createElement('div'); modelTog.className = 'model-tog'; hud.root.append(modelTog);
+  const hasFlash = visuals.some((v) => /flash/i.test(v.run.info.label + v.run.info.model));
+  const drawTog = () => { modelTog.innerHTML = hasFlash ? ['argon', 'flash'].map((m) => `<button data-m="${m}" class="${planModel === m ? 'on' : ''}">${m === 'argon' ? 'Gemini 4 Argon' : 'Gemini Flash'}</button>`).join('') : '';
+    modelTog.querySelectorAll('button').forEach((b) => ((b as HTMLElement).onclick = () => { const m = (b as HTMLElement).dataset.m as 'argon' | 'flash'; if (m === planModel) return;
+      planModel = m; const re = m === 'flash' ? /flash/i : /argon/i; const k = visuals.findIndex((v) => re.test(v.run.info.label + v.run.info.model)); if (k >= 0) planIdx = k;
+      briefing = null; briefTried = false; drawTog(); setView('plan'); })); };
+  drawTog();
   hud.onSeek = (u) => { t = tOf(u); hud.resetToasts(); };
   hud.onPlay = () => { playing = !playing; if (playing && t >= tEnd) t = tStart; };
   // Hide/show the side panels (step cards, briefing, benchmark) so the storm can be watched cleanly. Key H or the pill.

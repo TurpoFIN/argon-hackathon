@@ -333,3 +333,9 @@ html.light .panel-pill { background: rgba(255,255,255,0.95); color: #16202a; bor
 .cmp-n { font-weight: 700; font-size: 16px; } .cmp-big { font-size: 30px; font-weight: 800; margin: 2px 0 6px; } .cmp-big small { font-size: 13px; font-weight: 500; opacity: 0.75; }
 .cmp-tries { list-style: none; padding: 0; margin: 0 0 6px; font-size: 13px; line-height: 1.6; } .cmp-tries em.no { color: #b42318; font-style: normal; font-weight: 600; }
 .cmp-s { font-size: 12px; opacity: 0.75; } .cmp-why { font-size: 14px; margin-top: 10px; line-height: 1.45; }
+.model-tog { position: fixed; left: 170px; top: 96px; z-index: 30; display: none; gap: 2px; padding: 3px; border-radius: 18px; background: rgba(4,8,13,0.75); border: 1px solid rgba(255,255,255,0.25); }
+body[data-stage="plan"] .model-tog { display: inline-flex; }
+.model-tog button { font: 600 13px Inter, system-ui, sans-serif; padding: 5px 12px; border-radius: 14px; border: 0; background: transparent; color: #fff; cursor: pointer; }
+.model-tog button.on { background: #1f6fd1; color: #fff; }
+html.light .model-tog { background: rgba(255,255,255,0.95); border-color: rgba(20,40,60,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+html.light .model-tog button { color: #16202a; } html.light .model-tog button.on { color: #fff; }
