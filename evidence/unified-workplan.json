@@ -1,0 +1,467 @@
+{
+  "version": "action-workplan-1",
+  "model": "gemini-4-argon",
+  "storm_id": "cd8bb6f9bdaac6ff730079cbf54fd03f23670d885a4c15d1dd946fcb2797919f",
+  "input_digest": "2e518c18aa6fb5ac341c318300e8e793c1313b25451d6e76788ab6c52ff609c2",
+  "resources": {
+    "minutes": 30,
+    "crews": [
+      {
+        "id": "Crew 1",
+        "role": "general",
+        "people": 2,
+        "position": [
+          -122.3987519,
+          37.7975205
+        ]
+      },
+      {
+        "id": "Crew 2",
+        "role": "general",
+        "people": 2,
+        "position": [
+          -122.4052255,
+          37.7891171
+        ]
+      }
+    ],
+    "equipment": {
+      "handtool_kit": 2,
+      "tie_down": 20,
+      "cart": 1,
+      "fitted_barrier": 1,
+      "empty_sandbag": 100,
+      "sand_fill": 1,
+      "pump": 8
+    },
+    "basis": "Scenario stock, not verified availability: two hand-tool kits, 20 ties, one cart, one pre-fitted barrier, 100 bags/fill and eight pumps. Crew count and positions come from the saved world.",
+    "travel_basis": "Grid walking route at 1.4 m/s, including return to starting location; dry pre-storm access is assumed."
+  },
+  "decision": {
+    "selected_plan": "work_candidate1",
+    "reasons": [
+      "Achieves the lowest expected flood damage at $1,083,773,901.21, which is $127,046.03 lower than work_control and $47,094.92 lower than work_candidate3.",
+      "Completes both clear-inlet:158769 and clear-inlet:305510 within the 30-minute limit (29.57 and 27.57 crew minutes), reducing local water depths from 28 cm to 26 cm and from 21 cm to 20 cm compared to no preparation.",
+      "Causes zero route closures and leaves wet boxes at 60, matching all other tested plans.",
+      "Trades off 77 L to 154 L of indoor rain entry reduction offered by work_candidate3 (63,217 L) and work_candidate2 (63,140 L) in exchange for the largest reduction in flood damage dollars."
+    ]
+  },
+  "proposal_receipt": {
+    "result_sha256": "a058bb0b44b67f3cc3a8ee1e0941c54a8540eba243209a0185af622069e36afc",
+    "generated_at": "2026-10-25T23:50:40.478997+00:00"
+  },
+  "decision_receipt": {
+    "result_sha256": "a92145b05523435ebf642d42a33fa3ccd293ac7e69cb88ea814744aa1615e292",
+    "generated_at": "2026-10-25T23:56:41.941066+00:00"
+  },
+  "selected_label": "work_candidate1",
+  "ablations": {
+    "clear-inlet:158769": "work_without1",
+    "clear-inlet:305510": "work_without2"
+  },
+  "tested": [
+    {
+      "label": "work_control",
+      "name": "Do nothing \u00b7 same storm",
+      "action_ids": [],
+      "expected_flood_damage_usd": 1083900947.24,
+      "completed": 0,
+      "skipped": [],
+      "crew_minutes": {
+        "Crew 1": 0.0,
+        "Crew 2": 0.0
+      },
+      "local_harm": {
+        "rain_entry_l": 63294,
+        "wet_boxes": 60,
+        "closed_routes": 0
+      },
+      "site_water": []
+    },
+    {
+      "label": "work_candidate1",
+      "name": "Surface Drainage Priority (Catch Basin Clearing)",
+      "action_ids": [
+        "clear-inlet:158769",
+        "clear-inlet:305510"
+      ],
+      "expected_flood_damage_usd": 1083773901.21,
+      "completed": 2,
+      "skipped": [
+        {
+          "id": "clear-inlet:159211",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:305509",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154786",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:155692",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:307536",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:251115",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:156468",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:174311",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:158566",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:174312",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154792",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:290716",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:162764",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154788",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154791",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:159548",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:285580",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:162765",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154793",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:174313",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:155815",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:255187",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:285581",
+          "reason": "No qualified crew / accessible route / time including return"
+        }
+      ],
+      "crew_minutes": {
+        "Crew 1": 29.57,
+        "Crew 2": 27.57
+      },
+      "local_harm": {
+        "rain_entry_l": 63294,
+        "wet_boxes": 60,
+        "closed_routes": 0
+      },
+      "site_water": [
+        {
+          "id": "clear-inlet:158769",
+          "no_preparation_cm": 28,
+          "plan_cm": 26
+        },
+        {
+          "id": "clear-inlet:305510",
+          "no_preparation_cm": 21,
+          "plan_cm": 20
+        }
+      ]
+    },
+    {
+      "label": "work_candidate2",
+      "name": "Building Envelope Protection (Window Latching)",
+      "action_ids": [
+        "latch-windows:47732588",
+        "latch-windows:47706838"
+      ],
+      "expected_flood_damage_usd": 1083900947.24,
+      "completed": 2,
+      "skipped": [
+        {
+          "id": "latch-windows:47732585",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732586",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732587",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732589",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732590",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732591",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47732592",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706839",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706840",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706843",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706844",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706845",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706846",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706849",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706850",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706851",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706852",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706857",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706858",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706859",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706862",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47706863",
+          "reason": "No qualified crew / accessible route / time including return"
+        }
+      ],
+      "crew_minutes": {
+        "Crew 1": 21.43,
+        "Crew 2": 23.43
+      },
+      "local_harm": {
+        "rain_entry_l": 63140,
+        "wet_boxes": 60,
+        "closed_routes": 0
+      },
+      "site_water": [
+        {
+          "id": "latch-windows:47732588",
+          "no_preparation_cm": 92,
+          "plan_cm": 92
+        },
+        {
+          "id": "latch-windows:47706838",
+          "no_preparation_cm": 10,
+          "plan_cm": 10
+        }
+      ]
+    },
+    {
+      "label": "work_candidate3",
+      "name": "Split-Crew Hybrid (High-Depth Inlets & Secondary Window Clusters)",
+      "action_ids": [
+        "clear-inlet:158769",
+        "latch-windows:47709539"
+      ],
+      "expected_flood_damage_usd": 1083820996.13,
+      "completed": 2,
+      "skipped": [
+        {
+          "id": "clear-inlet:305510",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47709540",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:159211",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47709541",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:305509",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47709542",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:154786",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47735601",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:307536",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47735602",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:251115",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47735603",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:156468",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47735604",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:174311",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47710073",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:158566",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47710074",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:162764",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47719904",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "clear-inlet:290717",
+          "reason": "No qualified crew / accessible route / time including return"
+        },
+        {
+          "id": "latch-windows:47719905",
+          "reason": "No qualified crew / accessible route / time including return"
+        }
+      ],
+      "crew_minutes": {
+        "Crew 1": 22.29,
+        "Crew 2": 27.57
+      },
+      "local_harm": {
+        "rain_entry_l": 63217,
+        "wet_boxes": 60,
+        "closed_routes": 0
+      },
+      "site_water": [
+        {
+          "id": "clear-inlet:158769",
+          "no_preparation_cm": 28,
+          "plan_cm": 26
+        },
+        {
+          "id": "latch-windows:47709539",
+          "no_preparation_cm": 17,
+          "plan_cm": 17
+        }
+      ]
+    }
+  ],
+  "selected_ids": [
+    "clear-inlet:158769",
+    "clear-inlet:305510"
+  ],
+  "removal_replays": {
+    "clear-inlet:158769": {
+      "label": "work_without1",
+      "before": "28 cm local water",
+      "after": "26 cm local water",
+      "expected_flood_damage_usd": 1083853845.09
+    },
+    "clear-inlet:305510": {
+      "label": "work_without2",
+      "before": "21 cm local water",
+      "after": "20 cm local water",
+      "expected_flood_damage_usd": 1083820996.13
+    }
+  }
+}

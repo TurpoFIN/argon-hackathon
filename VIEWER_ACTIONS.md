@@ -37,3 +37,16 @@ existing operation catalogue; additional work is not claimed to be scheduled.
 `evidence/viewer-action-review.json` records Argon's review of one representative
 of each operation type. It is a critique of the supplied calculations, not
 independent calibration or review of all 251 sites.
+
+
+## Action-linked Argon work plan
+
+`python -m loop.workplan data/prep-loop/today/argon --minutes 30` now asks actual Argon for different ordered action-ID plans, schedules them, runs the complete saved storm for each, returns the numerical results to Argon, and saves its choice. `backend/workplan.py` is the common ID/schedule/physics contract. `workplan.json` saves the choices, execution receipts, input digest, matched removals and provider receipts; the viewer reads this file rather than interpreting a catalogue review as a selected plan.
+
+The current run retains two two-person general crews and 30 minutes, including grid walking and return. Stock is explicitly assumed; specialist crews are unavailable. The planning candidates include mapped NSI buildings near both crew starts and real drain IDs, rather than only the old top-12 display excerpt. All six hazard categories remain inspectable. This run does not assert that all operations are feasible or needed.
+
+The same forecast fingerprint `cd8bb6f9bdaac6ff730079cbf54fd03f23670d885a4c15d1dd946fcb2797919f` reproduces the archived no-action flood total to within one dollar. Actual Argon compared drainage, windows and a hybrid, then chose inlets 158769 and 305510: 27.57 and 29.57 crew minutes including return. The full-city simulation estimates $127,046 less flood damage, a 0.012% reduction. At those sites, final local depths change 28 to 26 cm and 21 to 20 cm. These are model outputs, not measured storm benefits.
+
+Removing either selected action loads a complete matched city replay, updates the flood layer, equipment/work counts and dollar total, and shows that action's matched before/after beside it. Unselected alternatives cannot apply an independent fake plan. Old flood rounds remain selectable as archived experiments. The original timeline, camera, cinema and hide/reopen controls remain.
+
+Evidence is in `evidence/unified-workplan.json`. Nine scheduling/contract tests, eight mechanism tests, three serving tests and the build pass. Live browser acceptance covers the selected plan, action removal/restore and do-nothing baseline. Field validation remains unavailable. Window inventories, indoor ingress, asset condition and the local non-flood mechanism calculations remain assumptions; this change does not claim a calibrated six-hazard loss model or optimality over every city asset.
