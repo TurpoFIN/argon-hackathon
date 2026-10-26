@@ -79,7 +79,22 @@ export function installRunActions(){
       add({type:'polyline',paths,spatialReference:{wkid:4326}},{type:'simple-line',width:2.5,color:'#ad8cdb'},'public-feeder-unverified-connection');
       const p=document.createElement('p');p.textContent=`${line.source}: ${line.name??'mapped line'} · connection unverified`;evidence.append(p);
     }
-    if(active.kind==='backup_power'){
+    if(active.kind==='secure_loose'){
+      // Show the modeled object, rather than inventing an extra glass failure.
+      const released=!!s.loose_released;
+      const first=active.before.findIndex(x=>!!x.loose_released),seconds=(pack.minutes[Math.max(0,first)]??0)*60;
+      const gust=pack.weather.gust_mps*(.6+.4*Math.sin(Math.PI*Math.min(seconds,3600)/3600));
+      const distance=Math.min(80,gust*site.height_m/6),direction=pack.weather.wind_from_deg*Math.PI/180;
+      const east=-Math.sin(direction)*distance,north=-Math.cos(direction)*distance;
+      const landing=[lon+east/(111320*Math.cos(lat*Math.PI/180)),lat+north/111320,1];
+      if(released){
+        add({type:'point',longitude:landing[0],latitude:landing[1],z:landing[2]}, {type:'point-3d',symbolLayers:[{type:'object',resource:{primitive:'cube'},width:.8,depth:.8,height:.5,material:{color:'#99744b'}}]},'released-loose-object');
+        add({type:'polyline',paths:[[[lon,lat,baseZ],landing]],hasZ:true,spatialReference:{wkid:4326}}, {type:'simple-line',width:2,color:'#d2b76e',style:'dash'},'illustrative-object-path');
+      }else{
+        box(0,0,0,.8,.8,.5,'#99744b','loose-object-at-source');
+        if(mode==='after')for(const x of [-.6,.6])path([[x,-1,0],[0,0,.5],[x,1,0]],.07,'#00c769','object-tie-down');
+      }
+    }else if(active.kind==='backup_power'){
       // A portable generator supplies one critical circuit. It is not a pump
       // and cannot drain the local water patch or restore the public feeder.
       box(-3,-4,0,1.8,1,1.2,mode==='after'?'#d2b76e':'#4a4a4a','critical-generator');
@@ -130,7 +145,22 @@ export function installRunActions(){
   }
   hazard.onchange=()=>options();search.oninput=()=>options();select.onchange=()=>{const a=pack?.actions.find(a=>a.id===select.value);if(a)void choose(a);};
   for(const b of Array.from(section.querySelectorAll<HTMLButtonElement>('[data-mode]')))b.onclick=()=>{if(!active?.selected||!active.ablation_label)return;mode=b.dataset.mode as typeof mode;window.dispatchEvent(new CustomEvent('prep-request-plan',{detail:{label:mode==='after'?active.plan_label:active.ablation_label}}));};
-  section.querySelector<HTMLButtonElement>('.locate')!.onclick=()=>{if(active&&ctx){window.dispatchEvent(new Event('prep-user-navigation'));void ctx.view.goTo({target:new Point({longitude:active.site.position[0],latitude:active.site.position[1]}),scale:2500,tilt:35},{animate:true});}};
+  section.querySelector<HTMLButtonElement>('.locate')!.onclick=async()=>{
+    if(!active||!ctx)return;
+    window.dispatchEvent(new Event('prep-user-navigation'));
+    const selected=active,id=selected.id,site=selected.site;
+    const point=new Point({longitude:site.position[0],latitude:site.position[1]});
+    const elevation=await ctx.map.ground.queryElevation(point).catch(()=>null);
+    if(active?.id!==id)return;
+    const ground=elevation?.geometry.z??0;
+    let scale=900,z=ground+(['building','pump'].includes(site.kind)?site.display_height_m+10:site.height_m*.35);
+    if(selected.native_consequence&&site.kind==='building'){
+      const coords=site.building_geometry?.coordinates.flat(2)??[];
+      const width=coords.length?Math.max((Math.max(...coords.map(p=>p[0]))-Math.min(...coords.map(p=>p[0])))*88000,(Math.max(...coords.map(p=>p[1]))-Math.min(...coords.map(p=>p[1])))*111320):100;
+      scale=Math.max(1200,Math.min(4500,width*12));z=ground+site.building_height_m*.5;
+    }
+    void ctx.view.goTo({target:new Point({longitude:site.position[0],latitude:site.position[1],z}),scale,tilt:35},{animate:true});
+  };
   window.addEventListener('prep-plan-shown',e=>void load((e as CustomEvent).detail));
   window.addEventListener('prep-frame-change',e=>{frame=(e as CustomEvent).detail.index;draw();});
   window.addEventListener('prep-panel-visibility',e=>{if(layer){layer.visible=(e as CustomEvent).detail;markers.visible=(e as CustomEvent).detail;if((e as CustomEvent).detail)draw();else resetOriginal();}});
