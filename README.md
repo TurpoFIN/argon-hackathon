@@ -31,13 +31,14 @@ Cached data is intentionally not added to Git. Delete only this checkout's
 
 ## Actual source data
 
-The area is approximately -122.406 to -122.386 longitude, 37.786 to 37.808
-latitude. The numerical grid is 146 × 205 at 12 metres in UTM zone 10N.
+The area runs from the Presidio to North Beach and the Embarcadero: approximately -122.486 to
+-122.386 longitude, 37.786 to 37.812 latitude. The numerical grid is 733 × 245 at 12 metres in
+UTM zone 10N.
 
 | Input | Source and use |
 | --- | --- |
 | Bare-earth elevation | [USGS 3DEP elevation service](https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer). Bounded float32 GeoTIFF, bilinear-resampled to 12 m. The mosaic may mix acquisition dates; no claim that this cut uses only the 2023 flight. |
-| Building obstacles and heights | [DataSF ynuv-fyni](https://data.sf.gov/Geographic-Locations-and-Boundaries/Building-Footprints/ynuv-fyni). 1,603 footprints; older source geometry, with valid height values required. |
+| Building obstacles and heights | [DataSF ynuv-fyni](https://data.sf.gov/Geographic-Locations-and-Boundaries/Building-Footprints/ynuv-fyni). 18,796 footprints; older source geometry, with valid height values required. |
 | Drain positions | [DataSF jtgq-b7c5](https://data.sf.gov/City-Infrastructure/Stormwater-inlets-drains-and-catch-basins/jtgq-b7c5). 1,009 records in the cut; 1,003 map into modeled land cells. The dataset does not represent every drain. |
 | Rainfall depth | [NOAA Atlas 14](https://hdsc.nws.noaa.gov/cgi-bin/hdsc/new/fe_text_mean.csv?lat=37.7955&lon=-122.3947&data=depth&units=metric&series=pds). 32 mm for the one-hour, 100-year event at the sample coordinate. |
 | Wind forcing | [NOAA CO-OPS](https://api.tidesandcurrents.noaa.gov/api/dev/) station 9414290, Jan 4–5, 2023: selected peak gust 19.3 m/s; corresponding mean 11.3 m/s from 138° at 2023-01-05 01:42 UTC. |

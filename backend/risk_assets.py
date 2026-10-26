@@ -191,7 +191,7 @@ def build_destruction_inventory(grid=None):
         rows, source = fetch(name, 'https://overpass-api.de/api/interpreter?'+urllib.parse.urlencode({'data':query}))
         source['license'] = '© OpenStreetMap contributors, ODbL'
         data.append(rows); sources.append(source)
-    query = {'$where':'within_box(shape,37.808,-122.406,37.786,-122.386)', '$limit':5000}
+    query = {'$where':f'within_box(shape,{BBOX[3]},{BBOX[0]},{BBOX[1]},{BBOX[2]})', '$limit':5000}
     signal_rows, source = fetch('datasf-traffic-signals.json', 'https://data.sfgov.org/resource/ybh5-27n2.json?'+urllib.parse.urlencode(query))
     source['license'] = 'DataSF Open Data; SFMTA Traffic Signals'
     sources.append(source)

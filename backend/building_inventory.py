@@ -97,12 +97,13 @@ def ground_retail(p):
 
 def load_sources():
     """Bounded, reproducible public-data caches, also usable on a fresh checkout."""
-    query = {'$where': 'within_box(shape,37.808,-122.406,37.786,-122.386)', '$limit': 200000}
+    box = f'{risk_assets.BBOX[3]},{risk_assets.BBOX[0]},{risk_assets.BBOX[1]},{risk_assets.BBOX[2]}'  # within_box: north, west, south, east
+    query = {'$where': f'within_box(shape,{box})', '$limit': 200000}
     full, fs = risk_assets.fetch('datasf-buildings-full.geojson',
-        'https://data.sf.gov/resource/ynuv-fyni.geojson?' + urllib.parse.urlencode(query))
-    query = {'$where': "closed_roll_year='2023' AND within_box(the_geom,37.808,-122.406,37.786,-122.386)", '$limit': 200000}
+        'https://data.sf.gov/resource/ynuv-fyni.geojson?' + urllib.parse.urlencode(query), max_bytes=80_000_000)
+    query = {'$where': f"closed_roll_year='2023' AND within_box(the_geom,{box})", '$limit': 200000}
     roll, rs = risk_assets.fetch('datasf-assessor-2023.geojson',
-        'https://data.sf.gov/resource/wv5m-vpq2.geojson?' + urllib.parse.urlencode(query), max_bytes=24_000_000)
+        'https://data.sf.gov/resource/wv5m-vpq2.geojson?' + urllib.parse.urlencode(query), max_bytes=120_000_000)
     fs.update(name='DataSF full building footprints', basis=REFERENCE['sources']['buildings'])
     rs.update(name='SF Assessor-Recorder secured roll 2023', basis=REFERENCE['sources']['assessor'])
     return full['features'], roll['features'], [fs, rs, dict(
