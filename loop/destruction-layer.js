@@ -142,7 +142,7 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
         a.fn(u * u);  // gravity-like ease-in
         if (u >= 1) anims.delete(a);
       }
-      flushTrees();
+      flushTrees(now);
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -189,13 +189,13 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
     // The standing urban forest: every inventory street tree as a realistic model (genus, height, crown from the
     // inventory). Trees that fail in the run are left out here and drawn by the run so they can fall.
     // Trees that fail keep their fall bearing as heading and topple by tilting about the base (attribute edits).
-    let streetTrees = null, standing = null, shown = true, treeFeatures = [], treePending = new Map(), treeEditing = false, treeEditedAt = 0;
+    let streetTrees = null, standing = null, shown = true, treeFeatures = [], treePending = new Map(), treeEditing = false, treeEditedAt = -Infinity;
     const setTreeTilt = (id, tilt) => treePending.set(id, tilt);
-    // Tilts collect between edits: one batched applyEdits at most every TREE_EDIT_MS, not one per animation frame.
-    async function flushTrees() {
-      if (treeEditing || !treePending.size || !standing || performance.now() - treeEditedAt < TREE_EDIT_MS) return;
+    // Tilts collect between edits: one batched applyEdits at most every TREE_EDIT_MS (animation-frame time), not one per frame.
+    async function flushTrees(now) {
+      if (treeEditing || !treePending.size || !standing || now - treeEditedAt < TREE_EDIT_MS) return;
       treeEditing = true;
-      treeEditedAt = performance.now();
+      treeEditedAt = now;
       const updateFeatures = [...treePending].map(([id, tilt]) => {
         const f = treeFeatures[id];
         f.attributes = { ...f.attributes, tilt };
