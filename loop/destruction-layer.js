@@ -12,7 +12,7 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
     sigBad: [255, 109, 0], sigDark: [173, 93, 255], sigFlood: [0, 108, 255], glass: [140, 205, 255, 0.55],
     smashed: [246, 68, 185], trunk: [110, 80, 50], crown: [46, 139, 70], crownDown: [128, 140, 60], debris: [255, 209, 102]
   };
-  const FALL_MS = 900, TREE_TILT = -88;
+  const FALL_MS = 900, TREE_TILT = -88, TREE_EDIT_MS = 250;
   require([
     "esri/layers/GraphicsLayer", "esri/Graphic", "esri/geometry/Polyline", "esri/geometry/Polygon", "esri/geometry/Point",
     "esri/symbols/LineSymbol3D", "esri/symbols/PointSymbol3D", "esri/symbols/PolygonSymbol3D",
@@ -189,11 +189,13 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
     // The standing urban forest: every inventory street tree as a realistic model (genus, height, crown from the
     // inventory). Trees that fail in the run are left out here and drawn by the run so they can fall.
     // Trees that fail keep their fall bearing as heading and topple by tilting about the base (attribute edits).
-    let streetTrees = null, standing = null, shown = true, treeFeatures = [], treePending = new Map(), treeEditing = false;
+    let streetTrees = null, standing = null, shown = true, treeFeatures = [], treePending = new Map(), treeEditing = false, treeEditedAt = 0;
     const setTreeTilt = (id, tilt) => treePending.set(id, tilt);
+    // Tilts collect between edits: one batched applyEdits at most every TREE_EDIT_MS, not one per animation frame.
     async function flushTrees() {
-      if (treeEditing || !treePending.size || !standing) return;
+      if (treeEditing || !treePending.size || !standing || performance.now() - treeEditedAt < TREE_EDIT_MS) return;
       treeEditing = true;
+      treeEditedAt = performance.now();
       const updateFeatures = [...treePending].map(([id, tilt]) => {
         const f = treeFeatures[id];
         f.attributes = { ...f.attributes, tilt };
