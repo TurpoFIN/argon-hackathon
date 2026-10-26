@@ -2,20 +2,24 @@
 
 python -m loop.workplan data/prep-loop/today/argon --minutes 30
 This adds a work-plan result without rewriting the archived flood rounds.
+python -m loop.workplan data/prep-loop/today/argon --destruction
+Replays the tested work plans already in workplan.json and adds only their destruction files.
 """
 import argparse
 import copy
 import json
 from pathlib import Path
+import shutil
+import tempfile
 import time
 
-from .judge import Judge
+from .layers import DestructionJudge
 from backend import argon, preparedness, viewer_actions, workplan
 from backend.coupled import route
 import numpy as np
 
 
-class WorkJudge(Judge):
+class WorkJudge(DestructionJudge):
     """Use the existing full-city water solver, not the local overlay balance."""
     def write_layers(self,label,plan,drawn,sim,ledger,runs):
         super().write_layers(label,plan,drawn,sim,ledger,runs)
@@ -187,6 +191,28 @@ def run(folder, minutes=30):
     return binding
 
 
+def destruction(folder):
+    """Write <label>_destruction.json for every tested work plan, without asking Argon again.
+    Each plan is replayed in a scratch folder; its files are published only if the replay reproduces the archived damage."""
+    model=folder.name;log=json.loads((folder/f'{model}.json').read_text());binding=json.loads((folder/'workplan.json').read_text())
+    with tempfile.TemporaryDirectory() as scratch:
+        scratch=Path(scratch);forcing=scratch/'work_forcing.json'
+        if log.get('forcing'):forcing.write_text(json.dumps(log['forcing']))
+        judge=WorkJudge(scratch,forcing=str(forcing) if log.get('forcing') else None,rain_mm_h=log['parameters']['rain_mm_h'],
+            mode=log.get('mode','doorways'),replay_context={'candidates':log['candidates']},parameters=log['parameters'])
+        judge.resources=binding['resources'];judge.walk_cache={};judge.work_candidates=binding['candidates']
+        for label,archived in binding['entries'].items():
+            entry=judge.evaluate_work(archived['action_ids'],archived['name'],label)
+            if abs(entry['ledger']['total_usd']-archived['ledger']['total_usd'])>1:
+                raise ValueError(f'{label} replay differs from the archived result; destruction not published')
+            if (scratch/f'{label}_destruction_error.json').exists():raise RuntimeError((scratch/f'{label}_destruction_error.json').read_text())
+            for name in (f'{label}_destruction.json',f'{label}_destruction_street_trees.json'):shutil.copyfile(scratch/name,folder/name)
+            print(f"{label}: ${entry['ledger']['total_usd']:,.0f} -> {label}_destruction.json",flush=True)
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('folder',type=Path);parser.add_argument('--minutes',type=int,default=30)
-    args=parser.parse_args();run(args.folder.resolve(),args.minutes)
+    parser.add_argument('--destruction',action='store_true',help='only add destruction files for the tested plans in workplan.json')
+    args=parser.parse_args()
+    if args.destruction:destruction(args.folder.resolve())
+    else:run(args.folder.resolve(),args.minutes)
