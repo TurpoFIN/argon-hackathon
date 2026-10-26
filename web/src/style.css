@@ -296,3 +296,17 @@ html.light .kpi a { color: #1f6fd1 !important; }
 html.light .brand, html.light .brand *, html.light .mode, html.light .mode *, html.light .clock, html.light .clock * { color: #fff !important; text-shadow: 0 1px 8px rgba(0,0,0,0.9) !important; }
 html.light .tl-phases > *, html.light .tl-bar > * { background: #cfd5db !important; color: #1a2430 !important; }
 html.light .tl, html.light .tl * { color: #1a2430 !important; }
+
+/* ---- Light UI contrast: every text in a white panel is dark enough to read (WCAG AA) ---- */
+html.light :is(.kpi, .runbar, .ctl, .insp, .icard, .final, .brief, .steps, .learn, .tl, .toast, .bs, .st-nav) :is(*, *::before, *::after) {
+  color: #16202a !important; text-shadow: none !important; }
+html.light :is(.kpi, .insp, .icard, .final, .brief, .steps, .learn, .bs) :is(small, .dim, .sub, .k-s, .lg-d, .lr-t, .st-sub, .st-meta, .muted, p, li, td + td, .bs-h span) {
+  color: #3d4955 !important; }
+html.light :is(.brief, .steps, .learn, .final) :is(h1, h2, h3, h4, b, strong, th) { color: #0d141b !important; }
+html.light :is(.steps, .brief, .learn, .kpi) a { color: #1554a8 !important; }
+html.light .bs b.ok { color: #0f7a3d !important; } html.light .bs b.no { color: #b42318 !important; }
+html.light .bs tr.best td, html.light .bs tr.best td * { color: #0d141b !important; } html.light .bs tr.best em { color: #0f7a3d !important; }
+html.light .runbar button { color: #16202a !important; } html.light .runbar button:is(.on, .active, [aria-pressed="true"]) { color: #fff !important; }
+html.light .quad .qa { fill: #3d4955 !important; } html.light .quad .qq { fill: #5a6672 !important; }
+html.light .quad .ql { paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+html.light .hint, html.light .ctl .hint { color: #16202a !important; }
