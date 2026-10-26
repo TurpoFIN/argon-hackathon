@@ -265,11 +265,19 @@ def public(binding,label,reference=None):
     main=binding['entries'][family];entry=binding['entries'][label];profile=main['profile']
     selected={j['id']:j for j in main['receipt']['completed']};applied=set(entry['action_ids'])
     rows=copy.deepcopy(binding['candidates'])
+    power_assets=None
     for a in rows:
         a['label']=OPERATIONS[a['kind']][2]
         identity=a['id'];a.update(selected=identity in selected,recorded=identity in applied,applied=identity in applied,
             assignment=selected.get(identity),plan_label=family,ablation_label=binding['profile_ablations'][family].get(identity))
         a.update(binding['profile_comparisons'][family].get(identity,{}))
+        if a['kind']=='backup_power':
+            # Public feeder geometry is context, never a claimed service link.
+            from shapely.geometry import Point, shape
+            if power_assets is None:power_assets=risk_assets.load()['power_lines']
+            point=Point(*a['site']['position'])
+            nearest=min(power_assets,key=lambda line:shape(line['geometry']).distance(point),default=None)
+            a['power_lines']=[nearest] if nearest else []
         if identity not in selected:
             feasibility=binding['feasibility'][identity][profile]
             a['not_selected_reason']=feasibility['skipped'][0]['reason'] if feasibility['skipped'] else 'No modeled harm benefit in this storm' if not a['helps'] else 'Argon chose other work after coupled tests'

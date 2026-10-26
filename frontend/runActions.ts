@@ -79,7 +79,13 @@ export function installRunActions(){
       add({type:'polyline',paths,spatialReference:{wkid:4326}},{type:'simple-line',width:2.5,color:'#ad8cdb'},'public-feeder-unverified-connection');
       const p=document.createElement('p');p.textContent=`${line.source}: ${line.name??'mapped line'} · connection unverified`;evidence.append(p);
     }
-    if(op==='prune-defect'){
+    if(active.kind==='backup_power'){
+      // A portable generator supplies one critical circuit. It is not a pump
+      // and cannot drain the local water patch or restore the public feeder.
+      box(-3,-4,0,1.8,1,1.2,mode==='after'?'#d2b76e':'#4a4a4a','critical-generator');
+      box(1,-3,0,1,.4,1.6,s.pump_on?'#00c769':'#4a4a4a',s.pump_on?'critical-circuit-powered':'critical-circuit-off');
+      if(mode==='after')path([[-3,-4,.2],[-1,-4,.2],[1,-3,.3]],.09,s.pump_on?'#00c769':'#555555','critical-power-cable');
+    }else if(op==='prune-defect'){
       const h=Math.min(24,site.height_m),tip=s.tree_fallen?[h*.7,0,1]:[0,0,h];
       path([[0,0,0],tip],.55,'#775940',s.tree_fallen?'fallen-tree':'standing-tree');
       box(tip[0],tip[1],tip[2]-2,mode==='after'?4:6,mode==='after'?4:6,4,'#567a55','tree-crown','sphere');
