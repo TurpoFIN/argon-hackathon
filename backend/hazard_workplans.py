@@ -275,6 +275,7 @@ def public(binding,label,reference=None):
         a.update(binding['profile_comparisons'][family].get(identity,{}))
         if a['kind']=='backup_power':
             # Public feeder geometry is context, never a claimed service link.
+            a['source_ids']=list(dict.fromkeys([*a['source_ids'],'pge','cec']))
             from shapely.geometry import Point, shape
             if power_assets is None:power_assets=risk_assets.load()['power_lines']
             point=Point(*a['site']['position'])
