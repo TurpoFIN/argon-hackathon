@@ -289,3 +289,10 @@ html.minimal .tl-fill { background: rgba(26,36,48,0.25) !important; }
 html.minimal .ctl, html.minimal .ctl * { color: #1a2430 !important; }
 html.minimal .kpi * { color: #1a2430 !important; } html.minimal .kpi small, html.minimal .kpi .k-s { color: #6b7782 !important; }
 html.minimal .tl, html.minimal .tl * { color: #1a2430 !important; }
+
+/* ---- Light UI cleanup: neutral numbers, readable labels over the dark map, quiet timeline ---- */
+html.light .kpi * { color: #1a2430 !important; } html.light .kpi small, html.light .kpi .k-s { color: #6b7782 !important; }
+html.light .kpi a { color: #1f6fd1 !important; }
+html.light .brand, html.light .brand *, html.light .mode, html.light .mode *, html.light .clock, html.light .clock * { color: #fff !important; text-shadow: 0 1px 8px rgba(0,0,0,0.9) !important; }
+html.light .tl-phases > *, html.light .tl-bar > * { background: #cfd5db !important; color: #1a2430 !important; }
+html.light .tl, html.light .tl * { color: #1a2430 !important; }
