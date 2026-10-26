@@ -142,7 +142,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     document.getElementById('total-label').textContent = isLive ? 'Flooded land at peak' : 'Modelled flood damage';
     const actions = document.getElementById('run-actions');
     if (actions) actions.hidden = isLive;
-    document.querySelectorAll('#plan-legend li').forEach((item, i) => { item.hidden = isLive && i > 0; });
+    document.querySelectorAll('#plan-legend li').forEach((item, i) => { item.style.display = isLive && i > 0 ? 'none' : ''; });
     map.layers.forEach(l => { if (['Per-action consequences (extrapolated)', 'Preventive actions'].includes(l.title)) l.visible = !isLive; });
     if (!isLive) { document.getElementById('sub').textContent = live.planSub; cinemaWeather = live.planWeather; }
   }
