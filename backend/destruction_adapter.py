@@ -152,6 +152,7 @@ class Inputs:
         for a in actions:
             kind, target = a['kind'], a['target']
             if kind == 'prune_tree': out['tree_actions'][self.tree_ids[target]] = 'prune'
+            elif kind == 'remove_tree': out['tree_actions'][self.tree_ids[target]] = 'remove'
             elif kind == 'brace_structure': out['roof_retrofit'].append(self.building_ids[target])
             elif kind == 'backup_power': out['backup_power'].append(self.building_ids[target])
             elif kind == 'close_route': out['closed_routes'].append(target)

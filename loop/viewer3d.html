@@ -59,6 +59,7 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
   <p class="delta" id="delta"></p>
   <dl id="stats"></dl>
   <ul class="legend" id="plan-legend">
+
     <li><span class="sw" style="background:#4a90ff"></span>Peak flood depth (P50), darker is deeper</li>
     <li><span class="sw" style="background:var(--c5)"></span>Sandbag wall (height shown 4×)</li>
     <li><span class="sw" style="background:var(--c3)"></span>Portable pump: drains the one 12 m cell it stands in</li>
@@ -141,10 +142,11 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   const live = { id: null, shown: false, button: null, planSub: '', planWeather: null };
   function planPanel(isLive) {
     live.shown = isLive;
+    if(isLive)for(const id of ['total','delta'])document.getElementById(id).hidden=false;
     document.getElementById('total-label').textContent = isLive ? 'Flooded land at peak' : 'Modelled flood damage';
     const actions = document.getElementById('run-actions');
     if (actions) actions.hidden = isLive;
-    document.querySelectorAll('#plan-legend li').forEach((item, i) => { item.style.display = isLive && i > 0 ? 'none' : ''; });
+    document.querySelectorAll('#plan-legend li').forEach((item, i) => { item.style.display = (isLive || currentLog?.hazard_study) && i > 0 ? 'none' : ''; });
     map.layers.forEach(l => { if (['Per-action consequences (extrapolated)', 'Preventive actions'].includes(l.title)) l.visible = !isLive; });
     if (!isLive) { document.getElementById('sub').textContent = live.planSub; cinemaWeather = live.planWeather; }
   }
@@ -233,7 +235,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   });
 
   const publishedOptions=new globalThis.Map();
-  let currentLog;
+  let currentLog, studyFamily;
   window.addEventListener('prep-request-plan',event=>{
     const option=publishedOptions.get(event.detail.label);
     if(option&&currentLog)void show(option,currentLog);
@@ -246,7 +248,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
       fetch(folder + option.label + '_destruction.json').then(r => r.ok ? r.json() : undefined),
       fetch(folder + option.label + '_destruction_street_trees.json').then(r => r.ok ? r.json() : undefined)
     ]).catch(() => [undefined, undefined]);
-    document.querySelectorAll('#plans button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.label === option.label || (option.label.startsWith('work_without') && b.dataset.label===log.work_plan?.label))));
+    document.querySelectorAll('#plans button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.label === option.label || (option.label.startsWith('work_without') && b.dataset.label===(option.entry.family_label||log.work_plan?.label)))));
     const layers = await fetch(folder + option.label + '_layers.json').then(r => r.ok ? r.json() : Promise.reject(r.status));
     const [damage, trees] = await destructionPromise;
     if (version !== showVersion) return;
@@ -305,7 +307,8 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     ]);
     scrub.max = Math.max(0, storm.frames - 1);
     setFrame(keep === null || keep === undefined ? null : Math.min(keep, storm.frames - 1));
-    window.prepRunContext={run,model,label:option.label,map,view,planLayer:plan,frame:storm.frame};
+    if(option.entry.family_label)studyFamily=option.entry.family_label;
+    window.prepRunContext={run,model,label:option.label,familyLabel:log.hazard_study?studyFamily:undefined,map,view,planLayer:plan,frame:storm.frame};
     window.dispatchEvent(new CustomEvent('prep-plan-shown',{detail:window.prepRunContext}));
     const control = log.control.ledger.total_usd, total = option.entry.ledger.total_usd;
     document.getElementById('total').textContent = usd(total);
@@ -315,7 +318,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     const bags = option.entry.sandbags || { total: 0 };
     const wallMetres = (bags.walls || []).reduce((s, w) => s + w.length_m, 0);
     const dry = layers.buildings.filter(b => b.status === 'dry').length;
-    const rows = [['Buildings protected at entrances', dry], ['Sandbags used', bags.total.toLocaleString('en-US')],
+    let rows = [['Buildings protected at entrances', dry], ['Sandbags used', bags.total.toLocaleString('en-US')],
       ['Sandbag walls', `${Math.round(wallMetres)} m`], ['Pumps', layers.pumps.length], ['Drains cleared', layers.drains_cleared.length],
       ['Flooded buildings (P50)', layers.buildings.filter(b => b.status !== 'dry').length]];
     if(option.entry.receipt){
@@ -324,6 +327,14 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
       if(option.entry.local_harm)rows.push(['Rain indoors · illustrative',`${option.entry.local_harm.rain_entry_l} L`]);
       document.documentElement.dataset.executedActions=option.entry.action_ids.join('|');
     }else document.documentElement.dataset.executedActions='';
+    for(const id of ['total','delta'])document.getElementById(id).hidden=!!log.hazard_study;
+    document.getElementById('total-label').textContent=log.hazard_study?'End-of-storm harm · change vs no preparation':'Modelled flood damage';
+    if(log.hazard_study){
+      const labels={windborne_objects:'Airborne loose objects',trees_failed:'Trees fallen',destroyed_buildings:'DS4 buildings',flooded_entrances:'Flooded entrances',unserved_load_hours:'Critical-load hours lost',route_hazard_minutes:'Hazardous open-link minutes'};
+      const metrics=option.entry.hazard_metrics,base=log.control.hazard_metrics;
+      rows=Object.entries(labels).map(([key,title])=>{const value=metrics[key],change=value-base[key];return [title,`${Number(value.toFixed(2))}${change?` (${change>0?'+':''}${Number(change.toFixed(2))})`:''}`];});
+      rows.push(['Work scheduled',option.entry.action_ids.length]);
+    }
     document.getElementById('stats').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
     // Frame the plan's placements once, on the first plan that has any; later switches keep the camera
     // so before and after compare from the same spot.
@@ -409,6 +420,13 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     folder = `/runs/${encodeURIComponent(run)}/${encodeURIComponent(model)}/`;
     const log = await fetch(folder + model + '.json').then(r => r.json());
     currentLog=log;
+    if(log.hazard_study){
+      const nativePanel=document.getElementById('destruction'),details=document.createElement('details'),summary=document.createElement('summary');
+      summary.textContent='Storm details';details.style.margin='8px 0';summary.style.cursor='pointer';
+      nativePanel.before(details);details.append(summary,nativePanel);
+      const items=[...document.getElementById('plan-legend').children];items.forEach((li,i)=>{if(i)li.style.display='none';});
+      items[0].lastChild.textContent=' Saved flood depth · same field in every plan';
+    }
     // Cinema mode (cinema.js) shows the storm this run was tested against: its rain and wind, and the forecast's P50 peak water.
     const sp = log.parameters || {}, p50 = (log.forcing?.scenarios || []).find(s => s.name === 'P50');
     live.planWeather = cinemaWeather = { rainMmH: sp.rain_mm_h ?? 0, meanMs: sp.wind_mps ?? 0,
@@ -418,15 +436,16 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     const rounds = log.rounds.filter(r => r.ledger);
     const best = rounds.length ? rounds.reduce((a, b) => (b.ledger.total_usd < a.ledger.total_usd ? b : a)) : null;
     const options = [{ label: log.work_control?'work_control':'control', text: 'No preparation', entry: log.work_control||log.control }];
-    if(log.work_plan)options.push(log.work_plan);
+    if(log.work_profiles)options.push(...log.work_profiles);else if(log.work_plan)options.push(log.work_plan);
     if (log.greedy_heuristic) options.push({ label: 'greedy', text: 'Rule (no AI)', entry: log.greedy_heuristic });
-    rounds.forEach(r => options.push({ label: `${model}_round${r.round}`, text: `${name} round ${r.round}${r === best ? ' ★' : ''}`, entry: r }));
+    if(!log.hazard_study)rounds.forEach(r => options.push({ label: `${model}_round${r.round}`, text: `${name} round ${r.round}${r === best ? ' ★' : ''}`, entry: r }));
     const available = [];
     for (const o of options) { if ((await fetch(folder + o.label + '_layers.json', { method: 'HEAD' })).ok) available.push(o); }
     for(const o of available)publishedOptions.set(o.label,o);
     for(const [label,entry]of Object.entries(log.work_ablations||{}))publishedOptions.set(label,{label,entry});
     document.getElementById('title').textContent = `Storm prep plan · ${name}`;
-    live.planSub = document.getElementById('sub').textContent = log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero';
+    live.planSub = document.getElementById('sub').textContent = log.storm_label || (log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero');
+
     const holder = document.getElementById('plans');
     available.forEach(o => { const b = document.createElement('button'); b.type = 'button'; b.textContent = o.text; b.dataset.label = o.label;
       b.addEventListener('click', () => show(o, log)); holder.append(b); });

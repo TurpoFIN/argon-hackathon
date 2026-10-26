@@ -25,7 +25,7 @@ context.require=(names,callback)=>callback(Layer,Item,Item,Item,Item,Item,Item,I
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('loop/destruction-layer.js','utf8'),context);
 const api=await context.window.createDestructionLayer({view,map,buildings:mesh,panel});
-const base='data/scenarios/cd31da7e0001/';
+const base=process.env.DESTRUCTION_TEST_DATA || 'data/scenarios/cd31da7e0001/';
 const data=JSON.parse(fs.readFileSync(base+'destruction.json'));
 const trees=JSON.parse(fs.readFileSync(base+'destruction_street_trees.json'));
 await api.set(data,trees);

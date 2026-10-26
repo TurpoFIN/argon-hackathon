@@ -99,7 +99,7 @@ def states(op,weather,depths,minutes,*,recorded=False,control=None,cell_m=12):
     return before,after
 
 
-def load_pack(root,run,model,label):
+def load_pack(root,run,model,label,reference=None):
     folder=Path(root)/run/model
     assets_path=risk_assets.FOLDER/'assets.json'
     files=[folder/f'{model}.json',folder/f'{label}_layers.json',folder/'control_layers.json',assets_path]
@@ -107,13 +107,19 @@ def load_pack(root,run,model,label):
     if review.is_file():files.append(review)
     binding=folder/'workplan.json'
     if binding.is_file():files.append(binding)
-    return _pack(str(root),run,model,label,tuple(p.stat().st_mtime_ns for p in files))
+    return _pack(str(root),run,model,label,tuple(p.stat().st_mtime_ns for p in files),reference)
 
 
 @lru_cache(maxsize=12)
-def _pack(root,run,model,label,versions):
+def _pack(root,run,model,label,versions,reference=None):
     folder=Path(root)/run/model
     log=json.loads((folder/f'{model}.json').read_text())
+    binding_path=folder/'workplan.json'
+    if binding_path.is_file():
+        binding=json.loads(binding_path.read_text())
+        if binding.get('version')=='six-hazard-resources-1':
+            from .hazard_workplans import public
+            return public(binding,label,reference)
     layers=json.loads((folder/f'{label}_layers.json').read_text())
     control=json.loads((folder/'control_layers.json').read_text())
     weather=dict(log['parameters'])

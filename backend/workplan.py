@@ -12,7 +12,7 @@ from .viewer_actions import metres
 
 VERSION = 'action-workplan-1'
 CONSUMED = {'tie_down', 'fitted_barrier', 'empty_sandbag', 'sand_fill', 'pump',
-            'backup_circuit', 'designed_support', 'traffic_set'}
+            'backup_circuit', 'designed_support', 'traffic_set', 'generator_20kw', 'fuel_2h'}
 
 
 class Proposal(BaseModel):
@@ -71,9 +71,11 @@ def schedule(ids, candidates, res, travel=None):
     positions={c['id']:c['position'] for c in res['crews']}
     stock=dict(res['equipment'])
     tools={k:[[] for _ in range(q)] for k,q in stock.items() if k not in CONSUMED}
-    done=[]; skipped=[]
+    done=[]; skipped=[]; groups=set()
     for identity in ids:
         a=rows[identity];role='general' if a['role']=='pump crew' else a['role']
+        if a.get('exclusive_group') and a['exclusive_group'] in groups:
+            skipped.append(dict(id=identity,reason='Conflicting treatment of the same asset'));continue
         if any(stock.get(k,0)<q for k,q in a['equipment'].items()):
             skipped.append(dict(id=identity,reason='Equipment unavailable'));continue
         options=[]
@@ -110,6 +112,7 @@ def schedule(ids, candidates, res, travel=None):
         for k,slots in allocations:
             for i in slots:tools[k][i].append((start,finish))
         clocks[key]=finish;positions[key]=a['site']['position']
+        if a.get('exclusive_group'):groups.add(a['exclusive_group'])
         done.append(dict(id=identity,priority=len(done)+1,crew_id=key,start=round(start,2),finish=round(finish,2),
                          travel_minutes=round(walking,2),return_minutes=round(back,2),work_minutes=a['minutes'][1],
                          conditions=a.get('conditions',[]),status='Planned completion; site conditions need inspection'))
