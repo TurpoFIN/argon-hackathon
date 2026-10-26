@@ -314,3 +314,13 @@ body.panels-off :is(.steps, .brief, .learn, .insp, .icard) { display: none !impo
 .panel-pill { position: fixed; left: 24px; top: 96px; z-index: 30; font: 600 13px Inter, system-ui, sans-serif; padding: 6px 12px; border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.3); background: rgba(4,8,13,0.75); color: #fff; cursor: pointer; }
 html.light .panel-pill { background: rgba(255,255,255,0.95); color: #16202a; border-color: rgba(20,40,60,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.steps .st-t.st-t-sm { font-size: 22px !important; line-height: 1.25; }
+.steps .st-built { list-style: none; padding: 0; margin: 4px 0 10px; font-size: 14px; }
+.steps .st-built li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid rgba(127,127,127,0.18); }
+.steps .st-built li b { white-space: nowrap; font-weight: 600; }
+.steps .st-q { font-size: 13px !important; line-height: 1.45; font-style: italic; margin: 4px 0 10px; }
+.steps .st-got { font-size: 12px !important; line-height: 1.5; opacity: 0.85; }
+.steps { width: 420px !important; top: 120px !important; bottom: auto !important; max-height: calc(100vh - 210px); }
+.steps .st-t { font-size: 22px !important; line-height: 1.25 !important; }
+.steps, .steps p, .steps li, .steps .st-m { font-size: 14px; }
+.steps .st-nav button { padding: 5px 12px !important; font-size: 14px !important; }

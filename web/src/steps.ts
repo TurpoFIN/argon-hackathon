@@ -78,12 +78,16 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
   if (!s) body = `<div class="st-t">No plan objects in this run.</div>`;
   else if (s.kind === 'overview') {
     const b = brief;
-    const inputs = (b?.inputs || []).map((x: any) => `<li><b>${x.count != null ? esc(Number(x.count).toLocaleString('en-US')) + ' ' : ''}${esc(x.name)}</b></li>`).join('');
+    const inputs = (b?.inputs || []).map((x: any) => `${x.count != null ? Number(x.count).toLocaleString('en-US') + ' ' : ''}${x.name}`).join(' · ');
+    const items = steps.filter((x: any) => x.kind === 'item').map((x: any) => x.objs[0]);
+    const built = items.slice(0, 6).map((o: any) => `<li><span>${esc(plainName(o, tile))}</span><b>${usd(o.cost_usd)}</b></li>`).join('');
+    const strat = String(b?.strategy || ''); const stratShort = strat.length > 260 ? strat.slice(0, 257).replace(/\s+\S*$/, '') + '…' : strat;
     body = `<div class="st-kk">WHAT ${esc(who.toUpperCase())} DECIDED</div>
-      ${b?.goal ? `<div class="st-t">${esc(b.goal)}</div>` : `<div class="st-t">${steps.length - 1} decisions · ${usd(planCost)} total</div>`}
-      <div class="st-m">Budget <b>${b?.budget_usd ? usd(+b.budget_usd) : '–'}</b> · Plan cost <b>${usd(planCost)}</b>${b?.storm ? ` · Storm <b>${esc(b.storm)}</b>` : ''}</div>
-      ${inputs ? `<div class="st-k">WHAT GEMINI GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><ul class="st-in">${inputs}</ul>` : ''}
-      ${b?.strategy ? `<div class="st-k">ITS STRATEGY</div><blockquote>“${esc(b.strategy)}”</blockquote>` : (b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`)}
+      <div class="st-t st-t-sm">Protect San Francisco from the El Niño storm with ${b?.budget_usd ? usd(+b.budget_usd) : '$50M'}</div>
+      <div class="st-m">Plan cost <b>${usd(planCost)}</b> · ${items.length} major decisions + smaller operations</div>
+      ${built ? `<div class="st-k">WHAT IT BUILT</div><ul class="st-built">${built}</ul>` : ''}
+      ${stratShort ? `<div class="st-k">ITS STRATEGY</div><blockquote class="st-q">“${esc(stratShort)}”</blockquote>` : (b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`)}
+      ${inputs ? `<div class="st-k">WHAT IT GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><div class="st-got">${esc(inputs)}</div>` : ''}
       <div class="st-hint">Press → to step through each decision.</div>`;
   } else if (s.kind === 'item') {
     const o = s.objs[0]; const [, , does] = kindOf(o); const w = why(o, brief); const src = o.raw?.cost_source || o.raw?.cost_basis || o.raw?.source;
