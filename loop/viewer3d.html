@@ -214,7 +214,9 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     destruction?.setTime(k === null ? 3600 : k * 120, forwardPlayback);
     storm.layer.draw(k);
     scrub.value = k === null ? scrub.max : k;
-    clock.textContent = k === null ? 'Peak water' : `Storm minute ${storm.minutes[k] ?? k * 2} of 60`;
+    const minute = storm.minutes[k] ?? k * 2, total = storm.minutes[storm.minutes.length - 1] ?? 60;
+    const fmt = m => total > 90 ? `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')} h` : `minute ${m}`;
+    clock.textContent = k === null ? 'Peak water' : `Storm ${fmt(minute)} of ${total > 90 ? fmt(total) : total}`;
     window.dispatchEvent(new CustomEvent('prep-frame-change',{detail:{index:k,minute:k===null?60:storm.minutes[k]}}));
   }
   function stop() { clearInterval(storm.timer); storm.timer = null; toggle.textContent = '▶ Play the storm'; }
@@ -444,7 +446,9 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     for(const o of available)publishedOptions.set(o.label,o);
     for(const [label,entry]of Object.entries(log.work_ablations||{}))publishedOptions.set(label,{label,entry});
     document.getElementById('title').textContent = `Storm prep plan · ${name}`;
-    live.planSub = document.getElementById('sub').textContent = log.storm_label || (log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero');
+    live.planSub = document.getElementById('sub').textContent = log.storm_label || (log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero`
+      : (log.storm_hours || 1) > 1 ? `${log.storm_hours}-hour storm: Atlas 14 100-year rain, January 2023 observed tide · Presidio to the Embarcadero`
+      : 'Design storm · Embarcadero');
 
     const holder = document.getElementById('plans');
     available.forEach(o => { const b = document.createElement('button'); b.type = 'button'; b.textContent = o.text; b.dataset.label = o.label;
@@ -454,6 +458,12 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     holder.append(live.button);
     const start = available.find(o=>o.label===log.work_plan?.label) || available.find(o => best && o.label === `${model}_round${best.round}`) || available[available.length - 1];
     await view.when();
+    // A multi-hour run covers Presidio to the Embarcadero: open on the whole domain, seen from over the Golden Gate looking east, and keep it
+    // across plan switches so before and after compare from the same spot.
+    if ((log.storm_hours || 1) > 1 && !storm.userMoved) {
+      storm.framed = true;
+      await view.goTo({ position: { longitude: -122.49, latitude: 37.824, z: 1250 }, heading: 108, tilt: 70 }, { animate: false });
+    }
     document.getElementById('status').hidden = true;
     followLive();
     if (params.get('plan') === 'live') await showLive();

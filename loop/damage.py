@@ -21,7 +21,8 @@ FT = 0.3048
 WET_M = 0.03
 EXPOSED_STOREYS = 3
 ASSUMPTIONS = [
-    "Depth at a building is the peak water depth in open cells within 24 m (48 m for large footprints).",
+    "Depth at a building is the peak water depth in the adjacent open cells (12 m; wider only for footprints with no open neighbour).",
+    "Below the first floor only buildings with a basement take damage; others start at the first floor.",
     "A building counts as flooded at 3 cm of water against it; damage uses depth above its NSI first-floor height.",
     f"Tall buildings expose at most {EXPOSED_STOREYS} storeys' share of their NSI value to street flooding.",
 ]
@@ -80,19 +81,24 @@ class Exposure:
         self.value_c = np.array([float(r["val_cont"] or 0) for r in self.rows]) * self.exposed_share
         self.curves = [_curve(r["occtype"], r["st_damcat"]) for r in self.rows]
         self.unmatched = sorted({r["occtype"] for r, (key, _) in zip(self.rows, self.curves) if key != r["occtype"]})
-        near5 = maximum_filter(self.open.astype(np.uint8), size=5) > 0
-        self.use5 = near5[self.cell[:, 0], self.cell[:, 1]]
+        r, c = self.cell[:, 0], self.cell[:, 1]
+        self.use3 = (maximum_filter(self.open.astype(np.uint8), size=3) > 0)[r, c]
+        self.use5 = (maximum_filter(self.open.astype(np.uint8), size=5) > 0)[r, c]
+        # Only buildings with a basement take damage while the water stays below the first floor.
+        self.basement = np.array([(row.get("found_type") or "") == "B" for row in self.rows])
 
     def depths(self, peak):
         land = np.where(self.ocean, 0.0, peak)
-        d5, d9 = maximum_filter(land, size=5), maximum_filter(land, size=9)
+        d3, d5, d9 = (maximum_filter(land, size=k) for k in (3, 5, 9))
         r, c = self.cell[:, 0], self.cell[:, 1]
-        return np.where(self.use5, d5[r, c], d9[r, c])
+        # Water against the building: adjacent cells (12 m); wider only when the footprint has no open neighbour.
+        return np.where(self.use3, d3[r, c], np.where(self.use5, d5[r, c], d9[r, c]))
 
     def score(self, peak, protected=(), protect_m=0.0):
         """protected: fd_ids with sandbagged doorways; water below protect_m stays out of them."""
         depth_m = self.depths(peak)
         above_ft = depth_m / FT - self.found_ft
+        above_ft = np.where(self.basement, above_ft, np.where(above_ft < 0, -99.0, above_ft))
         protected = set(protected)
         guarded = np.array([r["fd_id"] in protected for r in self.rows]) & (depth_m < protect_m)
         wet = (depth_m >= WET_M) & ~self.on_bay & ~guarded
