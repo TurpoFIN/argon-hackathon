@@ -73,14 +73,21 @@ export function renderBench(el: HTMLElement, d: { jobs: JobLine[]; board: any[] 
   const fam = (m: string) => (/argon/i.test(m) ? 'Gemini 4 Argon' : /flash-lite/i.test(m) ? 'Gemini Flash-Lite' : /flash/i.test(m) ? 'Gemini Flash' : m || 'model');
   const briefRuns: any[] = brief?.runs || [];
   const seen = new Set<string>();
-  for (const j of d.jobs) {
+  // One session per model, shown as try 1, 2, 3…: the session with the most finished tries (ties → best in-budget result).
+  const score = (j: JobLine) => Math.min(...j.runs.filter((r) => isFinite(r.cost) && r.cost <= (j.budget || 50e6)).map((r) => r.damage + r.cost), Infinity);
+  const pickJobs: JobLine[] = [];
+  for (const fm of [...new Set(d.jobs.map((j) => fam(j.model)))]) {
+    const js = d.jobs.filter((j) => fam(j.model) === fm && j.runs.length);
+    if (js.length) pickJobs.push(js.sort((a, b) => b.runs.length - a.runs.length || score(a) - score(b))[0]);
+  }
+  for (const j of pickJobs) {
     const name = fam(j.model);
     const rs = [...j.runs].sort((a, b) => a.idx - b.idx);
-    rs.forEach((r) => { seen.add(r.runId); const br = /argon/i.test(j.model) ? briefRuns.find((x) => +x.run === r.idx) : null;
+    rs.forEach((r) => { seen.add(r.runId); const br = /argon/i.test(j.model) && [brief?.job_id, brief?.job, brief?.id].filter(Boolean).every((x: any) => x === j.id) ? briefRuns.find((x) => +x.run === r.idx) : null;
       rows.push({ name: `${name} · try ${r.idx}`, damage: r.damage, lives: br?.lives_at_risk ?? r.atRisk, cost: r.cost, budget: +(brief?.budget_usd ?? j.budget), note: br ? [br.critique, br.change_made].filter(Boolean).join(' → ') : r.note, runId: r.runId }); });
     if (!rs.length && /running|queued|awaiting/i.test(j.status)) rows.push({ name: `${name} · try 1`, damage: NaN, lives: null, cost: NaN, budget: NaN, pending: true, sub: j.phase });
   }
-  for (const b of d.board) if (b.run_id && !seen.has(b.run_id) && !/no plan|baseline/i.test(b.name || '')) rows.push({ name: b.name, damage: +b.damage_usd, lives: b.lives_at_risk ?? b.people?.at_risk_peak ?? null, cost: +b.plan_cost_usd, budget: +(b.budget_usd ?? NaN), runId: b.run_id });
+  for (const b of d.board) if (b.run_id && !seen.has(b.run_id) && !/no plan|baseline|argon|flash|gemini/i.test(b.name || '')) rows.push({ name: b.name, damage: +b.damage_usd, lives: b.lives_at_risk ?? b.people?.at_risk_peak ?? null, cost: +b.plan_cost_usd, budget: +(b.budget_usd ?? NaN), runId: b.run_id });
   const usd = (v: number) => (!isFinite(v) ? '–' : v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v / 1e3)}k` : `$${Math.round(v)}`);
   const per = (r: Row) => (base && r.cost > 0 && isFinite(r.damage) ? (base.damage - r.damage) / r.cost : NaN);
   let best = -1, bv = -Infinity; rows.forEach((r, i) => { const v = per(r); if (isFinite(v) && v > bv) { bv = v; best = i; } });
