@@ -268,6 +268,8 @@ def public(binding,label,reference=None):
     power_assets=None
     for a in rows:
         a['label']=OPERATIONS[a['kind']][2]
+        primary={'wind':'sf-glass','trees':'uf-trees','structure':'fema-andrew','flood':'sandy','power':'sandy','routes':'sf-works'}[a['hazard']]
+        a['source_ids']=list(dict.fromkeys([primary,*a['source_ids']]))
         identity=a['id'];a.update(selected=identity in selected,recorded=identity in applied,applied=identity in applied,
             assignment=selected.get(identity),plan_label=family,ablation_label=binding['profile_ablations'][family].get(identity))
         a.update(binding['profile_comparisons'][family].get(identity,{}))

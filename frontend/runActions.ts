@@ -99,6 +99,7 @@ export function installRunActions(){
       // and cannot drain the local water patch or restore the public feeder.
       box(-3,-4,0,1.8,1,1.2,mode==='after'?'#d2b76e':'#4a4a4a','critical-generator');
       box(1,-3,0,1,.4,1.6,s.pump_on?'#00c769':'#4a4a4a',s.pump_on?'critical-circuit-powered':'critical-circuit-off');
+      add(point(1,-3,2),{type:'point-3d',symbolLayers:[{type:'icon',resource:{primitive:'circle'},size:10,material:{color:s.pump_on?'#00c769':'#4a4a4a'},outline:{color:'#ffffff',size:1}}]},'critical-circuit-indicator');
       if(mode==='after')path([[-3,-4,.2],[-1,-4,.2],[1,-3,.3]],.09,s.pump_on?'#00c769':'#555555','critical-power-cable');
     }else if(op==='prune-defect'){
       const h=Math.min(24,site.height_m),tip=s.tree_fallen?[h*.7,0,1]:[0,0,h];
