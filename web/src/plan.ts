@@ -95,7 +95,7 @@ export interface PlanLabel { pos: THREE.Vector3; text: string; sub: string; colo
 export interface PlanRecord { id: string; index: number; type: string; category: string; label: string; cost_usd: number; t_s: number; phase?: string; notes?: string; center: number[]; bbox: number[] }
 const OBJ_GLSL = `attribute float aId; attribute float aMn; uniform float uHi, uBuildId, uBuildP, uAll; varying float vHi;
 float growG(float aT){ if (uAll > 0.5) return 1.0; if (abs(aId - uBuildId) < 0.5) return uBuildP; return clamp((uT - aT) / uGrow, 0.0, 1.0); }
-float hiF(){ bool me = abs(aId - uHi) < 0.5; if (aMn > 0.5 && !me) return 0.0; return uHi < -0.5 ? 1.0 : (me ? 2.0 : 0.12); }
+float hiF(){ bool me = abs(aId - uHi) < 0.5; if (aMn > 0.5 && !me) return 0.0; return uHi < -0.5 ? 1.0 : (me ? 2.0 : 0.0); }
 `;
 export interface PlanVisual { records: PlanRecord[]; highlightObject(id: string | null): void; buildObject(id: string, durationMs?: number): void; setAllBuilt(on: boolean): void; group: THREE.Group; labels: PlanLabel[]; alerts: { t_s: number; text: string }[]; update(t: number, time: number): void; objects: PlanObject[]; setHighlight(on: boolean): void }
 
