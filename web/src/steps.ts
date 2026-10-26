@@ -101,7 +101,7 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
         <span><i style="background:#3a8bff"></i>blue · pumps & storage</span><span><i style="background:#5dff9d"></i>green · shelters & permeable streets</span>
         <span><i style="background:#ff3d3d"></i>red · closed roads</span><span><i style="background:#ffb347"></i>orange areas · evacuation zones</span></div>
 
-      ${stratShort ? `<div class="st-k">ITS STRATEGY</div><blockquote class="st-q">“${esc(stratShort)}”</blockquote>` : (b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`)}
+      ${b ? '' : `<div class="st-wait">Briefing: waiting for Gemini.</div>`}
       `;
   } else if (s.kind === 'item') {
     const o = s.objs[0]; const w = why(o, brief);
