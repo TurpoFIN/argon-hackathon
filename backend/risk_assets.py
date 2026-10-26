@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FOLDER = ROOT / 'data/risk'
 PGE = 'https://services2.arcgis.com/mJaJSax0KPHoCNB6/ArcGIS/rest/services/DRPComplianceRelProd/FeatureServer'
 CEC = 'https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2'
-BBOX = [-122.406, 37.786, -122.386, 37.808]
+BBOX = [-122.486, 37.786, -122.386, 37.812]  # Presidio to North Beach and the Embarcadero
 TO = Transformer.from_crs(4326, 32610, always_xy=True).transform
 FROM = Transformer.from_crs(32610, 4326, always_xy=True).transform
 

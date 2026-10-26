@@ -20,7 +20,7 @@ from .simulation import Budget, advance_water, potential_wind
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 RAW = DATA / "raw"
-BBOX = [-122.406, 37.786, -122.386, 37.808]
+BBOX = [-122.486, 37.786, -122.386, 37.812]  # Presidio to North Beach and the Embarcadero
 DX = 12.0
 CRS = "EPSG:32610"
 
@@ -30,8 +30,8 @@ def retrieve(name, url):
     if not path.exists():
         req = urllib.request.Request(url, headers={"User-Agent": "EmbarcaderoStormPrototype/0.1", "Accept-Encoding": "identity"})
         with urllib.request.urlopen(req, timeout=90) as response:
-            raw = response.read(15_000_000)
-        if len(raw) >= 15_000_000:
+            raw = response.read(120_000_000)
+        if len(raw) >= 120_000_000:
             raise RuntimeError(f"Bounded download exceeded: {name}")
         path.write_bytes(raw)
     return path.read_bytes()
@@ -44,7 +44,7 @@ def source_json(name, url):
 def socrata(dataset, select, geometry):
     w, s, e, n = BBOX
     polygon = f"POLYGON(({w} {s},{e} {s},{e} {n},{w} {n},{w} {s}))"
-    params = {"$select": select, "$where": f"intersects({geometry},'{polygon}')", "$limit": 15000}
+    params = {"$select": select, "$where": f"intersects({geometry},'{polygon}')", "$limit": 60000}
     url = f"https://data.sf.gov/resource/{dataset}.json?" + urllib.parse.urlencode(params)
     return source_json(dataset + ".json", url), url
 
@@ -99,8 +99,10 @@ def main():
         from shapely.ops import transform as project
         return mapping(project(forward.transform, shape(geometry)))
 
-    if any(not b.get("hgt_median_m") or float(b["hgt_median_m"]) <= 0 for b in building_rows):
-        raise RuntimeError("A building is missing a valid height; resolve the source before simulation")
+    # The larger Presidio-to-North-Beach area includes footprints without lidar heights; skip and count them.
+    missing_height = sum(1 for b in building_rows if not b.get("hgt_median_m") or float(b["hgt_median_m"]) <= 0)
+    building_rows = [b for b in building_rows if b.get("hgt_median_m") and float(b["hgt_median_m"]) > 0]
+    print(f"Skipped {missing_height} footprints without a valid height", flush=True)
     shapes = [(projected_shape(b["shape"]), float(b["hgt_median_m"])) for b in building_rows]
     height = rasterize(shapes, out_shape=(ny, nx), transform=transform, fill=0, dtype="float32")
     buildings = height > 2
@@ -111,9 +113,17 @@ def main():
     if ocean.sum() < 20:
         raise RuntimeError("No coastal boundary resolved in DEM; inspect real data")
     buildings[ocean] = False
-    # Roof rain is routed to the nearest open ground cell, conserving volume.
+    # Roof rain is routed to the nearest cell of the connected street network, conserving volume. Rear yards
+    # walled in by row houses are separate components with no inlet; routing whole roofs into them ponded
+    # metres of water there that real downspouts never send.
     land = ~ocean
-    _, nearest = distance_transform_edt(buildings, return_indices=True)
+    pieces, _ = label(land & ~buildings)
+    sizes = np.bincount(pieces.ravel())
+    sizes[0] = 0
+    rim = np.unique(np.concatenate([pieces[0], pieces[-1], pieces[:, 0], pieces[:, -1], pieces[ocean | np.roll(ocean, 1, 0) | np.roll(ocean, 1, 1)]]))
+    street = np.isin(pieces, [sizes.argmax()] + [k for k in rim if k and sizes[k] >= 200])
+    print(f"Street network {int(street.sum())} cells; {int((land & ~buildings & ~street).sum())} enclosed yard cells keep only their own rain", flush=True)
+    _, nearest = distance_transform_edt(~(street | ocean), return_indices=True)
     rain_rate = np.zeros_like(ground)
     ri, rj = np.indices(ground.shape)
     target_i = np.where(buildings, nearest[0], ri)[land]

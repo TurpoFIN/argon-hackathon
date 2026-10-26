@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL = "gemini-4-argon"
-BBOX = [-122.406, 37.786, -122.386, 37.808]
+BBOX = [-122.486, 37.786, -122.386, 37.812]  # Presidio to North Beach and the Embarcadero
 _vault_cache = {}
 
 

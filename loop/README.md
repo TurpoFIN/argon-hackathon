@@ -9,6 +9,23 @@ All runs use the same storm, crews, candidate drains and 25,000-bag stock.
 | TimesFM January 2023 storm (`demo6`), with the full building table and the greedy plan as round 0 | $1,067.9M | $582.3M | $582.3M | **$580.6M** |
 | Same storm, brief showing only the 60 costliest buildings (`live-143427`) | $1,067.9M | not run | $738.1M | $639.3M |
 
+**Six-hour storm, Presidio to the Embarcadero (`big6h3`, full toolbox, no TimesFM).** Simulated
+damage, same storm for every plan:
+
+| Plan | Damage | vs no preparation |
+| --- | --- | --- |
+| No preparation | $5,119.7M | |
+| Rule: costliest protectable doorways | $4,371.0M | −14.6% |
+| Rule: doorways + pumps at the damage hotspots | $4,329.2M | −15.4% |
+| Rule: doorways + pumps in the deepest perched basins | $4,328.1M | −15.5% |
+| Rule: doorways + pumps where ponded volume × nearby damage is largest | $4,323.4M | −15.6% |
+| Flash, best of 3 rounds (round 2; rounds 1 and 3 dropped the doorways, $5.07B) | $4,322.1M | −15.6% |
+| **Argon, best of 3 rounds (round 3: 109 doorways, 8 pumps, 7 drains)** | **$4,304.2M** | **−15.9%** |
+
+Argon beats the best rule by $19.2M (0.4%) and Flash by $17.9M. The doorway sandbags do about 90%
+of the work, and Argon's doorway list is 95% the rule's (103 of 109 in round 3). On this storm, damage
+is spread over about 8,000 buildings, and 8 pumps at 0.25 m³/s move little of 75 mm of rain on 20 km².
+
 Showing the models only the top 60 buildings made both lose to a simple rule. With the full table
 in context, Flash reproduced the greedy plan, and Argon matched it and improved it by about 0.3%.
 The simulation, damage curves and sandbag rules decide most of the outcome. The loop's value is
@@ -98,6 +115,34 @@ on expected damage, weighted 0.3/0.4/0.3 (Swanson's rule). The live server uses 
 
 TimesFM 3.0 weights are licensed for non-commercial, non-production use only. Production use
 goes through BigQuery ML.
+
+## Six-hour storm, Presidio to the Embarcadero
+
+`--storm-hours 6` replaces Codex's one-hour storm:
+
+- **Rain:** the NOAA Atlas 14 100-year depth-duration curve as a 10-minute alternating-block
+  hyetograph (75 mm over 6 h, peak mid-storm).
+- **Bay:** the observed January 2023 water level at gauge 9414290, with its 2.368 m NAVD88 peak
+  aligned with the rain peak.
+- **Domain:** `BBOX` in `backend/prepare.py`, `backend/argon.py` and `backend/risk_assets.py` covers
+  the Presidio, Marina, Russian Hill, North Beach and the northern Embarcadero (733 × 245 cells at 12 m).
+  Run `python -m backend.prepare` after changing it.
+
+Three model fixes came with the larger area. Each was found by checking where the control damage
+came from:
+
+- **Land edges drain out.** A closed edge ponded the runoff that really flows on past the domain
+  (0.42 m mean peak on the south edge, about 0.05 m inland). Edge cells now lose Manning normal flow
+  down the outward slope; the outflow is booked in the water budget.
+- **Roof rain goes to the street network.** Rear yards walled in by row houses have no inlet.
+  Routing whole roofs into them caused 36% of the control damage.
+- **Water must be against the building.** Depth is read from adjacent cells (12 m) and widens only
+  for footprints with no open neighbour. Below the first floor, only NSI basement structures take
+  damage.
+
+```sh
+env PYTHONPATH=. $PY -m loop.judge --model argon --rounds 3 --mode doorways --storm-hours 6 --run big6h3/argon
+```
 
 ## What a plan can do
 
