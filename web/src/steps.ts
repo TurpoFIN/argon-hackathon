@@ -3,6 +3,15 @@ import type { PlanObject } from './data';
 import type { TileFrame } from './geo';
 import { placeName } from './story';
 
+/** Readable unit cost from a cost_basis value (string, {usd, unit} item, or list of them). */
+function fmtBasis(cb: any): string {
+  if (!cb) return '';
+  if (typeof cb === 'string') return cb;
+  const one = (x: any) => (x && typeof x === 'object' && x.usd != null ? `$${Math.round(+x.usd).toLocaleString('en-US')} per ${String(x.unit || 'unit').replace(/^m /, 'm of ')}` : '');
+  const list = Array.isArray(cb) ? cb : [cb];
+  return list.map(one).filter(Boolean).slice(0, 2).join(' · ');
+}
+
 export interface Step { kind: 'overview' | 'item' | 'ops'; objs: PlanObject[]; id?: string }
 const usd = (v: number) => (v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v / 1e3)}k` : v > 0 ? `$${Math.round(v)}` : '—');
 const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
@@ -59,7 +68,7 @@ const optionsFor = (o: PlanObject, brief: any) => {
   const ck = CATKEY.find(([t]) => t.test(o.type)); const list = ck ? acts.filter((a) => ck[1].test(a.category || '')) : [];
   if (!list.length) return '';
   const t = o.type.replace(/_/g, ' ').toLowerCase().split(' ')[0];
-  return `<div class="st-k">OPTIONS IT HAD</div><ul class="st-opt">${list.slice(0, 6).map((a) => { const on = String(a.name || '').toLowerCase().includes(t); return `<li class="${on ? 'on' : ''}">${on ? '✓ ' : ''}<b>${esc(a.name)}</b>${a.cost_basis ? ` <span>${esc(a.cost_basis)}</span>` : ''}</li>`; }).join('')}</ul>`;
+  return `<div class="st-k">OPTIONS IT HAD</div><ul class="st-opt">${list.slice(0, 6).map((a) => { const on = String(a.name || '').toLowerCase().includes(t); return `<li class="${on ? 'on' : ''}">${on ? '✓ ' : ''}<b>${esc(a.name)}</b>${fmtBasis(a.cost_basis) ? ` <span>${esc(fmtBasis(a.cost_basis))}</span>` : ''}</li>`; }).join('')}</ul>`;
 };
 
 export function buildSteps(objs: PlanObject[]): Step[] {
@@ -96,11 +105,11 @@ export function renderStep(el: HTMLElement, steps: Step[], i: number, tile: Tile
       ${inputs ? `<div class="st-k">WHAT IT GOT${b.total_tokens ? ` · ≈${Math.round(b.total_tokens / 1000)}k tokens` : ''}</div><div class="st-got">${esc(inputs)}</div>` : ''}
       <div class="st-hint">Press → to step through each decision.</div>`;
   } else if (s.kind === 'item') {
-    const o = s.objs[0]; const [, , does] = kindOf(o); const w = why(o, brief); const src = o.raw?.cost_source || o.raw?.cost_basis || o.raw?.source;
+    const o = s.objs[0]; const [, , does] = kindOf(o); const w = why(o, brief); const src = o.raw?.cost_source || fmtBasis(o.raw?.cost_basis) || o.raw?.source;
     body = `<div class="st-kk">${esc(o.label || '')}</div><div class="st-t">${esc(plainName(o, tile))}</div>
       ${does ? `<div class="st-k">WHAT IT DOES</div><div class="st-p">${esc(does)}</div>` : ''}
       <div class="st-k">WHY — IN GEMINI'S WORDS</div><div class="st-p ${w ? 'q' : 'dim'}">${w ? '“' + esc(w) + '”' : 'Gemini gave no reason for this item.'}</div>
-      <div class="st-g"><div><span>COST</span><b>${usd(o.cost_usd)}</b>${src ? `<small>${esc(src)}</small>` : ''}</div><div><span>READY</span><b>${o.t_s < 0 ? Math.round(-o.t_s / 3600) + ' h before landfall' : 'during storm'}</b></div></div>
+      <div class="st-g"><div><span>COST</span><b>${usd(o.cost_usd)}</b>${src ? `<small>${esc(src)}</small>` : ''}</div><div><span>READY</span><b>${o.t_s < 0 ? (-o.t_s >= 72 * 3600 ? Math.round(-o.t_s / 86400) + ' days before landfall' : Math.round(-o.t_s / 3600) + ' h before landfall') : 'during storm'}</b></div></div>
       ${optionsFor(o, brief)}`;
   } else {
     const tot = s.objs.reduce((a, o) => a + (o.cost_usd || 0), 0);
