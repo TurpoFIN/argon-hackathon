@@ -215,6 +215,7 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
       const web = (name) => ({ type: "web-style", styleName: "EsriRealisticTreesStyle", name });
       standing = new FeatureLayer({
         title: "Street trees (3D)", source, objectIdField: "oid", geometryType: "point", spatialReference: SR, listMode: "hide", popupEnabled: false,
+        definitionExpression: streetTrees.removed?.length ? `oid NOT IN (${streetTrees.removed.map(id=>id+1).join(',')})` : null,
         fields: [{ name: "oid", type: "oid" }, { name: "model", type: "string" }, { name: "h", type: "double" }, { name: "crown", type: "double" },
                  { name: "heading", type: "double" }, { name: "tilt", type: "double" }],
         elevationInfo: { mode: "on-the-ground" }, visible: shown,

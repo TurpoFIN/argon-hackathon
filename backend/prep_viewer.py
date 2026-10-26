@@ -64,23 +64,23 @@ def preparation_result(run: str, model: str, filename: str):
 
 
 @router.get("/api/prep-runs/{run}/{model}/{label}/actions")
-def action_catalog(run: str, model: str, label: str):
+def action_catalog(run: str, model: str, label: str, reference: str | None = None):
     if not NAME.fullmatch(run) or model not in ("argon", "flash") or not NAME.fullmatch(label):
         raise HTTPException(404)
     from .viewer_actions import load_pack, summary
     try:
-        return summary(load_pack(RUNS, run, model, label))
+        return summary(load_pack(RUNS, run, model, label,reference))
     except FileNotFoundError:
         raise HTTPException(404, "Run or action evidence is not available")
 
 
 @router.get("/api/prep-runs/{run}/{model}/{label}/actions/{action_id}")
-def action_detail(run: str, model: str, label: str, action_id: str):
+def action_detail(run: str, model: str, label: str, action_id: str, reference: str | None = None):
     if not NAME.fullmatch(run) or model not in ("argon", "flash") or not NAME.fullmatch(label):
         raise HTTPException(404)
     from .viewer_actions import load_pack
     try:
-        pack = load_pack(RUNS, run, model, label)
+        pack = load_pack(RUNS, run, model, label,reference)
     except FileNotFoundError:
         raise HTTPException(404)
     found = next((row for row in pack['actions'] if row['id'] == action_id), None)
