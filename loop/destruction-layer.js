@@ -151,14 +151,18 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
       const forward = next >= t;
       if (!fromPlayback || !forward) anims.clear();
       t = next;
-      for (const it of items) {
-        const s = stateAt(it.times, t);
-        if (s !== it.state) {
-          const anim = fromPlayback && forward && s === it.state + 1;
-          it.state = s;
-          it.apply(s, anim);
+      filterBatch++;
+      try {
+        for (const it of items) {
+          const s = stateAt(it.times, t);
+          if (s !== it.state) {
+            const anim = fromPlayback && forward && s === it.state + 1;
+            it.state = s;
+            it.apply(s, anim);
+          }
         }
-      }
+      } finally { filterBatch--; }
+      if (filterDirty) updateMeshFilter();
       renderPanel();
       document.documentElement.dataset.destructionFrame = String(Math.round(t / 120));
     }
@@ -238,7 +242,11 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
     // Collapse (DS4): cut the textured building out of the photoreal mesh, drop its mass to a rubble pile and
     // spill debris chunks downwind. Timing and footprint come from the run; the motion itself is illustrative.
     const collapsedNow = new Map();
+    // Collapses within one storm step share one mesh filter rebuild (a strong storm collapses hundreds at once).
+    let filterBatch = 0, filterDirty = false;
     function updateMeshFilter() {
+      if (filterBatch) { filterDirty = true; return; }
+      filterDirty = false;
       if (!meshLayer) return;
       const sr = meshLayer.spatialReference;
       const geoms = [...collapsedNow.values()].map((poly) => (sr?.isWebMercator ? webMercatorUtils.geographicToWebMercator(poly) : poly));
@@ -246,6 +254,16 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
     }
     const rand = (seed) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
     const RUBBLE = [[168, 140, 110], [120, 95, 70], [190, 182, 168], [140, 136, 130], [96, 82, 70]];
+    // Chunks draw from 24 random shapes per size class: graphics that share a symbol are batched by the renderer,
+    // where a unique symbol per chunk (60-140 per collapse) stalled scenes with hundreds of collapses.
+    const rubbleSymbol = (r, small) => {
+      const size = small ? 0.4 + r() * 1.6 : 0.8 + r() * 3.2;
+      return new PointSymbol3D({ symbolLayers: [{ type: "object", resource: { primitive: r() < 0.7 ? "cube" : "tetrahedron" },
+        width: size * (0.6 + r()), depth: size * (0.3 + r() * 0.5), height: size * (0.2 + r() * 0.4), anchor: "bottom",
+        heading: r() * 360, tilt: (r() - 0.5) * 70, roll: (r() - 0.5) * 70, material: { color: RUBBLE[Math.floor(r() * RUBBLE.length)] } }] });
+    };
+    let rubble = null;
+    const rubbleSet = () => rubble ??= [false, true].map((small) => { const r = rand(small ? 977 : 4241); return Array.from({ length: 24 }, () => rubbleSymbol(r, small)); });
     function collapse(id, flat, h, t4) {
       const poly = new Polygon({ rings: geometryRings(id, flat), spatialReference: SR });
       const pts = ring(flat);
@@ -264,10 +282,7 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
       for (let i = 0; i < n; i++) {
         const spill = r() < 0.35 ? r() * h * 0.7 : 0;   // a third of the debris spills downwind past the footprint
         const [lo, la] = offset(x0 + (x1 - x0) * r(), y0 + (y1 - y0) * r(), Math.sin(toward * Math.PI / 180) * spill, Math.cos(toward * Math.PI / 180) * spill);
-        const size = spill ? 0.4 + r() * 1.6 : 0.8 + r() * 3.2;
-        const sym = new PointSymbol3D({ symbolLayers: [{ type: "object", resource: { primitive: r() < 0.7 ? "cube" : "tetrahedron" },
-          width: size * (0.6 + r()), depth: size * (0.3 + r() * 0.5), height: size * (0.2 + r() * 0.4), anchor: "bottom",
-          heading: r() * 360, tilt: (r() - 0.5) * 70, roll: (r() - 0.5) * 70, material: { color: RUBBLE[Math.floor(r() * RUBBLE.length)] } }] });
+        const sym = rubbleSet()[spill ? 1 : 0][Math.floor(r() * 24)];
         const g = new Graphic({ geometry: new Point({ longitude: lo, latitude: la, z: spill ? 0 : slabH * (0.6 + r() * 0.5), spatialReference: SR }), symbol: sym, visible: false });
         L.things.add(g);
         chunks.push(g);
@@ -288,14 +303,20 @@ window.createDestructionLayer = ({view, map, buildings: meshLayer, panel}) => ne
           mass.symbol = massSym(slabH); dust.visible = false; chunks.forEach((c) => { c.visible = true; });
           return;
         }
-        // pancake: the full-height mass drops to the pile, debris lands, a dust cloud rises and thins
+        // pancake: the full-height mass drops to the pile, debris lands, a dust cloud rises and thins.
+        // Symbols are rebuilt in 5% steps of the motion, not on every animation frame.
+        let massAt = -1, dustAt = -1;
         animate((u) => {
+          if (u < 1 && u - massAt < 0.05) return;
+          massAt = u;
           mass.symbol = massSym(h - (h - slabH) * u);
           if (u > 0.6) chunks.forEach((c) => { c.visible = true; });
         }, 1600);
         dust.visible = true;
         animate((u) => {
           const e = Math.sqrt(u);
+          if (e < 1 && e - dustAt < 0.05) return;
+          dustAt = e;
           dust.symbol = new PointSymbol3D({ symbolLayers: [{ type: "object", resource: { primitive: "sphere" }, anchor: "center",
             width: 8 + 2.2 * h * e, depth: 8 + 2.2 * h * e, height: 6 + 1.2 * h * e, material: { color: [205, 195, 180, 0.55 * (1 - e)] } }] });
           if (e >= 1) dust.visible = false;

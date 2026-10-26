@@ -35,7 +35,7 @@ await new Promise(resolve=>setImmediate(resolve));
 const standing=layers.find(l=>l.title==='Street trees (3D)');
 assert.equal(standing.source.length,trees.trees.length);
 assert.equal(standing.source.filter(g=>g.attributes.tilt===-88).length,data.trees.length);
-assert(stats.innerHTML.includes(String(data.trees.length)));
+assert(stats.innerHTML.includes(data.trees.length.toLocaleString('en-US')));
 const collapsed=data.buildings.filter(b=>b[2][3]!==null).length;
 assert.equal(mesh.filter?.geometries.length??0,collapsed);
 for(const geometry of mesh.filter?.geometries??[]){
