@@ -48,6 +48,72 @@ DOOR = COSTS["doorway_protection"]
 BAGS_PER_STRUCTURE = round(DOOR["doorways_per_structure"] * DOOR["doorway_width_m"] * BAGS_PER_M_1FT * (DOOR["height_m"] / 0.3048) ** 2)
 
 
+# ── Multi-hour storm ────────────────────────────────────────────────────────────────────────────
+# Rain: NOAA Atlas 14 PFDS, 100-year, at the Ferry Building (-122.3937, 37.7955), retrieved 2026-10-25,
+# intensity in in/h for durations 5, 10, 15, 30, 60, 120, 180, 360 min, arranged by the alternating-block method.
+# Tide: observed water level at NOAA 9414290 (San Francisco) during the January 4-5, 2023 atmospheric river,
+# the window centred on its 2.368 m NAVD88 peak (data/raw/tides-20230104.json, downloaded by backend/prepare.py).
+ATLAS14_100YR = [(5, 4.46), (10, 3.20), (15, 2.58), (30, 1.76), (60, 1.25), (120, 0.863), (180, 0.713), (360, 0.495)]
+STORM = {"t": 0, "rain": None, "tide": None}
+
+
+def hyetograph(hours, block_min=10):
+    """Alternating-block design storm (mm/h per block) from the Atlas 14 depth-duration curve, peak mid-storm."""
+    durations = np.array([d for d, _ in ATLAS14_100YR], float)
+    depths = np.array([d * i / 60 * 25.4 for d, i in ATLAS14_100YR])
+    n = int(round(hours * 60 / block_min))
+    cumulative = np.exp(np.interp(np.log(np.arange(1, n + 1) * block_min), np.log(durations), np.log(depths)))
+    blocks = np.diff(np.concatenate([[0.0], cumulative]))
+    order, centre = np.zeros(n), n // 2
+    for rank, depth in enumerate(sorted(blocks, reverse=True)):
+        order[min(n - 1, max(0, centre + (rank + 1) // 2 * (1 if rank % 2 else -1)))] = depth
+    return order * 60 / block_min
+
+
+def observed_tide(hours):
+    """Observed 6-minute water level (m NAVD88) for `hours` centred on the January 2023 storm peak."""
+    rows = json.loads((scenarios.DATA / "raw" / "tides-20230104.json").read_text())["data"]
+    levels = np.array([float(r["v"]) for r in rows if r.get("v")])
+    steps, peak = int(hours * 10), int(np.argmax(levels))
+    start = min(max(0, peak - steps // 2), max(0, len(levels) - steps - 1))
+    return levels[start:start + steps + 1]
+
+
+_advance_water = preparedness.advance_water
+
+
+def _advance_with_storm(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, dt, budget, roughness=0.035):
+    if STORM["rain"] is not None:
+        t = STORM["t"]
+        rain_rate = rain_rate * STORM["rain"][min(t, len(STORM["rain"]) - 1)]
+        tide = STORM["tide"][min(t, len(STORM["tide"]) - 1)]
+        STORM["t"] = t + 1
+        h = _advance_water(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, dt, budget, roughness)
+        return _outfall(h, ground, buildings, ocean, dx, dt, budget, roughness)
+    return _advance_water(h, ground, buildings, ocean, rain_rate, drain_rate, tide, dx, dt, budget, roughness)
+
+
+def _outfall(h, ground, buildings, ocean, dx, dt, budget, roughness, min_slope=0.001):
+    """Free-outfall land edges: the larger domain cuts through the city, and a closed edge would pond the
+    runoff that really flows on past it. Each open edge cell loses Manning normal flow down the outward ground
+    slope (at least min_slope; none where the ground rises out of the domain). The loss is booked as boundary
+    exchange so the water budget still closes."""
+    gone = 0.0
+    for edge, inner in (((0, slice(None)), (1, slice(None))), ((-1, slice(None)), (-2, slice(None))),
+                        ((slice(None), 0), (slice(None), 1)), ((slice(None), -1), (slice(None), -2))):
+        slope = (ground[inner] - ground[edge]) / dx
+        depth = h[edge]
+        flow = depth ** (5 / 3) / roughness * np.sqrt(np.maximum(slope, min_slope)) * dt / dx
+        out = np.where((slope > -min_slope) & ~ocean[edge] & ~buildings[edge], np.minimum(flow, np.minimum(3 * depth * dt / dx, depth)), 0.0)
+        h[edge] = depth - out
+        gone += float(out.sum())
+    budget.coastal_exchange_m3 -= gone * dx * dx
+    STORM["outfall_m3"] = STORM.get("outfall_m3", 0.0) + gone * dx * dx
+    return h
+
+
+preparedness.advance_water = _advance_with_storm
+
 PUMP_M3S = 0.25   # assumption: roughly one 12-inch portable dewatering pump
 PUMP_LIMIT = 8    # assumption: pumps available before the storm
 
@@ -173,9 +239,10 @@ def validate(plan: Plan, context, judge):
 
 
 class Judge:
-    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways", replay_context=None, parameters=None):
+    def __init__(self, run_dir: Path, use_shared_state=False, forcing=None, rain_mm_h=None, mode="doorways", replay_context=None, parameters=None, storm_hours=1):
         self.run_dir = run_dir
         self.mode = mode
+        self.storm_hours = storm_hours
         run_dir.mkdir(parents=True, exist_ok=True)
         self.forcing = json.loads(Path(forcing).read_text()) if forcing else None
         if self.forcing:
@@ -200,6 +267,25 @@ class Judge:
         self._metric = lambda lon, lat: np.column_stack([np.asarray(lon) * 111320 * np.cos(np.radians(lat0)), np.asarray(lat) * 111320])
         self._cells = cKDTree(self._metric(self.base.lon.ravel(), self.base.lat.ravel()))
 
+    def simulate(self, base, plan):
+        """The Codex one-hour storm, or a multi-hour storm: Atlas 14 alternating-block rain with its peak aligned to
+        the observed January 2023 tide peak (worst case)."""
+        if self.storm_hours <= 1:
+            return preparedness.simulate(base, plan)
+        seconds = int(self.storm_hours * 3600)
+        rain = hyetograph(self.storm_hours) / self.p.rain_mm_h
+        tide = observed_tide(self.storm_hours)
+        STORM.update(t=0, outfall_m3=0.0, rain=np.repeat(rain, 600)[:seconds + 1],
+                     tide=np.interp(np.arange(seconds + 1), np.linspace(0, seconds, len(tide)), tide))
+        base = copy.copy(base)
+        base.dynamics = {**base.dynamics, "tide_base": float(STORM["tide"][0])}
+        try:
+            result = preparedness.simulate(base, plan, horizon=seconds)
+            result["boundary_outflow_m3"] = round(STORM["outfall_m3"])
+            return result
+        finally:
+            STORM.update(t=0, rain=None, tide=None)
+
     def write_layers(self, label, plan, drawn, sim, ledger, runs):
         """Map layers for the 3D view: P50 (or design) peak water per wet cell, the plan's walls, pumps,
         cleared drains, and each affected building's outcome."""
@@ -223,8 +309,9 @@ class Judge:
             "label": label, "plan": plan, "cell_m": float(self.base.cell),
             "flood": [[round(float(lon[r, c]), 6), round(float(lat[r, c]), 6), round(float(peak[r, c]), 2)] for r, c in wet],
             # The whole storm for 3D playback: depth in every cell that is ever wet, one value per saved frame.
-            "frame_minutes": [round(k * 2) for k in range(len(sim["flood"]))],
-            "flood_frames": [[round(float(lon[r, c]), 6), round(float(lat[r, c]), 6), [round(float(v), 2) for v in sim["flood"][:, r, c]]]
+            "frame_minutes": [k * 2 for k in range(0, len(sim["flood"]), max(1, len(sim["flood"]) // 40))],
+            "flood_frames": [[round(float(lon[r, c]), 6), round(float(lat[r, c]), 6),
+                              [round(float(v), 2) for v in sim["flood"][::max(1, len(sim["flood"]) // 40), r, c]]]
                              for r, c in np.argwhere(land & (sim["flood"].max(axis=0) >= damage.WET_M))],
             "walls": [{"path": [[round(float(lon[c]), 6), round(float(lat[c]), 6)] for c in cells], "height_m": b["height_ft"] * 0.3048}
                       for cells, b in zip(drawn["barriers"], plan.get("barriers", []))],
@@ -288,13 +375,13 @@ class Judge:
                     base.pump_rates = np.zeros_like(base.z)
                     for pump in plan["pumps"]:
                         base.pump_rates[self.pump_cell(pump)] += PUMP_M3S / base.cell ** 2
-            sim = preparedness.simulate(base, plan)
+            sim = self.simulate(base, plan)
             ledger = self.exposure.score(sim["peak"], plan.get("doorway_fd_ids", []), DOOR["height_m"])
             suffix = "" if len(self.scenarios) == 1 else f"_{scenario['name']}"
             heading = title if not suffix else f"{scenario['name']} · {title}"
             main = render.plan_map(sim["world"], sim["result"], sim["peak"], ledger, self.exposure, self.candidates, heading, drawn)
             image_path = self.run_dir / f"{label}{suffix}.jpg"
-            render.composite(main, render.timeline(sim["world"], sim["flood"])).save(image_path, quality=88)
+            render.composite(main, render.timeline(sim["world"], sim["flood"], tuple(round(self.storm_hours * 60 * q) for q in (0.25, 0.5, 0.75, 1.0)))).save(image_path, quality=88)
             runs.append(dict(scenario=scenario, sim=sim, ledger=ledger, image=image_path.name))
         primary_run = next(r for r in runs if r["scenario"]["base"] is self.base)
         self.write_layers(label, plan, drawn, primary_run["sim"], primary_run["ledger"], runs)
@@ -384,7 +471,12 @@ class Judge:
                         "drains, the plan's walls in orange, protected buildings in cyan, damaged buildings as yellow rings, four "
                         "timeline snapshots), then a video of the P90 storm.\n")
         else:
-            storm = (f"Storm (fixed): {p.rain_mm_h:g} mm/h rain for one hour, coastal water rising {p.coastal_rise_m:g} m over 30 min "
+            storm = (f"Storm (fixed): {self.storm_hours:g} hours. Rain follows the NOAA Atlas 14 100-year storm "
+                     f"({hyetograph(self.storm_hours).sum() / 6:.0f} mm in total, peaking mid-storm), and the bay follows the "
+                     "observed water level of the January 2023 atmospheric river around its 2.368 m NAVD88 peak, which is "
+                     f"aligned with the rain peak. Wind {p.wind_mps:g} m/s gusting {p.gust_mps:g} m/s from {p.wind_from_deg:g}°.\n"
+                     if self.storm_hours > 1 else
+                     f"Storm (fixed): {p.rain_mm_h:g} mm/h rain for one hour, coastal water rising {p.coastal_rise_m:g} m over 30 min "
                      f"above an observed 2.368 m NAVD88 high water, wind {p.wind_mps:g} m/s gusting {p.gust_mps:g} m/s from {p.wind_from_deg:g}°.\n")
             attached = ("Attached: the rendered result of the latest run (image: peak depth, numbered candidate drains, the plan's walls "
                         "(orange), protected buildings (cyan), damaged buildings (yellow rings), four timeline snapshots) and a video of "
@@ -472,7 +564,8 @@ class Judge:
         control_scores = {"_usd": control_raw["_per_structure_usd"],
                           "_depth": {name: raw["_per_structure_depth_m"] for name, raw in self._last_raw_all.items()}}
         heuristic_plan = dict(name=self.heuristic["selected_plan"], drain_ids=self.heuristic["drain_ids"], stage_ids=self.heuristic["stage_ids"])
-        heuristic = self.evaluate(heuristic_plan, "codex_heuristic", f"Codex heuristic: {heuristic_plan['name']}")
+        # The drains-only Codex baseline matched no preparation in every run; skip it on long storms.
+        heuristic = control if self.storm_hours > 1 else self.evaluate(heuristic_plan, "codex_heuristic", f"Codex heuristic: {heuristic_plan['name']}")
         # Fair non-AI baseline with the models' main lever: sandbag the costliest doorways whose control
         # water stays below the protection height, until the stock runs out.
         if self.mode == "coupled":
@@ -485,7 +578,7 @@ class Judge:
             greedy_plan = dict(name="Greedy doorway sandbags", drain_ids=[], stage_ids=[],
                                doorway_fd_ids=[fd for _, fd in protectable[:STOCK // BAGS_PER_STRUCTURE]])
             greedy = self.evaluate(greedy_plan, "greedy", "Greedy rule: sandbag the costliest protectable doorways")
-        log = {"model": model_id, "mode": self.mode, "started": datetime.now(timezone.utc).isoformat(), "parameters": self.p.model_dump(),
+        log = {"model": model_id, "mode": self.mode, "storm_hours": self.storm_hours, "started": datetime.now(timezone.utc).isoformat(), "parameters": self.p.model_dump(),
                "codex_root": str(CODEX_ROOT), "nsi_source": self.exposure.source, "nsi_retrieved": self.exposure.retrieved,
                "curves_source": damage.CURVES["source"], "costs": COSTS, "unmatched_occtypes": self.exposure.unmatched,
                "candidates": self.candidates, "control": control, "codex_heuristic": heuristic, "greedy_heuristic": greedy, "rounds": [],
@@ -568,10 +661,12 @@ def main():
     parser.add_argument("--shared-scenario", action="store_true", help="use the UI's current sliders instead of Codex defaults")
     parser.add_argument("--forcing", help="TimesFM forcing JSON from loop.forecast; plans are scored on P10/P50/P90")
     parser.add_argument("--rain-mm-h", type=float, help="rain rate for every scenario (default: Atlas 14 100-yr 1-h, 32 mm/h)")
+    parser.add_argument("--storm-hours", type=float, default=1, help=">1: Atlas 14 alternating-block rain + observed Jan 2023 tide")
     parser.add_argument("--mode", choices=["doorways", "coupled"], default="doorways",
                         help="doorways: sandbag doorways + walls + drains; coupled: pumps + walls + drains, no doorways")
     args = parser.parse_args()
-    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing, rain_mm_h=args.rain_mm_h, mode=args.mode)
+    judge = Judge(OUT / args.run, use_shared_state=args.shared_scenario, forcing=args.forcing, rain_mm_h=args.rain_mm_h, mode=args.mode,
+                  storm_hours=args.storm_hours)
     judge.run(args.model, args.rounds)
 
 
