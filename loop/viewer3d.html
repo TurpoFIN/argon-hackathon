@@ -54,11 +54,12 @@ video { width:100%; border-radius:4.8px; margin-top:8px; display:none; }
   <h1 id="title">Loading plan</h1>
   <p class="sub" id="sub"></p>
   <div id="plans" role="group" aria-label="Plan shown"></div>
-  <p class="sub" id="damage-label" style="margin:0">Modelled flood damage</p>
+  <p class="sub" style="margin:0" id="total-label">Modelled flood damage</p>
   <p class="big" id="total">…</p>
   <p class="delta" id="delta"></p>
   <dl id="stats"></dl>
-  <ul class="legend" id="flood-legend">
+  <ul class="legend" id="plan-legend">
+
     <li><span class="sw" style="background:#4a90ff"></span>Peak flood depth (P50), darker is deeper</li>
     <li><span class="sw" style="background:var(--c5)"></span>Sandbag wall (height shown 4×)</li>
     <li><span class="sw" style="background:var(--c3)"></span>Portable pump: drains the one 12 m cell it stands in</li>
@@ -134,7 +135,19 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     .then(() => window.createDestructionLayer({view, map, buildings: meshLayer, panel: document.getElementById('destruction')}))
     .then(layer => (destruction = layer))
     .catch(error => { console.error('Destruction layer unavailable', error); return null; });
-  let showVersion = 0;
+  let showVersion = 0, cinemaWeather = null;
+  // Live scenario: the analysis page's slider storm (its own water frames and destruction) on this page's play button.
+  const live = { id: null, shown: false, button: null, planSub: '', planWeather: null };
+  function planPanel(isLive) {
+    live.shown = isLive;
+    if(isLive)for(const id of ['total','delta'])document.getElementById(id).hidden=false;
+    document.getElementById('total-label').textContent = isLive ? 'Flooded land at peak' : 'Modelled flood damage';
+    const actions = document.getElementById('run-actions');
+    if (actions) actions.hidden = isLive;
+    document.querySelectorAll('#plan-legend li').forEach((item, i) => { item.style.display = (isLive || currentLog?.hazard_study) && i > 0 ? 'none' : ''; });
+    map.layers.forEach(l => { if (['Per-action consequences (extrapolated)', 'Preventive actions'].includes(l.title)) l.visible = !isLive; });
+    if (!isLive) { document.getElementById('sub').textContent = live.planSub; cinemaWeather = live.planWeather; }
+  }
   window.sfScene = { view, map };
   view.when().then(() => window.dispatchEvent(new Event('prep-view-ready')));
 
@@ -175,6 +188,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
   async function show(option, log) {
     const version = ++showVersion;
     stop();
+    planPanel(false);
     const destructionPromise = Promise.all([
       fetch(folder + option.label + '_destruction.json').then(r => r.ok ? r.json() : undefined),
       fetch(folder + option.label + '_destruction_street_trees.json').then(r => r.ok ? r.json() : undefined)
@@ -262,7 +276,7 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
       document.documentElement.dataset.executedActions=option.entry.action_ids.join('|');
     }else document.documentElement.dataset.executedActions='';
     for(const id of ['total','delta'])document.getElementById(id).hidden=!!log.hazard_study;
-    document.getElementById('damage-label').textContent=log.hazard_study?'End-of-storm harm · change vs no preparation':'Modelled flood damage';
+    document.getElementById('total-label').textContent=log.hazard_study?'End-of-storm harm · change vs no preparation':'Modelled flood damage';
     if(log.hazard_study){
       const labels={windborne_objects:'Airborne loose objects',trees_failed:'Trees fallen',destroyed_buildings:'DS4 buildings',flooded_entrances:'Flooded entrances',unserved_load_hours:'Critical-load hours lost',route_hazard_minutes:'Hazardous open-link minutes'};
       const metrics=option.entry.hazard_metrics,base=log.control.hazard_metrics;
@@ -286,6 +300,66 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     else play.style.display = 'none';
   }
 
+  async function showLive() {
+    const version = ++showVersion;
+    stop();
+    document.querySelectorAll('#plans button').forEach(b => b.setAttribute('aria-pressed', String(b === live.button)));
+    const state = await fetch('/api/state', { cache: 'no-store' }).then(r => r.json());
+    if (!state.scenario_id) { live.button.textContent = 'Live scenario · calculating'; return; }
+    const root = `/api/results/${state.scenario_id}/`, get = name => fetch(root + name, { cache: 'no-store' });
+    const binary = name => get(name).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${name}: ${r.status}`))).then(b => new Float32Array(b));
+    const optional = name => get(name).then(r => r.ok ? r.json() : undefined).catch(() => undefined);
+    const [manifest, grid, depth, damage, trees] = await Promise.all([get('manifest.json').then(r => r.json()), binary('grid.bin'), binary('flood.bin'),
+      optional('destruction.json'), optional('destruction_street_trees.json')]);
+    if (version !== showVersion) return;
+    const layer = await destructionReady;
+    if (layer) await layer.set(damage, trees).catch(error => console.error('Destruction data unavailable', error));
+    if (version !== showVersion) return;
+    live.id = state.scenario_id;
+    planPanel(true);
+    // grid.bin bands: lon, lat, ground, building height, wind east, wind north, ocean. flood.bin: one depth grid per frame.
+    const n = manifest.grid.nx * manifest.grid.ny, count = depth.length / n, half = manifest.grid.cell_m / 2, features = [];
+    for (let i = 0; i < n; i++) {
+      if (grid[6 * n + i] > 0.5) continue;
+      const properties = {};
+      let peak = 0;
+      for (let k = 0; k < count; k++) { const d = Math.round(depth[k * n + i] * 100) / 100; properties['d' + k] = d; peak = Math.max(peak, d); }
+      if (peak < 0.03) continue;
+      properties.depth = peak;
+      features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [square(grid[i], grid[n + i], half)] }, properties });
+    }
+    storm.frames = count;
+    storm.minutes = manifest.frame_metrics.map(m => Math.round(m.time_seconds / 60));
+    const keep = storm.frame;
+    plan.layers.removeAll();
+    plan.add(storm.layer = new GeoJSONLayer({ url: blob({ type: 'FeatureCollection', features }), title: 'Flood depth', geometryType: 'polygon',
+      renderer: floodRenderer('depth'), elevationInfo: { mode: 'on-the-ground' }, outFields: ['*'], popupTemplate: { title: 'Peak water {depth} m' } }));
+    scrub.max = Math.max(0, storm.frames - 1);
+    setFrame(keep === null || keep === undefined ? null : Math.min(keep, storm.frames - 1));
+    const p = manifest.parameters, last = manifest.frame_metrics[manifest.frame_metrics.length - 1];
+    cinemaWeather = { rainMmH: p.rain_mm_h, meanMs: p.wind_mps, gustMs: p.gust_mps, fromDeg: p.wind_from_deg,
+      tideM: manifest.tide_base_navd88_m + p.coastal_rise_m, localHour: null, flash: 0 };
+    document.getElementById('sub').textContent = `Live scenario from the analysis page · ${state.scenario_id}`;
+    document.getElementById('total').textContent = `${(last.flooded_area_m2 / 1e4).toFixed(1)} ha`;
+    document.getElementById('delta').textContent = `Gust ${p.gust_mps} m/s from ${p.wind_from_deg}° · rain ${p.rain_mm_h} mm/h`;
+    document.getElementById('stats').innerHTML = [['Deepest water', `${last.max_depth_m.toFixed(2)} m`],
+      ['Water on land', `${Math.round(last.water_volume_m3).toLocaleString('en-US')} m³`], ['Mean wind', `${p.wind_mps} m/s`],
+      ['Coastal rise', `${p.coastal_rise_m} m`], ['Drain blockage', `${p.blockage_pct}%`], ['Clearing crews', p.clearing_crews]]
+      .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    document.documentElement.dataset.executedActions = '';
+    document.getElementById('play').style.display = 'none';
+    document.getElementById('video').style.display = 'none';
+  }
+  // Follow the analysis page: a new slider scenario reloads the live entry when it is shown.
+  async function followLive() {
+    const state = await fetch('/api/state', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
+    if (state && live.button) {
+      live.button.textContent = state.status === 'ready' ? 'Live scenario' : 'Live scenario · calculating';
+      if (live.shown && state.status === 'ready' && state.scenario_id !== live.id) await showLive().catch(error => console.error(error));
+    }
+    setTimeout(followLive, 2000);
+  }
+
   (async () => {
     if (!run) {
       const response = await fetch('/api/prep-runs');
@@ -302,13 +376,14 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
       const nativePanel=document.getElementById('destruction'),details=document.createElement('details'),summary=document.createElement('summary');
       summary.textContent='Storm details';details.style.margin='8px 0';summary.style.cursor='pointer';
       nativePanel.before(details);details.append(summary,nativePanel);
-      const items=[...document.getElementById('flood-legend').children];items.forEach((li,i)=>{if(i)li.style.display='none';});
+      const items=[...document.getElementById('plan-legend').children];items.forEach((li,i)=>{if(i)li.style.display='none';});
       items[0].lastChild.textContent=' Saved flood depth · same field in every plan';
     }
     // Cinema mode (cinema.js) shows the storm this run was tested against: its rain and wind, and the forecast's P50 peak water.
     const sp = log.parameters || {}, p50 = (log.forcing?.scenarios || []).find(s => s.name === 'P50');
-    window.sfCinemaHost = { standalone: true, conditions: () => ({ rainMmH: sp.rain_mm_h ?? 0, meanMs: sp.wind_mps ?? 0,
-      gustMs: sp.gust_mps ?? sp.wind_mps ?? 0, fromDeg: sp.wind_from_deg ?? 200, tideM: p50?.peak_water_level_navd88_m ?? 2.368, localHour: null, flash: 0 }) };
+    live.planWeather = cinemaWeather = { rainMmH: sp.rain_mm_h ?? 0, meanMs: sp.wind_mps ?? 0,
+      gustMs: sp.gust_mps ?? sp.wind_mps ?? 0, fromDeg: sp.wind_from_deg ?? 200, tideM: p50?.peak_water_level_navd88_m ?? 2.368, localHour: null, flash: 0 };
+    window.sfCinemaHost = { standalone: true, conditions: () => cinemaWeather };
     const name = log.model.includes('argon') ? 'Argon' : 'Flash';
     const rounds = log.rounds.filter(r => r.ledger);
     const best = rounds.length ? rounds.reduce((a, b) => (b.ledger.total_usd < a.ledger.total_usd ? b : a)) : null;
@@ -321,14 +396,20 @@ async (Map, Basemap, TileLayer, SceneLayer, ElevationLayer, GeoJSONLayer, GroupL
     for(const o of available)publishedOptions.set(o.label,o);
     for(const [label,entry]of Object.entries(log.work_ablations||{}))publishedOptions.set(label,{label,entry});
     document.getElementById('title').textContent = `Storm prep plan · ${name}`;
-    document.getElementById('sub').textContent = log.storm_label || (log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero');
+    live.planSub = document.getElementById('sub').textContent = log.storm_label || (log.forcing ? `TimesFM forecast issued ${log.forcing.issued} UTC · Embarcadero` : 'Design storm · Embarcadero');
+
     const holder = document.getElementById('plans');
     available.forEach(o => { const b = document.createElement('button'); b.type = 'button'; b.textContent = o.text; b.dataset.label = o.label;
       b.addEventListener('click', () => show(o, log)); holder.append(b); });
+    live.button = document.createElement('button'); live.button.type = 'button'; live.button.textContent = 'Live scenario'; live.button.dataset.label = 'live';
+    live.button.addEventListener('click', () => showLive().catch(error => { live.button.textContent = 'Live scenario · unavailable'; console.error(error); }));
+    holder.append(live.button);
     const start = available.find(o=>o.label===log.work_plan?.label) || available.find(o => best && o.label === `${model}_round${best.round}`) || available[available.length - 1];
     await view.when();
     document.getElementById('status').hidden = true;
-    if (start) await show(start, log); else document.getElementById('title').textContent = 'No 3D layers for this run yet';
+    followLive();
+    if (params.get('plan') === 'live') await showLive();
+    else if (start) await show(start, log); else document.getElementById('title').textContent = 'No 3D layers for this run yet';
   })().catch(error => { document.getElementById('status').textContent = 'Could not load the plan: ' + error; console.error(error); });
 });
 </script>
